@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log*
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+storage/uploads/*
+storage/invoices/*
+!storage/uploads/.gitkeep
+!storage/invoices/.gitkeep
+Dockerfile
+.dockerignore
+README.md
