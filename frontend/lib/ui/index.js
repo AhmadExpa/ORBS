@@ -1,7 +1,7 @@
-export { Button } from "./button.js";
-export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card.js";
-export { StatusBadge } from "./status-badge.js";
-export { DataTable } from "./data-table.js";
-export { TextInput, TextArea } from "./inputs.js";
-export { SectionHeading } from "./section-heading.js";
+export { Button } from "./button.jsx";
+export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card.jsx";
+export { StatusBadge } from "./status-badge.jsx";
+export { DataTable } from "./data-table.jsx";
+export { TextInput, TextArea } from "./inputs.jsx";
+export { SectionHeading } from "./section-heading.jsx";
 export { cn } from "./utils.js";
