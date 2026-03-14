@@ -1,12 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 
+const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
+
+function isServerSubscription(subscription) {
+  return SERVER_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
+}
+
+function hasAssignedCredentials(subscription) {
+  const access = subscription?.serviceAccess || {};
+  return Boolean(access.username || access.password || access.ipAddress);
+}
+
 export function ServiceDetail({ serviceId }) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const { data, isLoading } = useCustomerQuery({
     queryKey: ["portal-service-detail", serviceId],
     path: "/subscriptions",
@@ -16,6 +29,10 @@ export function ServiceDetail({ serviceId }) {
   const billingAmount = Number(subscription?.metadata?.billingAmount || 0);
   const techStack = subscription?.productPlanId?.techStack || [];
   const categoryName = subscription?.productPlanId?.categoryId?.name || "Managed Service";
+  const serviceAccess = subscription?.serviceAccess || {};
+  const sharedDetails = subscription?.sharedDetails || [];
+  const isServer = isServerSubscription(subscription);
+  const credentialsAssigned = hasAssignedCredentials(subscription);
 
   if (isLoading) {
     return (
@@ -35,7 +52,10 @@ export function ServiceDetail({ serviceId }) {
 
   return (
     <div>
-      <Topbar title={subscription.productPlanId?.name || "Managed Service"} subtitle={`${categoryName} managed and operated by ElevenOrbits.`} />
+      <Topbar
+        title={subscription.productPlanId?.name || "Managed Service"}
+        subtitle={isServer ? "Server access and renewal details for this deployment." : `${categoryName} managed and operated by ElevenOrbits.`}
+      />
       <div className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
           <Card>
@@ -64,6 +84,62 @@ export function ServiceDetail({ serviceId }) {
               </div>
             </CardContent>
           </Card>
+          {isServer ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Server Access</CardTitle>
+                <CardDescription>Credentials assigned by the admin team appear here for your VPS or VDS.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-slate-600">
+                {credentialsAssigned ? (
+                  <>
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <span className="text-slate-500">IP Address</span>
+                      <span className="font-semibold text-slate-900">{serviceAccess.ipAddress || "Not assigned"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <span className="text-slate-500">Username</span>
+                      <span className="font-semibold text-slate-900">{serviceAccess.username || "Not assigned"}</span>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-slate-500">Password</span>
+                        <Button type="button" variant="ghost" onClick={() => setIsPasswordVisible((current) => !current)}>
+                          {isPasswordVisible ? "Hide" : "Show"}
+                        </Button>
+                      </div>
+                      <p className="mt-3 break-all font-semibold text-slate-900">
+                        {serviceAccess.password ? (isPasswordVisible ? serviceAccess.password : "••••••••••••") : "Not assigned"}
+                      </p>
+                    </div>
+                    {serviceAccess.assignedAt ? (
+                      <p className="text-xs text-slate-500">Last updated {new Date(serviceAccess.assignedAt).toLocaleString()}.</p>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                    Server credentials have not been assigned yet. Contact the admin team if you need access.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+          {sharedDetails.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Shared Details</CardTitle>
+                <CardDescription>Information assigned by the admin team for this subscription.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-600">
+                {sharedDetails.map((detail, index) => (
+                  <div key={`${detail.label}-${index}`} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <span className="text-slate-500">{detail.label}</span>
+                    <span className="font-semibold text-right text-slate-900">{detail.value}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
           <Card>
             <CardHeader>
               <CardTitle>Plan Features</CardTitle>
@@ -78,7 +154,7 @@ export function ServiceDetail({ serviceId }) {
         </div>
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle>Tech Stack & Renewal Wallet</CardTitle>
+            <CardTitle>{isServer ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
             <CardDescription>Renewals deduct automatically from your approved wallet balance on the due date.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -18,8 +18,8 @@ export function AppShell({
   logoutEndpoint = "/staff/auth/logout",
   logoutRedirectUrl = "/",
   logoSrc = "/logo.png",
-  logoWidth = 1080,
-  logoHeight = 720,
+  logoWidth = 1019,
+  logoHeight = 284,
   sidebarHref = "/",
 }) {
   const { signOut } = useClerk();

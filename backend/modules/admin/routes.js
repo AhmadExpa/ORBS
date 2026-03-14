@@ -180,9 +180,76 @@ adminRouter.get(
     ensureRole(req, ["admin", "support_agent"]);
     await processSubscriptionRenewals();
     const subscriptions = await Subscription.find({})
-      .populate("userId productPlanId")
+      .populate("userId")
+      .populate({
+        path: "productPlanId",
+        populate: {
+          path: "categoryId",
+        },
+      })
       .sort({ createdAt: -1 });
     res.json({ subscriptions });
+  }),
+);
+
+adminRouter.patch(
+  "/subscriptions/:id/access",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const subscription = await Subscription.findById(req.params.id)
+      .populate("userId")
+      .populate({
+        path: "productPlanId",
+        populate: {
+          path: "categoryId",
+        },
+      });
+
+    if (!subscription) {
+      throw new HttpError(404, "Subscription not found.");
+    }
+
+    const username = String(req.body.username || "").trim();
+    const password = String(req.body.password || "");
+    const ipAddress = String(req.body.ipAddress || "").trim();
+    const sharedDetails = Array.isArray(req.body.sharedDetails)
+      ? req.body.sharedDetails
+          .map((item) => ({
+            label: String(item?.label || "").trim(),
+            value: String(item?.value || "").trim(),
+          }))
+          .filter((item) => item.label && item.value)
+      : [];
+    const hasAssignedAccess = Boolean(username || password || ipAddress);
+
+    subscription.serviceAccess = {
+      username,
+      password,
+      ipAddress,
+      assignedAt: hasAssignedAccess ? new Date() : null,
+      assignedBy: hasAssignedAccess ? req.staff._id : null,
+    };
+    subscription.sharedDetails = sharedDetails;
+
+    await subscription.save();
+
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: hasAssignedAccess ? "subscription.access_updated" : "subscription.access_cleared",
+      targetType: "subscription",
+      targetId: String(subscription._id),
+      metadata: {
+        customerId: subscription.userId?._id ? String(subscription.userId._id) : undefined,
+        planId: subscription.productPlanId?._id ? String(subscription.productPlanId._id) : undefined,
+        hasUsername: Boolean(username),
+        hasPassword: Boolean(password),
+        hasIpAddress: Boolean(ipAddress),
+        sharedDetailCount: sharedDetails.length,
+      },
+    });
+
+    res.json({ subscription });
   }),
 );
 

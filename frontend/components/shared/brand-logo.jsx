@@ -9,18 +9,18 @@ export function BrandLogo({
   priority = false,
   src = "/logo.png",
   alt = "ElevenOrbits",
-  width = 1080,
-  height = 720,
+  width = 1019,
+  height = 284,
 }) {
   return (
-    <div className={cn("inline-flex h-10 shrink-0 items-center", className)}>
+    <div className={cn("inline-flex shrink-0 items-center", className)}>
       <Image
         src={src}
         alt={alt}
         width={width}
         height={height}
         priority={priority}
-        sizes="(max-width: 768px) 128px, 160px"
+        sizes="(max-width: 768px) 180px, 240px"
         className={cn("h-full w-auto object-contain", imageClassName)}
       />
     </div>

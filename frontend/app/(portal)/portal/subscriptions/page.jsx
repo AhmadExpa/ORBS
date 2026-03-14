@@ -15,7 +15,15 @@ export default function PortalSubscriptionsPage() {
       emptyTitle="No subscriptions found"
       emptyDescription="Subscriptions appear after you create an order."
       columns={[
-        { key: "plan", label: "Plan", render: (row) => row.productPlanId?.name || "Managed Service" },
+        {
+          key: "plan",
+          label: "Plan",
+          render: (row) => (
+            <Link className="font-semibold text-sky-700" href={`/portal/services/${row._id}`}>
+              {row.productPlanId?.name || "Managed Service"}
+            </Link>
+          ),
+        },
         { key: "billingCycle", label: "Cycle" },
         { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
         { key: "renewalDate", label: "Renewal", render: (row) => (row.renewalDate ? new Date(row.renewalDate).toLocaleDateString() : "Pending") },

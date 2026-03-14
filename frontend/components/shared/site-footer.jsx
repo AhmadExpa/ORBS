@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="border-t border-slate-200 bg-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-10 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
-          <BrandLogo className="h-11 w-40" />
+          <BrandLogo className="h-14 md:h-16" />
           <div>
             <p className="font-semibold text-slate-900">ElevenOrbits</p>
             <p>Managed infrastructure, AI systems, and workflow automation.</p>

@@ -11,9 +11,9 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center" aria-label="ElevenOrbits home">
-          <BrandLogo priority />
+          <BrandLogo className="h-14 md:h-16" priority />
         </Link>
         <div className="flex items-center gap-3">
           <SignedOut>
