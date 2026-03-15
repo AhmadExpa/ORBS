@@ -341,6 +341,10 @@ adminRouter.patch(
       throw new HttpError(404, "Payment submission not found.");
     }
 
+    if (submission.status !== "pending_verification") {
+      throw new HttpError(400, "This payment has already been completed or reviewed.");
+    }
+
     const [order, subscription, invoice, customer] = await Promise.all([
       Order.findById(submission.orderId),
       Subscription.findById(submission.subscriptionId).populate("productPlanId"),

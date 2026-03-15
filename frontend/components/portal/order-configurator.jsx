@@ -81,7 +81,10 @@ export function OrderConfigurator({ slug }) {
 
   return (
     <div>
-      <Topbar title={`Configure ${plan.name}`} subtitle="Review the managed service stack, choose billing, and fund renewals through your wallet after approval." />
+      <Topbar
+        title={`Configure ${plan.name}`}
+        subtitle="Review the managed service stack, choose billing, and let renewals use wallet balance first with saved-card fallback when needed."
+      />
       <div className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader>
@@ -161,7 +164,7 @@ export function OrderConfigurator({ slug }) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-500">Renewal Billing</p>
               <p className="mt-2 text-sm leading-7 text-slate-600">
-                Once the order is approved and activated, the subscription renews by deducting the due amount from your wallet on its renewal date.
+                Once the order is approved and activated, renewals use your wallet balance first. If the wallet does not fully cover the due amount, the remaining balance can be charged to your saved Stripe card automatically.
               </p>
               <div className="mt-4">
                 <Link href="/portal/payments">

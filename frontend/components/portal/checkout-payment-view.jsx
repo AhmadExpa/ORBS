@@ -2,36 +2,122 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput } from "@/lib/ui";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 
+function savedCardLabel(user) {
+  if (!user?.defaultPaymentMethodLast4) {
+    return "No saved Stripe card on file yet.";
+  }
+
+  const brand = user.defaultPaymentMethodBrand
+    ? `${user.defaultPaymentMethodBrand.charAt(0).toUpperCase()}${user.defaultPaymentMethodBrand.slice(1)}`
+    : "Card";
+
+  return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
+}
+
+function stripeMessage(status) {
+  if (status === "cancel") {
+    return {
+      message: "",
+      error: "Stripe checkout was cancelled before the payment completed.",
+    };
+  }
+
+  return {
+    message: "Stripe payment completed successfully. Your order is being refreshed now.",
+    error: "",
+  };
+}
+
+function buildFileUrl(path) {
+  if (!path) {
+    return "";
+  }
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000";
+  return `${apiBase}${path}`;
+}
+
 export function CheckoutPaymentView({ orderId }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
-  const { data, isLoading } = useCustomerQuery({
+  const [invoiceCode, setInvoiceCode] = useState("");
+  const [proof, setProof] = useState(null);
+  const [state, setState] = useState({
+    isSubmitting: false,
+    stripeAction: false,
+    message: "",
+    error: "",
+  });
+
+  const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
     path: `/orders/${orderId}`,
   });
-  const [invoiceCode, setInvoiceCode] = useState("");
-  const [proof, setProof] = useState(null);
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-order-checkout-profile"],
+    path: "/profile/me",
+  });
 
-  const order = data?.order;
-  const invoice = data?.invoice;
-  const subscription = data?.subscription;
-  const paymentSetting = data?.paymentSetting;
+  const order = orderQuery.data?.order;
+  const invoice = orderQuery.data?.invoice;
+  const subscription = orderQuery.data?.subscription;
+  const paymentSetting = orderQuery.data?.paymentSetting;
+  const profile = profileQuery.data?.user;
+  const lineItems = order?.lineItems || [];
+  const isPaid = invoice?.status === "paid" || order?.status === "approved";
+  const canTriggerPayments = Boolean(order) && !isPaid;
+  const invoiceFileUrl = buildFileUrl(invoice?.pdfUrl);
+  const refetchOrder = orderQuery.refetch;
+  const refetchProfile = profileQuery.refetch;
 
-  async function handleSubmit(event) {
+  const totalDue = useMemo(() => Number(invoice?.amount || order?.totalAmount || 0), [invoice?.amount, order?.totalAmount]);
+
+  useEffect(() => {
+    const stripeStatus = searchParams.get("stripe");
+    const stripeType = searchParams.get("type");
+
+    if (!stripeStatus || stripeType !== "order_payment") {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("stripe");
+    nextParams.delete("type");
+
+    setState((current) => ({
+      ...current,
+      stripeAction: false,
+      ...stripeMessage(stripeStatus),
+    }));
+
+    if (stripeStatus === "success") {
+      void Promise.all([refetchOrder(), refetchProfile()]);
+    }
+
+    router.replace(
+      nextParams.toString() ? `/portal/checkout/${orderId}?${nextParams.toString()}` : `/portal/checkout/${orderId}`,
+      { scroll: false },
+    );
+  }, [orderId, refetchOrder, refetchProfile, router, searchParams]);
+
+  async function handleManualSubmit(event) {
     event.preventDefault();
-    setIsSubmitting(true);
-    setError("");
+    setState((current) => ({
+      ...current,
+      isSubmitting: true,
+      message: "",
+      error: "",
+    }));
 
     try {
       const token = await getToken();
@@ -44,35 +130,97 @@ export function CheckoutPaymentView({ orderId }) {
         formData.append("proof", proof);
       }
 
-      await apiFetch("/payments/submissions", {
+      const response = await apiFetch("/payments/submissions", {
         method: "POST",
         token,
         body: formData,
         isMultipart: true,
       });
 
-      router.push("/portal?payment=under-review");
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        message:
+          response.message ||
+          "Your payment is in process. After verification, it will be added to your account. International payments usually take less than 3–4 hours to process.",
+        error: "",
+      }));
+      setInvoiceCode("");
+      setProof(null);
+      await refetchOrder();
     } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsSubmitting(false);
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        message: "",
+        error: requestError.message,
+      }));
     }
+  }
+
+  async function handleStripeCheckout() {
+    setState((current) => ({
+      ...current,
+      stripeAction: true,
+      message: "",
+      error: "",
+    }));
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/checkout-sessions", {
+        method: "POST",
+        token,
+        body: {
+          type: "order_payment",
+          orderId,
+        },
+      });
+
+      window.location.assign(response.url);
+    } catch (requestError) {
+      setState((current) => ({
+        ...current,
+        stripeAction: false,
+        message: "",
+        error: requestError.message,
+      }));
+    }
+  }
+
+  if (orderQuery.isLoading) {
+    return (
+      <div>
+        <Topbar title="Checkout & Payment" subtitle="Loading order details..." />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div>
+        <Topbar title="Checkout & Payment" subtitle="Order not found." />
+      </div>
+    );
   }
 
   return (
     <div>
-      <Topbar title="Checkout & Payment" subtitle="Review your plan, pay manually, and submit verification for approval." />
+      <Topbar
+        title="Checkout & Payment"
+        subtitle="Review your plan, pay instantly with Stripe or submit a manual payment, and let successful Stripe payments save a card for future renewals."
+      />
       <div className="grid gap-6 p-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader>
             <CardTitle>Selected Plan Summary</CardTitle>
-            <CardDescription>{isLoading ? "Loading order..." : order?.productPlanId?.name || "Pending order details"}</CardDescription>
+            <CardDescription>{order.productPlanId?.name || "Pending order details"}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-slate-200 p-4">
                 <p className="text-sm text-slate-500">Total Due</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-950">{formatCurrency(invoice?.amount || order?.totalAmount || 0)}</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-950">{formatCurrency(totalDue)}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
                 <p className="text-sm text-slate-500">Invoice</p>
@@ -81,59 +229,126 @@ export function CheckoutPaymentView({ orderId }) {
               <div className="rounded-2xl border border-slate-200 p-4">
                 <p className="text-sm text-slate-500">Status</p>
                 <div className="mt-2">
-                  <StatusBadge status={subscription?.status || order?.status || "pending_verification"} />
+                  <StatusBadge status={subscription?.status || order.status || "pending_verification"} />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Manual Payment</p>
-              <div className="mt-4 grid gap-6 md:grid-cols-[220px_1fr]">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
-                  {paymentSetting?.qrCodeImageUrl ? (
-                    <Image
-                      alt="Payment QR code"
-                      src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000"}${paymentSetting.qrCodeImageUrl}`}
-                      width={220}
-                      height={220}
-                      className="h-auto w-full rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500">
-                      QR code will appear here
+            {lineItems.length ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Included Charges</p>
+                <div className="mt-4 space-y-3">
+                  {lineItems.map((item, index) => (
+                    <div key={`${item.label}-${index}`} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <div>
+                        <p className="font-semibold text-slate-950">{item.label}</p>
+                        <p className="text-sm text-slate-500">
+                          {subscription?.billingCycle ? `${subscription.billingCycle} billing` : "Managed service"}
+                        </p>
+                      </div>
+                      <span className="font-semibold text-slate-950">{formatCurrency(item.amount)}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
-                <div className="space-y-4">
-                  <p className="text-sm leading-7 text-slate-600">{paymentSetting?.instructions || "Scan the QR code and submit your payment reference."}</p>
-                  {paymentSetting?.paymentLink ? (
-                    <Link href={paymentSetting.paymentLink} target="_blank">
-                      <Button variant="ghost">Unable to scan? Pay using payment link</Button>
-                    </Link>
-                  ) : null}
+              </div>
+            ) : null}
+
+            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+              <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Stripe Instant Checkout</p>
+                <p className="mt-4 text-lg font-semibold text-slate-950">{savedCardLabel(profile)}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Pay this order instantly with Stripe. Successful checkout also keeps a card ready for future wallet-fallback renewals.
+                </p>
+                <Button className="mt-5 w-full" type="button" disabled={!canTriggerPayments || state.isSubmitting || state.stripeAction} onClick={handleStripeCheckout}>
+                  {state.stripeAction ? "Opening Stripe..." : isPaid ? "Already Paid" : "Pay with Stripe"}
+                </Button>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Manual Payment</p>
+                <div className="mt-4 grid gap-6 md:grid-cols-[180px_1fr]">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
+                    {paymentSetting?.qrCodeImageUrl ? (
+                      <Image
+                        alt="Payment QR code"
+                        src={buildFileUrl(paymentSetting.qrCodeImageUrl)}
+                        width={220}
+                        height={220}
+                        className="h-auto w-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500">
+                        QR code will appear here
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    <p className="text-sm leading-7 text-slate-600">
+                      {paymentSetting?.instructions || "Scan the QR code and submit your payment reference for admin verification."}
+                    </p>
+                    {paymentSetting?.paymentLink ? (
+                      <Link href={paymentSetting.paymentLink} target="_blank">
+                        <Button variant="ghost">Unable to scan? Pay using payment link</Button>
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Payment invoice/reference code</label>
-                <TextInput value={invoiceCode} onChange={(event) => setInvoiceCode(event.target.value)} placeholder="Enter transfer reference" required />
+            <form onSubmit={handleManualSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Payment invoice/reference code</label>
+                  <TextInput value={invoiceCode} onChange={(event) => setInvoiceCode(event.target.value)} placeholder="Enter transfer reference" required />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Payment proof screenshot (optional)</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) => setProof(event.target.files?.[0] || null)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Payment proof screenshot (optional)</label>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => setProof(event.target.files?.[0] || null)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                />
+              {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
+              {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="submit" disabled={!canTriggerPayments || state.isSubmitting || state.stripeAction}>
+                  {state.isSubmitting ? "Submitting payment..." : isPaid ? "Already Paid" : "Submit Payment Verification"}
+                </Button>
+                {invoiceFileUrl ? (
+                  <Link href={invoiceFileUrl} target="_blank">
+                    <Button variant="ghost" type="button">Open Invoice PDF</Button>
+                  </Link>
+                ) : null}
               </div>
-              {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-              <Button className="w-full" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting payment..." : "Submit Payment Verification"}
-              </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Billing Snapshot</CardTitle>
+            <CardDescription>Checkout status, renewal behavior, and invoice access.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Billing Cycle</span>
+              <span className="font-semibold capitalize text-slate-900">{subscription?.billingCycle || order.billingCycle}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Renewal Strategy</span>
+              <span className="font-semibold text-right text-slate-900">Wallet first, Stripe fallback</span>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+              After approval, future renewals check wallet balance first. If the wallet is short and you have a saved Stripe card, the remaining amount can be charged automatically.
+            </div>
+            <Link href="/portal/payments">
+              <Button variant="ghost">Manage Wallet & Saved Card</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

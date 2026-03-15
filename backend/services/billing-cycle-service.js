@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
-import { Invoice, Subscription, User } from "../db/models/index.js";
+import { Invoice, PaymentSubmission, Subscription, User } from "../db/models/index.js";
 import { generateInvoicePdf, nextInvoiceNumber } from "./invoice-service.js";
+import { createOffSessionCharge, isStripeConfigured } from "./stripe-service.js";
 
 function addBillingPeriod(date, billingCycle) {
   const nextDate = new Date(date);
@@ -14,8 +15,8 @@ function addBillingPeriod(date, billingCycle) {
   return nextDate;
 }
 
-function buildWalletBillingCode(date) {
-  return `wallet_balance_${date.toISOString().slice(0, 10)}`;
+function buildRenewalBillingCode(date) {
+  return `renewal_${date.toISOString().slice(0, 10)}`;
 }
 
 const renewalSweepIntervalMs = 5 * 60 * 1000;
@@ -23,8 +24,8 @@ let renewalSweepTimer = null;
 let renewalSweepInFlight = false;
 const subscriptionRenewalLocks = new Set();
 
-async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planName, status }) {
-  const paymentReferenceCode = buildWalletBillingCode(dueDate);
+async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planName, status, paymentMethodType = "wallet_balance" }) {
+  const paymentReferenceCode = buildRenewalBillingCode(dueDate);
   const existingInvoice = await Invoice.findOne({
     subscriptionId: subscription._id,
     paymentReferenceCode,
@@ -38,7 +39,7 @@ async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planN
     currency: "USD",
     billingCycle: subscription.billingCycle,
     status,
-    paymentMethodType: "wallet_balance",
+    paymentMethodType,
     paymentReferenceCode,
     lineItems: [
       {
@@ -104,10 +105,13 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
       }
 
       const planName = subscription.productPlanId?.name || "Managed Service";
-      const hasBalance = Number(user.accountBalance || 0) >= amount;
+      const walletBalance = Number(user.accountBalance || 0);
+      const walletAmount = Math.min(walletBalance, amount);
+      const remainingAmount = Number((amount - walletAmount).toFixed(2));
+      const hasFullWalletBalance = walletBalance >= amount;
 
-      if (hasBalance) {
-        user.accountBalance = Number(user.accountBalance || 0) - amount;
+      if (hasFullWalletBalance) {
+        user.accountBalance = walletBalance - amount;
         await user.save();
 
         await ensureRenewalInvoice({
@@ -117,6 +121,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
           dueDate,
           planName,
           status: "paid",
+          paymentMethodType: "wallet_balance",
         });
 
         subscription.status = "active";
@@ -125,9 +130,99 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
           ...subscription.metadata,
           lastAutoChargeAt: new Date(),
           lastAutoChargeAmount: amount,
+          lastAutoChargeSource: "wallet_balance",
         };
         await subscription.save();
         continue;
+      }
+
+      if (remainingAmount > 0 && user.stripeCustomerId && user.defaultPaymentMethodId && isStripeConfigured()) {
+        try {
+          const paymentIntent = await createOffSessionCharge({
+            user,
+            amount: remainingAmount,
+            description: `${planName} renewal`,
+            metadata: {
+              type: "renewal_charge",
+              subscriptionId: String(subscription._id),
+              userId: String(user._id),
+              orderId: subscription.orderId ? String(subscription.orderId) : "",
+              billingCycle: subscription.billingCycle,
+            },
+          });
+
+          user.accountBalance = walletBalance - walletAmount;
+          await user.save();
+
+          await ensureRenewalInvoice({
+            subscription,
+            user,
+            amount,
+            dueDate,
+            planName,
+            status: "paid",
+            paymentMethodType: walletAmount > 0 ? "wallet_balance + stripe_card" : "stripe_card",
+          });
+
+          const existingSubmission = await PaymentSubmission.findOne({ gatewayPaymentId: paymentIntent.id });
+          if (!existingSubmission) {
+            await PaymentSubmission.create({
+              userId: user._id,
+              orderId: subscription.orderId,
+              subscriptionId: subscription._id,
+              submissionType: "renewal_charge",
+              amount,
+              invoiceCode: buildRenewalBillingCode(dueDate),
+              paymentMethodType: walletAmount > 0 ? "wallet_balance + stripe_card" : "stripe_card",
+              status: "approved",
+              adminRemarks:
+                walletAmount > 0
+                  ? `Automatic renewal collected using $${walletAmount.toFixed(2)} from wallet and $${remainingAmount.toFixed(2)} from saved card.`
+                  : "Automatic renewal collected using the saved Stripe card.",
+              gateway: "stripe",
+              gatewayPaymentId: paymentIntent.id,
+              submittedAt: new Date(),
+              reviewedAt: new Date(),
+            });
+          }
+
+          subscription.status = "active";
+          subscription.renewalDate = addBillingPeriod(dueDate, subscription.billingCycle);
+          subscription.metadata = {
+            ...subscription.metadata,
+            lastAutoChargeAt: new Date(),
+            lastAutoChargeAmount: amount,
+            lastAutoChargeSource: walletAmount > 0 ? "wallet_balance + stripe_card" : "stripe_card",
+            lastStripePaymentIntentId: paymentIntent.id,
+            lastWalletChargeAmount: walletAmount,
+          };
+          await subscription.save();
+          continue;
+        } catch (error) {
+          await ensureRenewalInvoice({
+            subscription,
+            user,
+            amount,
+            dueDate,
+            planName,
+            status: "pending",
+            paymentMethodType: walletAmount > 0 ? "wallet_balance + stripe_card" : "stripe_card",
+          });
+
+          subscription.status = "suspended";
+          subscription.metadata = {
+            ...subscription.metadata,
+            lastFailedAutoChargeAt: new Date(),
+            lastFailedAutoChargeAmount: amount,
+            billingNote:
+              walletAmount > 0
+                ? "Wallet balance is available, but the saved Stripe card charge failed."
+                : "Saved Stripe card charge failed after the wallet balance check.",
+            lastStripeChargeError: error.message,
+          };
+          await subscription.save();
+          continue;
+        }
       }
 
       await ensureRenewalInvoice({
@@ -137,6 +232,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
         dueDate,
         planName,
         status: "pending",
+        paymentMethodType: walletAmount > 0 ? "wallet_balance + manual_followup" : "pending_confirmation",
       });
 
       subscription.status = "suspended";
@@ -144,7 +240,10 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
         ...subscription.metadata,
         lastFailedAutoChargeAt: new Date(),
         lastFailedAutoChargeAmount: amount,
-        billingNote: "Insufficient wallet balance for automatic renewal.",
+        billingNote:
+          walletAmount > 0
+            ? "Wallet balance is partially available, but no saved Stripe card is on file for the remaining renewal amount."
+            : "Insufficient wallet balance and no saved Stripe card on file for automatic renewal.",
       };
       await subscription.save();
     } finally {

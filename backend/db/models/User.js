@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema(
     company: String,
     billingAddress: billingAddressSchema,
     accountBalance: { type: Number, default: 0 },
+    stripeCustomerId: { type: String, index: true },
+    defaultPaymentMethodId: String,
+    defaultPaymentMethodBrand: String,
+    defaultPaymentMethodLast4: String,
   },
   { timestamps: true },
 );

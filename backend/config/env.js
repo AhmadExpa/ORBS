@@ -29,6 +29,9 @@ export const env = {
   clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "",
   adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL || "admin@elevenorbits.com",
   adminBootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD || "change-me",
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  stripeCurrency: (process.env.STRIPE_CURRENCY || "usd").toLowerCase(),
   uploadDir: resolveStorageDir(process.env.UPLOAD_DIR, "storage/uploads"),
   invoiceDir: resolveStorageDir(process.env.INVOICE_DIR, "storage/invoices"),
 };

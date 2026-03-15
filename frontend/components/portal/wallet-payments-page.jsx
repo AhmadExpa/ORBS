@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client";
@@ -13,11 +14,58 @@ import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 
 function submissionTypeLabel(type) {
-  return type === "wallet_topup" ? "Wallet Top-up" : "Subscription Payment";
+  if (type === "wallet_topup") {
+    return "Wallet Top-up";
+  }
+
+  if (type === "renewal_charge") {
+    return "Automatic Renewal";
+  }
+
+  return "Subscription Payment";
+}
+
+function savedCardLabel(user) {
+  if (!user?.defaultPaymentMethodLast4) {
+    return "No saved Stripe card on file.";
+  }
+
+  const brand = user.defaultPaymentMethodBrand
+    ? `${user.defaultPaymentMethodBrand.charAt(0).toUpperCase()}${user.defaultPaymentMethodBrand.slice(1)}`
+    : "Card";
+
+  return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
+}
+
+function stripeResultMessage(type, status) {
+  if (status === "cancel") {
+    if (type === "card_setup") {
+      return "Stripe card setup was cancelled.";
+    }
+
+    if (type === "wallet_topup") {
+      return "Stripe wallet top-up was cancelled.";
+    }
+
+    return "Stripe checkout was cancelled.";
+  }
+
+  if (type === "card_setup") {
+    return "Your card is now saved for wallet fallback renewals.";
+  }
+
+  if (type === "wallet_topup") {
+    return "Stripe wallet top-up completed successfully.";
+  }
+
+  return "Stripe payment completed successfully.";
 }
 
 export function WalletPaymentsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
+
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-profile-balance"],
     path: "/profile/me",
@@ -31,21 +79,61 @@ export function WalletPaymentsPage() {
     queryFn: () => apiFetch("/payments/settings/active"),
   });
 
+  const { data: profileData, refetch: refetchProfile } = profileQuery;
+  const { data: paymentsData, refetch: refetchPayments } = paymentsQuery;
+
   const [amount, setAmount] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
   const [proof, setProof] = useState(null);
-  const [state, setState] = useState({ saving: false, message: "", error: "" });
+  const [state, setState] = useState({
+    saving: false,
+    stripeAction: "",
+    message: "",
+    error: "",
+  });
 
-  const user = profileQuery.data?.user;
-  const submissions = paymentsQuery.data?.submissions || [];
+  const user = profileData?.user;
+  const submissions = paymentsData?.submissions || [];
   const paymentSetting = paymentSettingQuery.data?.paymentSetting;
   const pendingTopups = submissions.filter(
     (submission) => submission.submissionType === "wallet_topup" && submission.status === "pending_verification",
   ).length;
 
+  useEffect(() => {
+    const stripeStatus = searchParams.get("stripe");
+    const stripeType = searchParams.get("type");
+
+    if (!stripeStatus || !stripeType) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("stripe");
+    nextParams.delete("type");
+
+    if (stripeStatus === "success") {
+      setState((current) => ({
+        ...current,
+        message: stripeResultMessage(stripeType, stripeStatus),
+        error: "",
+      }));
+      void Promise.all([refetchPayments(), refetchProfile()]);
+    } else {
+      setState((current) => ({
+        ...current,
+        message: "",
+        error: stripeResultMessage(stripeType, stripeStatus),
+      }));
+    }
+
+    router.replace(nextParams.toString() ? `/portal/payments?${nextParams.toString()}` : "/portal/payments", {
+      scroll: false,
+    });
+  }, [refetchPayments, refetchProfile, router, searchParams]);
+
   async function handleSubmit(event) {
     event.preventDefault();
-    setState({ saving: true, message: "", error: "" });
+    setState((current) => ({ ...current, saving: true, message: "", error: "" }));
 
     try {
       const token = await getToken();
@@ -68,22 +156,63 @@ export function WalletPaymentsPage() {
       setAmount("");
       setInvoiceCode("");
       setProof(null);
-      setState({ saving: false, message: response.message || paymentProcessingMessage, error: "" });
-      await Promise.all([paymentsQuery.refetch(), profileQuery.refetch()]);
+      setState((current) => ({
+        ...current,
+        saving: false,
+        message: response.message || paymentProcessingMessage,
+        error: "",
+      }));
+      await Promise.all([refetchPayments(), refetchProfile()]);
     } catch (error) {
-      setState({ saving: false, message: "", error: error.message });
+      setState((current) => ({ ...current, saving: false, message: "", error: error.message }));
+    }
+  }
+
+  async function handleStripeCheckout(type) {
+    if (type === "wallet_topup" && (!amount || Number(amount) <= 0)) {
+      setState((current) => ({
+        ...current,
+        message: "",
+        error: "Enter a valid top-up amount before starting Stripe checkout.",
+      }));
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      stripeAction: type,
+      message: "",
+      error: "",
+    }));
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/checkout-sessions", {
+        method: "POST",
+        token,
+        body: type === "wallet_topup" ? { type, amount } : { type },
+      });
+
+      window.location.assign(response.url);
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        stripeAction: "",
+        message: "",
+        error: error.message,
+      }));
     }
   }
 
   return (
     <div>
-      <Topbar title="Wallet & Payments" subtitle="Top up your balance, submit proof for review, and let subscriptions deduct automatically on renewal dates." />
+      <Topbar title="Wallet & Payments" subtitle="Use manual payments or Stripe, save a card for renewals, and let subscriptions use wallet first with card fallback second." />
       <div className="space-y-6 p-6">
         <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
           <Card>
             <CardHeader>
               <CardTitle>Wallet Balance</CardTitle>
-              <CardDescription>Approved top-ups are added here. Active subscriptions deduct from this balance automatically on renewal dates.</CardDescription>
+              <CardDescription>Manual and Stripe top-ups both land here. Renewals use wallet balance first and then your saved Stripe card for any remaining amount.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
@@ -97,7 +226,30 @@ export function WalletPaymentsPage() {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Renewal Billing</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-950">Automatic wallet deduction</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">Wallet first, Stripe fallback</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Stripe Automatic Payments</p>
+                    <p className="mt-3 text-lg font-semibold text-slate-950">{savedCardLabel(user)}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      Save a Stripe card once and the renewal engine can charge the missing amount automatically whenever the wallet does not fully cover the subscription.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    disabled={state.saving || Boolean(state.stripeAction)}
+                    onClick={() => handleStripeCheckout("card_setup")}
+                  >
+                    {state.stripeAction === "card_setup"
+                      ? "Opening Stripe..."
+                      : user?.defaultPaymentMethodLast4
+                        ? "Update Saved Card"
+                        : "Add Card for Auto Renewals"}
+                  </Button>
                 </div>
               </div>
 
@@ -154,9 +306,20 @@ export function WalletPaymentsPage() {
                 </div>
                 {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
                 {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-                <Button className="w-full" type="submit" disabled={state.saving}>
-                  {state.saving ? "Submitting top-up..." : "Submit Top-up for Approval"}
-                </Button>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Button className="w-full" type="submit" disabled={state.saving || Boolean(state.stripeAction)}>
+                    {state.saving ? "Submitting top-up..." : "Submit Top-up for Approval"}
+                  </Button>
+                  <Button
+                    className="w-full justify-center"
+                    type="button"
+                    variant="ghost"
+                    disabled={state.saving || Boolean(state.stripeAction)}
+                    onClick={() => handleStripeCheckout("wallet_topup")}
+                  >
+                    {state.stripeAction === "wallet_topup" ? "Opening Stripe..." : "Top Up with Stripe"}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -164,13 +327,13 @@ export function WalletPaymentsPage() {
           <Card className="h-fit">
             <CardHeader>
               <CardTitle>How it works</CardTitle>
-              <CardDescription>Wallet balance is used first on renewal dates for active subscriptions.</CardDescription>
+              <CardDescription>Wallet balance is always checked first for active subscription renewals.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
-              <p>1. Pay the exact top-up amount using the QR code or payment link.</p>
-              <p>2. Submit the amount, transaction ID, and an optional proof screenshot from this page.</p>
-              <p>3. After admin approval, the amount is added to your wallet balance.</p>
-              <p>4. On subscription renewal dates, the system deducts the required amount from your wallet automatically.</p>
+              <p>1. Top up manually with QR / payment link if you want admin-reviewed balance funding.</p>
+              <p>2. Or use Stripe for an instant wallet top-up with no manual review delay.</p>
+              <p>3. Save a Stripe card once if you want automatic renewal fallback billing.</p>
+              <p>4. On renewal dates, the system uses wallet balance first and then charges the saved card for any remaining amount.</p>
             </CardContent>
           </Card>
         </div>
@@ -178,7 +341,7 @@ export function WalletPaymentsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Payment Activity</CardTitle>
-            <CardDescription>Track subscription payments and wallet top-up requests in one place.</CardDescription>
+            <CardDescription>Track manual payments, Stripe charges, wallet top-ups, and automatic renewals in one place.</CardDescription>
           </CardHeader>
           <CardContent>
             <DataTable

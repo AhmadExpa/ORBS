@@ -8,7 +8,15 @@ import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
 function submissionTypeLabel(type) {
-  return type === "wallet_topup" ? "Wallet Top-up" : "Subscription Payment";
+  if (type === "wallet_topup") {
+    return "Wallet Top-up";
+  }
+
+  if (type === "renewal_charge") {
+    return "Automatic Renewal";
+  }
+
+  return "Subscription Payment";
 }
 
 export function AdminPaymentsPage() {
@@ -48,7 +56,7 @@ export function AdminPaymentsPage() {
 
   return (
     <div>
-      <Topbar title="Payment Verification" subtitle="Approve or reject subscription payments and wallet top-up submissions after reviewing proof." />
+      <Topbar title="Payment Verification" subtitle="Approve or reject manual submissions after reviewing proof. Stripe payments are recorded automatically." />
       <div className="grid gap-6 p-6 xl:grid-cols-[1fr_380px]">
         <div className="space-y-4">
           {submissions.map((submission) => (
@@ -110,14 +118,18 @@ export function AdminPaymentsPage() {
                   <TextArea value={remarks} onChange={(event) => setRemarks(event.target.value)} placeholder="Add review remarks" />
                 </div>
                 {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-                <div className="flex gap-3">
-                  <Button className="flex-1" onClick={() => handleReview("approved")} disabled={state.loading}>
-                    Approve
-                  </Button>
-                  <Button className="flex-1" variant="ghost" onClick={() => handleReview("rejected")} disabled={state.loading}>
-                    Reject
-                  </Button>
-                </div>
+                {selected.status === "pending_verification" ? (
+                  <div className="flex gap-3">
+                    <Button className="flex-1" onClick={() => handleReview("approved")} disabled={state.loading}>
+                      Approve
+                    </Button>
+                    <Button className="flex-1" variant="ghost" onClick={() => handleReview("rejected")} disabled={state.loading}>
+                      Reject
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">This payment has already been completed automatically or reviewed earlier.</p>
+                )}
               </>
             ) : (
               <p className="text-sm text-slate-500">Choose a payment from the queue to review it.</p>

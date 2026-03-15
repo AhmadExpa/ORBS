@@ -152,10 +152,10 @@ export function ServiceDetail({ serviceId }) {
             </CardContent>
           </Card>
         </div>
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>{isServer ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
-            <CardDescription>Renewals deduct automatically from your approved wallet balance on the due date.</CardDescription>
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>{isServer ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
+            <CardDescription>Renewals use wallet balance first and saved-card fallback second when Stripe is available.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
@@ -175,7 +175,7 @@ export function ServiceDetail({ serviceId }) {
               </div>
             ) : null}
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              If the wallet balance is too low on the renewal date, the system marks the subscription for follow-up until you top it up again.
+              If the wallet does not fully cover the renewal on its due date, the system uses your saved Stripe card for the remaining amount. If no card is saved or the charge fails, the subscription is flagged for follow-up.
             </div>
             <Link href="/portal/payments">
               <Button variant="ghost">Top Up Wallet</Button>

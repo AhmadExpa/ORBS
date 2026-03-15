@@ -143,40 +143,40 @@ function SummaryCard({ subscriptions }) {
   const activeCount = subscriptions.filter((subscription) => subscription.status === "active").length;
 
   return (
-    <Card className="overflow-hidden border-slate-900">
-      <CardHeader className="border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-sky-900 text-white">
+    <Card className="overflow-hidden border-slate-200 bg-white">
+      <CardHeader className="border-b border-slate-200 bg-slate-50">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">Current Services</p>
-            <CardTitle className="mt-3 text-2xl text-white">What you are actively running</CardTitle>
-            <CardDescription className="mt-2 max-w-2xl text-slate-300">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Current Services</p>
+            <CardTitle className="mt-3 text-2xl text-slate-950">What you are actively running</CardTitle>
+            <CardDescription className="mt-2 max-w-2xl text-slate-600">
               Your portal now separates current services by how they are used, so servers, automation, support, and security do not all look the same.
             </CardDescription>
           </div>
-          <Sparkles className="h-8 w-8 shrink-0 text-sky-300" />
+          <Sparkles className="h-8 w-8 shrink-0 text-sky-600" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 bg-slate-950 p-6 text-white">
+      <CardContent className="space-y-6 bg-white p-6">
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Current Services</p>
-            <p className="mt-2 text-3xl font-semibold">{subscriptions.length}</p>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Current Services</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{subscriptions.length}</p>
           </div>
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Active Now</p>
-            <p className="mt-2 text-3xl font-semibold">{activeCount}</p>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Active Now</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{activeCount}</p>
           </div>
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Needs Follow-Up</p>
-            <p className="mt-2 text-3xl font-semibold">{subscriptions.length - activeCount}</p>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Needs Follow-Up</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{subscriptions.length - activeCount}</p>
           </div>
         </div>
 
         {breakdown.length ? (
           <div className="flex flex-wrap gap-3">
             {breakdown.map((item) => (
-              <div key={item.id} className="rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-200">
-                {item.label}: <span className="font-semibold text-white">{item.count}</span>
+              <div key={item.id} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
+                {item.label}: <span className="font-semibold text-slate-950">{item.count}</span>
               </div>
             ))}
           </div>
@@ -185,20 +185,20 @@ function SummaryCard({ subscriptions }) {
         {subscriptions.length ? (
           <div className="grid gap-3 lg:grid-cols-2">
             {subscriptions.slice(0, 4).map((subscription) => (
-              <div key={subscription._id} className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4">
+              <div key={subscription._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-white">{subscription.productPlanId?.name || "Managed Service"}</p>
-                    <p className="mt-1 text-sm text-slate-400">{getCategoryName(subscription)}</p>
+                    <p className="text-sm font-semibold text-slate-950">{subscription.productPlanId?.name || "Managed Service"}</p>
+                    <p className="mt-1 text-sm text-slate-500">{getCategoryName(subscription)}</p>
                   </div>
                   <StatusBadge status={subscription.status} />
                 </div>
-                <p className="mt-4 text-sm text-slate-300">Renewal: {formatRenewalText(subscription)}</p>
+                <p className="mt-4 text-sm text-slate-600">Renewal: {formatRenewalText(subscription)}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/60 p-6 text-sm text-slate-300">
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
             Your active services will appear here once a subscription is approved and provisioned.
           </div>
         )}
@@ -215,20 +215,20 @@ function RecommendationCard({ recommendation, isLoading }) {
     : "";
 
   return (
-    <Card className="overflow-hidden border-sky-200">
-      <CardHeader className="bg-gradient-to-br from-sky-50 via-white to-emerald-50">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Random Recommendation</p>
-        <CardTitle className="mt-3">A fresh service to consider</CardTitle>
+    <Card className="overflow-hidden border-sky-200 bg-white">
+      <CardHeader className="bg-sky-50">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Orbs AI Recommendation</p>
+        <CardTitle className="mt-3 text-slate-950">Suggested next service</CardTitle>
         <CardDescription>
-          One rotating suggestion from the service catalog, excluding plans you already use when possible.
+          A catalog suggestion based on your current services, with priority on plans you are not already using.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Selecting a recommendation...</p>
+          <p className="text-sm text-slate-500">Preparing your Orbs AI recommendation...</p>
         ) : recommendation ? (
           <>
-            <div className="rounded-3xl border border-sky-100 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-sky-100 bg-slate-50 p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">{recommendation.categoryId?.name || "Service"}</p>
               <p className="mt-3 text-xl font-semibold text-slate-950">{recommendation.name}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">{recommendation.description}</p>
@@ -313,58 +313,58 @@ function ToolsCard() {
 
 function ServerUsageSection({ subscriptions }) {
   return (
-    <Card className="overflow-hidden border-slate-900">
-      <CardHeader className="border-b border-slate-800 bg-slate-950 text-white">
+    <Card className="overflow-hidden border-sky-200 bg-white">
+      <CardHeader className="border-b border-sky-100 bg-slate-50">
         <div className="flex items-start gap-3">
-          <Server className="mt-1 h-6 w-6 text-sky-300" />
+          <Server className="mt-1 h-6 w-6 text-sky-700" />
           <div>
-            <CardTitle className="text-white">Server Usage</CardTitle>
-            <CardDescription className="text-slate-300">
+            <CardTitle className="text-slate-950">Server Usage</CardTitle>
+            <CardDescription className="text-slate-600">
               VPS and VDS subscriptions are shown as deployment units with access, usage type, and renewal timing.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 bg-slate-950 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 bg-white p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const access = subscription.serviceAccess || {};
           const credentialsReady = hasAssignedCredentials(subscription);
           const detailBadges = getSharedDetails(subscription, 3);
 
           return (
-            <div key={subscription._id} className="rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 text-white shadow-sm">
+            <div key={subscription._id} className="rounded-[1.75rem] border border-sky-100 bg-slate-50 p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-sky-300">Server Usage Type</p>
-                  <p className="mt-2 text-xl font-semibold">{getServerUsageType(subscription)}</p>
-                  <p className="mt-1 text-sm text-slate-400">{subscription.productPlanId?.name || "Managed Server"}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-sky-700">Server Usage Type</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-950">{getServerUsageType(subscription)}</p>
+                  <p className="mt-1 text-sm text-slate-500">{subscription.productPlanId?.name || "Managed Server"}</p>
                 </div>
                 <StatusBadge status={subscription.status} />
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Access</p>
-                  <p className="mt-2 font-semibold">{credentialsReady ? "Credentials assigned" : "Pending assignment"}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{credentialsReady ? "Credentials assigned" : "Pending assignment"}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">IP Address</p>
-                  <p className="mt-2 font-semibold">{access.ipAddress || "Waiting for provisioning"}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{access.ipAddress || "Waiting for provisioning"}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Billing Cycle</p>
-                  <p className="mt-2 font-semibold capitalize">{subscription.billingCycle}</p>
+                  <p className="mt-2 font-semibold capitalize text-slate-950">{subscription.billingCycle}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>
-                  <p className="mt-2 font-semibold">{formatRenewalText(subscription)}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{formatRenewalText(subscription)}</p>
                 </div>
               </div>
 
               {detailBadges.length ? (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {detailBadges.map((detail) => (
-                    <span key={`${detail.label}-${detail.value}`} className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200">
+                    <span key={`${detail.label}-${detail.value}`} className="rounded-full border border-sky-100 bg-white px-3 py-1 text-xs font-medium text-slate-700">
                       {detail.label}: {detail.value}
                     </span>
                   ))}
@@ -372,7 +372,7 @@ function ServerUsageSection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5 flex items-center justify-between gap-4">
-                <p className="text-sm text-slate-400">{getCategoryName(subscription)}</p>
+                <p className="text-sm text-slate-500">{getCategoryName(subscription)}</p>
                 <Link href={`/portal/services/${subscription._id}`}>
                   <Button variant="ghost">Open Server</Button>
                 </Link>
@@ -669,7 +669,7 @@ export default function PortalServicesPage() {
     <div>
       <Topbar
         title="Services"
-        subtitle="See the services you are currently using, get one random recommendation, and jump into the wider catalog when you need more."
+        subtitle="See the services you are currently using, review your Orbs AI recommendation, and jump into the wider catalog when you need more."
         actions={
           <Link href="/services">
             <Button>Browse More Services</Button>
