@@ -91,6 +91,19 @@ export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }
   });
 }
 
+export async function createSetupIntent({ user, metadata }) {
+  assertStripeConfigured();
+
+  const customerId = await ensureStripeCustomer(user);
+
+  return stripe.setupIntents.create({
+    customer: customerId,
+    payment_method_types: ["card"],
+    usage: "off_session",
+    metadata: normalizeMetadata(metadata),
+  });
+}
+
 export async function createPaymentCheckoutSession({ user, successUrl, cancelUrl, lineItems, metadata }) {
   assertStripeConfigured();
 
@@ -110,6 +123,22 @@ export async function createPaymentCheckoutSession({ user, successUrl, cancelUrl
       metadata: normalizedMetadata,
     },
     metadata: normalizedMetadata,
+  });
+}
+
+export async function createPaymentIntent({ user, amount, description, metadata }) {
+  assertStripeConfigured();
+
+  const customerId = await ensureStripeCustomer(user);
+
+  return stripe.paymentIntents.create({
+    amount: toStripeAmount(amount),
+    currency: env.stripeCurrency,
+    customer: customerId,
+    payment_method_types: ["card"],
+    setup_future_usage: "off_session",
+    description,
+    metadata: normalizeMetadata(metadata),
   });
 }
 

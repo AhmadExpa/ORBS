@@ -2,18 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput } from "@/lib/ui";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
+import { PortalCardForm } from "@/components/portal/portal-card-form";
 
 function savedCardLabel(user) {
   if (!user?.defaultPaymentMethodLast4) {
-    return "No saved Stripe card on file yet.";
+    return "No saved card on file yet.";
   }
 
   const brand = user.defaultPaymentMethodBrand
@@ -21,20 +21,6 @@ function savedCardLabel(user) {
     : "Card";
 
   return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
-}
-
-function stripeMessage(status) {
-  if (status === "cancel") {
-    return {
-      message: "",
-      error: "Stripe checkout was cancelled before the payment completed.",
-    };
-  }
-
-  return {
-    message: "Stripe payment completed successfully. Your order is being refreshed now.",
-    error: "",
-  };
 }
 
 function buildFileUrl(path) {
@@ -46,15 +32,18 @@ function buildFileUrl(path) {
   return `${apiBase}${path}`;
 }
 
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function CheckoutPaymentView({ orderId }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const [invoiceCode, setInvoiceCode] = useState("");
   const [proof, setProof] = useState(null);
   const [state, setState] = useState({
     isSubmitting: false,
-    stripeAction: false,
     message: "",
     error: "",
   });
@@ -82,33 +71,11 @@ export function CheckoutPaymentView({ orderId }) {
 
   const totalDue = useMemo(() => Number(invoice?.amount || order?.totalAmount || 0), [invoice?.amount, order?.totalAmount]);
 
-  useEffect(() => {
-    const stripeStatus = searchParams.get("stripe");
-    const stripeType = searchParams.get("type");
-
-    if (!stripeStatus || stripeType !== "order_payment") {
-      return;
-    }
-
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("stripe");
-    nextParams.delete("type");
-
-    setState((current) => ({
-      ...current,
-      stripeAction: false,
-      ...stripeMessage(stripeStatus),
-    }));
-
-    if (stripeStatus === "success") {
-      void Promise.all([refetchOrder(), refetchProfile()]);
-    }
-
-    router.replace(
-      nextParams.toString() ? `/portal/checkout/${orderId}?${nextParams.toString()}` : `/portal/checkout/${orderId}`,
-      { scroll: false },
-    );
-  }, [orderId, refetchOrder, refetchProfile, router, searchParams]);
+  async function syncOrderState() {
+    await Promise.all([refetchOrder(), refetchProfile()]);
+    await wait(1200);
+    await Promise.all([refetchOrder(), refetchProfile()]);
+  }
 
   async function handleManualSubmit(event) {
     event.preventDefault();
@@ -158,34 +125,33 @@ export function CheckoutPaymentView({ orderId }) {
     }
   }
 
-  async function handleStripeCheckout() {
-    setState((current) => ({
-      ...current,
-      stripeAction: true,
-      message: "",
-      error: "",
-    }));
+  async function handleCardPayment({ stripe, cardElement }) {
+    const token = await getToken();
+    const response = await apiFetch("/stripe/intents", {
+      method: "POST",
+      token,
+      body: {
+        type: "order_payment",
+        orderId,
+      },
+    });
 
-    try {
-      const token = await getToken();
-      const response = await apiFetch("/stripe/checkout-sessions", {
-        method: "POST",
-        token,
-        body: {
-          type: "order_payment",
-          orderId,
+    const result = await stripe.confirmCardPayment(response.clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: profile?.name || undefined,
+          email: profile?.email || undefined,
         },
-      });
+      },
+    });
 
-      window.location.assign(response.url);
-    } catch (requestError) {
-      setState((current) => ({
-        ...current,
-        stripeAction: false,
-        message: "",
-        error: requestError.message,
-      }));
+    if (result.error) {
+      throw new Error(result.error.message || "The payment could not be completed.");
     }
+
+    await syncOrderState();
+    return "Your payment was received. The order details are being refreshed now.";
   }
 
   if (orderQuery.isLoading) {
@@ -208,7 +174,7 @@ export function CheckoutPaymentView({ orderId }) {
     <div>
       <Topbar
         title="Checkout & Payment"
-        subtitle="Review your plan, pay instantly with Stripe or submit a manual payment, and let successful Stripe payments save a card for future renewals."
+        subtitle="Review your plan, pay with direct card entry or submit a manual payment, and keep a saved card ready for future renewals."
       />
       <div className="grid gap-6 p-6 lg:grid-cols-[1fr_360px]">
         <Card>
@@ -254,15 +220,27 @@ export function CheckoutPaymentView({ orderId }) {
             ) : null}
 
             <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-              <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Stripe Instant Checkout</p>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Card Payment</p>
                 <p className="mt-4 text-lg font-semibold text-slate-950">{savedCardLabel(profile)}</p>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Pay this order instantly with Stripe. Successful checkout also keeps a card ready for future wallet-fallback renewals.
+                  Enter card details here for an immediate payment. A successful payment can also keep a card available for future renewal fallback billing.
                 </p>
-                <Button className="mt-5 w-full" type="button" disabled={!canTriggerPayments || state.isSubmitting || state.stripeAction} onClick={handleStripeCheckout}>
-                  {state.stripeAction ? "Opening Stripe..." : isPaid ? "Already Paid" : "Pay with Stripe"}
-                </Button>
+                {isPaid ? (
+                  <div className="mt-5 rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-sm font-medium text-emerald-700">
+                    This order has already been paid.
+                  </div>
+                ) : (
+                  <div className="mt-5">
+                    <PortalCardForm
+                      disabled={!canTriggerPayments || state.isSubmitting}
+                      submitLabel="Pay Now"
+                      pendingLabel="Processing payment..."
+                      onSubmit={handleCardPayment}
+                      note="Card payments update the order automatically after confirmation."
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -316,7 +294,7 @@ export function CheckoutPaymentView({ orderId }) {
               {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
               {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
               <div className="flex flex-wrap items-center gap-3">
-                <Button type="submit" disabled={!canTriggerPayments || state.isSubmitting || state.stripeAction}>
+                <Button type="submit" disabled={!canTriggerPayments || state.isSubmitting}>
                   {state.isSubmitting ? "Submitting payment..." : isPaid ? "Already Paid" : "Submit Payment Verification"}
                 </Button>
                 {invoiceFileUrl ? (
@@ -341,10 +319,10 @@ export function CheckoutPaymentView({ orderId }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Renewal Strategy</span>
-              <span className="font-semibold text-right text-slate-900">Wallet first, Stripe fallback</span>
+              <span className="font-semibold text-right text-slate-900">Wallet first, saved-card fallback</span>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              After approval, future renewals check wallet balance first. If the wallet is short and you have a saved Stripe card, the remaining amount can be charged automatically.
+              After approval, future renewals check wallet balance first. If the wallet is short and you have a saved card, the remaining amount can be charged automatically.
             </div>
             <Link href="/portal/payments">
               <Button variant="ghost">Manage Wallet & Saved Card</Button>

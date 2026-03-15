@@ -1,12 +1,14 @@
 "use client";
 
 import { siteConfig } from "../constants/site";
+import { getStaffSessionToken } from "../auth/staff-client-session";
 
 export async function apiFetch(path, { method = "GET", body, token, isMultipart = false } = {}) {
   const headers = {};
+  const resolvedToken = token || getStaffSessionToken();
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (resolvedToken) {
+    headers.Authorization = `Bearer ${resolvedToken}`;
   }
 
   if (!isMultipart && body) {
@@ -28,4 +30,3 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
 
   return data;
 }
-

@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client";
@@ -12,6 +11,7 @@ import { paymentProcessingMessage } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
+import { PortalCardForm } from "@/components/portal/portal-card-form";
 
 function submissionTypeLabel(type) {
   if (type === "wallet_topup") {
@@ -27,7 +27,7 @@ function submissionTypeLabel(type) {
 
 function savedCardLabel(user) {
   if (!user?.defaultPaymentMethodLast4) {
-    return "No saved Stripe card on file.";
+    return "No saved card on file.";
   }
 
   const brand = user.defaultPaymentMethodBrand
@@ -37,33 +37,13 @@ function savedCardLabel(user) {
   return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
 }
 
-function stripeResultMessage(type, status) {
-  if (status === "cancel") {
-    if (type === "card_setup") {
-      return "Stripe card setup was cancelled.";
-    }
-
-    if (type === "wallet_topup") {
-      return "Stripe wallet top-up was cancelled.";
-    }
-
-    return "Stripe checkout was cancelled.";
-  }
-
-  if (type === "card_setup") {
-    return "Your card is now saved for wallet fallback renewals.";
-  }
-
-  if (type === "wallet_topup") {
-    return "Stripe wallet top-up completed successfully.";
-  }
-
-  return "Stripe payment completed successfully.";
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export function WalletPaymentsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { getToken } = useAuth();
 
   const profileQuery = useCustomerQuery({
@@ -87,7 +67,6 @@ export function WalletPaymentsPage() {
   const [proof, setProof] = useState(null);
   const [state, setState] = useState({
     saving: false,
-    stripeAction: "",
     message: "",
     error: "",
   });
@@ -99,39 +78,13 @@ export function WalletPaymentsPage() {
     (submission) => submission.submissionType === "wallet_topup" && submission.status === "pending_verification",
   ).length;
 
-  useEffect(() => {
-    const stripeStatus = searchParams.get("stripe");
-    const stripeType = searchParams.get("type");
+  async function syncPortalPayments() {
+    await Promise.all([refetchPayments(), refetchProfile()]);
+    await wait(1200);
+    await Promise.all([refetchPayments(), refetchProfile()]);
+  }
 
-    if (!stripeStatus || !stripeType) {
-      return;
-    }
-
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("stripe");
-    nextParams.delete("type");
-
-    if (stripeStatus === "success") {
-      setState((current) => ({
-        ...current,
-        message: stripeResultMessage(stripeType, stripeStatus),
-        error: "",
-      }));
-      void Promise.all([refetchPayments(), refetchProfile()]);
-    } else {
-      setState((current) => ({
-        ...current,
-        message: "",
-        error: stripeResultMessage(stripeType, stripeStatus),
-      }));
-    }
-
-    router.replace(nextParams.toString() ? `/portal/payments?${nextParams.toString()}` : "/portal/payments", {
-      scroll: false,
-    });
-  }, [refetchPayments, refetchProfile, router, searchParams]);
-
-  async function handleSubmit(event) {
+  async function handleManualSubmit(event) {
     event.preventDefault();
     setState((current) => ({ ...current, saving: true, message: "", error: "" }));
 
@@ -168,51 +121,78 @@ export function WalletPaymentsPage() {
     }
   }
 
-  async function handleStripeCheckout(type) {
-    if (type === "wallet_topup" && (!amount || Number(amount) <= 0)) {
-      setState((current) => ({
-        ...current,
-        message: "",
-        error: "Enter a valid top-up amount before starting Stripe checkout.",
-      }));
-      return;
+  async function handleSaveCard({ stripe, cardElement }) {
+    const token = await getToken();
+    const response = await apiFetch("/stripe/intents", {
+      method: "POST",
+      token,
+      body: { type: "card_setup" },
+    });
+
+    const result = await stripe.confirmCardSetup(response.clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: user?.name || undefined,
+          email: user?.email || undefined,
+        },
+      },
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message || "The card could not be saved.");
     }
 
-    setState((current) => ({
-      ...current,
-      stripeAction: type,
-      message: "",
-      error: "",
-    }));
+    await syncPortalPayments();
+    return user?.defaultPaymentMethodLast4
+      ? "Your saved card has been updated."
+      : "Your card is now saved for automatic renewals.";
+  }
 
-    try {
-      const token = await getToken();
-      const response = await apiFetch("/stripe/checkout-sessions", {
-        method: "POST",
-        token,
-        body: type === "wallet_topup" ? { type, amount } : { type },
-      });
-
-      window.location.assign(response.url);
-    } catch (error) {
-      setState((current) => ({
-        ...current,
-        stripeAction: "",
-        message: "",
-        error: error.message,
-      }));
+  async function handleCardTopup({ stripe, cardElement }) {
+    const numericAmount = Number(amount || 0);
+    if (!numericAmount || numericAmount <= 0) {
+      throw new Error("Enter a valid top-up amount before submitting the card payment.");
     }
+
+    const token = await getToken();
+    const response = await apiFetch("/stripe/intents", {
+      method: "POST",
+      token,
+      body: {
+        type: "wallet_topup",
+        amount: numericAmount,
+      },
+    });
+
+    const result = await stripe.confirmCardPayment(response.clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: user?.name || undefined,
+          email: user?.email || undefined,
+        },
+      },
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message || "The wallet top-up could not be completed.");
+    }
+
+    await syncPortalPayments();
+    setAmount("");
+    return "Your wallet payment was received. The balance has been refreshed.";
   }
 
   return (
     <div>
-      <Topbar title="Wallet & Payments" subtitle="Use manual payments or Stripe, save a card for renewals, and let subscriptions use wallet first with card fallback second." />
+      <Topbar title="Wallet & Payments" subtitle="Use manual payments or direct card entry, save a card for renewals, and let subscriptions use wallet balance first with saved-card fallback second." />
       <div className="space-y-6 p-6">
         <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
           <Card>
             <CardHeader>
               <CardTitle>Wallet Balance</CardTitle>
-              <CardDescription>Manual and Stripe top-ups both land here. Renewals use wallet balance first and then your saved Stripe card for any remaining amount.</CardDescription>
+              <CardDescription>Manual and instant card top-ups both land here. Renewals use wallet balance first and then your saved card for any remaining amount.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
@@ -226,30 +206,47 @@ export function WalletPaymentsPage() {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Renewal Billing</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-950">Wallet first, Stripe fallback</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">Wallet first, saved-card fallback</p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Stripe Automatic Payments</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Saved Card</p>
                     <p className="mt-3 text-lg font-semibold text-slate-950">{savedCardLabel(user)}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Save a Stripe card once and the renewal engine can charge the missing amount automatically whenever the wallet does not fully cover the subscription.
+                      Save a card once and the renewal engine can charge any missing amount automatically whenever the wallet does not fully cover the subscription.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    disabled={state.saving || Boolean(state.stripeAction)}
-                    onClick={() => handleStripeCheckout("card_setup")}
-                  >
-                    {state.stripeAction === "card_setup"
-                      ? "Opening Stripe..."
-                      : user?.defaultPaymentMethodLast4
-                        ? "Update Saved Card"
-                        : "Add Card for Auto Renewals"}
-                  </Button>
+                  <PortalCardForm
+                    submitLabel={user?.defaultPaymentMethodLast4 ? "Update Saved Card" : "Save Card for Auto Renewals"}
+                    pendingLabel={user?.defaultPaymentMethodLast4 ? "Updating card..." : "Saving card..."}
+                    onSubmit={handleSaveCard}
+                    note="The saved card stays available for future renewals whenever your wallet balance is short."
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Instant Card Top-up</p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">Top-up Amount</label>
+                    <TextInput type="number" min="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="100" />
+                  </div>
+                  <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3">
+                    <p className="text-sm text-slate-500">Processing</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950">Funds are posted to the wallet automatically after card payment confirmation.</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <PortalCardForm
+                    submitLabel="Top Up Wallet Now"
+                    pendingLabel="Processing payment..."
+                    onSubmit={handleCardTopup}
+                    note="Use the amount above, then enter your card details to fund the wallet immediately."
+                  />
                 </div>
               </div>
 
@@ -284,7 +281,7 @@ export function WalletPaymentsPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+              <form onSubmit={handleManualSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">Top-up Amount</label>
@@ -306,20 +303,9 @@ export function WalletPaymentsPage() {
                 </div>
                 {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
                 {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Button className="w-full" type="submit" disabled={state.saving || Boolean(state.stripeAction)}>
-                    {state.saving ? "Submitting top-up..." : "Submit Top-up for Approval"}
-                  </Button>
-                  <Button
-                    className="w-full justify-center"
-                    type="button"
-                    variant="ghost"
-                    disabled={state.saving || Boolean(state.stripeAction)}
-                    onClick={() => handleStripeCheckout("wallet_topup")}
-                  >
-                    {state.stripeAction === "wallet_topup" ? "Opening Stripe..." : "Top Up with Stripe"}
-                  </Button>
-                </div>
+                <Button className="w-full" type="submit" disabled={state.saving}>
+                  {state.saving ? "Submitting top-up..." : "Submit Top-up for Approval"}
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -330,9 +316,9 @@ export function WalletPaymentsPage() {
               <CardDescription>Wallet balance is always checked first for active subscription renewals.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
-              <p>1. Top up manually with QR / payment link if you want admin-reviewed balance funding.</p>
-              <p>2. Or use Stripe for an instant wallet top-up with no manual review delay.</p>
-              <p>3. Save a Stripe card once if you want automatic renewal fallback billing.</p>
+              <p>1. Top up manually with QR or payment link if you want admin-reviewed balance funding.</p>
+              <p>2. Or use direct card entry for an instant wallet top-up with no manual review delay.</p>
+              <p>3. Save a card once if you want automatic renewal fallback billing.</p>
               <p>4. On renewal dates, the system uses wallet balance first and then charges the saved card for any remaining amount.</p>
             </CardContent>
           </Card>
@@ -341,7 +327,7 @@ export function WalletPaymentsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Payment Activity</CardTitle>
-            <CardDescription>Track manual payments, Stripe charges, wallet top-ups, and automatic renewals in one place.</CardDescription>
+            <CardDescription>Track manual payments, card charges, wallet top-ups, and automatic renewals in one place.</CardDescription>
           </CardHeader>
           <CardContent>
             <DataTable

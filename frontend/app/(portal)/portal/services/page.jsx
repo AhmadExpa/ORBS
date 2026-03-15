@@ -278,39 +278,6 @@ function BrowseMoreCard() {
   );
 }
 
-function ToolsCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Tools</CardTitle>
-        <CardDescription>Jump from services into the billing and support actions you use most.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Link href="/portal/subscriptions">
-          <Button className="w-full justify-center" variant="ghost">
-            Subscriptions
-          </Button>
-        </Link>
-        <Link href="/portal/payments">
-          <Button className="w-full justify-center" variant="ghost">
-            Wallet & Payments
-          </Button>
-        </Link>
-        <Link href="/portal/invoices">
-          <Button className="w-full justify-center" variant="ghost">
-            Invoices
-          </Button>
-        </Link>
-        <Link href="/portal/support">
-          <Button className="w-full justify-center" variant="ghost">
-            Support
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ServerUsageSection({ subscriptions }) {
   return (
     <Card className="overflow-hidden border-sky-200 bg-white">
@@ -682,7 +649,6 @@ export default function PortalServicesPage() {
           <div className="space-y-6">
             <RecommendationCard recommendation={recommendation} isLoading={catalogQuery.isLoading} />
             <BrowseMoreCard />
-            <ToolsCard />
           </div>
         </div>
 

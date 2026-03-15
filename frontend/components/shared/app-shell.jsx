@@ -6,6 +6,7 @@ import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
 import { Button } from "@/lib/ui";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
@@ -32,6 +33,7 @@ export function AppShell({
     try {
       if (authMode === "staff") {
         await apiFetch(logoutEndpoint, { method: "POST" });
+        clearStaffSessionToken();
         router.replace(logoutRedirectUrl);
         return;
       }

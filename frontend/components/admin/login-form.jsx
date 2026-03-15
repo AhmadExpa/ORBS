@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextInput } from "@/lib/ui";
 import { apiFetch } from "@/lib/api/client";
+import { setStaffSessionToken } from "@/lib/auth/staff-client-session";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -15,10 +16,11 @@ export function AdminLoginForm() {
     setState({ loading: true, error: "" });
 
     try {
-      await apiFetch("/staff/auth/login", {
+      const response = await apiFetch("/staff/auth/login", {
         method: "POST",
         body: form,
       });
+      setStaffSessionToken(response.token);
       router.push("/eo-admin");
       router.refresh();
     } catch (error) {

@@ -12,6 +12,8 @@
   "dependencies": {
     "@clerk/nextjs": "6.10.0",
     "@hookform/resolvers": "3.10.0",
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@stripe/stripe-js": "^8.9.0",
     "@tanstack/react-query": "5.62.9",
     "clsx": "2.1.1",
     "lucide-react": "0.474.0",
