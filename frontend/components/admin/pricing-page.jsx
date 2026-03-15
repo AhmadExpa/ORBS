@@ -20,6 +20,7 @@ export function PricingPage() {
     try {
       await apiFetch(`/admin/products/${plan._id}`, {
         method: "PATCH",
+        authMode: "staff",
         body: {
           monthlyPrice: Number(plan.monthlyPrice),
           yearlyPrice: Number(plan.yearlyPrice),

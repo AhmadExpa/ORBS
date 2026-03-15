@@ -93,6 +93,7 @@ export function AdminTicketsPage() {
     try {
       await apiFetch(`/admin/tickets/${selectedId}`, {
         method: "PATCH",
+        authMode: "staff",
         body: {
           status,
           assignedTo: assignedTo || null,
@@ -117,6 +118,7 @@ export function AdminTicketsPage() {
     try {
       await apiFetch(`/tickets/${selectedId}/messages`, {
         method: "POST",
+        authMode: "staff",
         body: {
           message: replyMessage.trim(),
           status,

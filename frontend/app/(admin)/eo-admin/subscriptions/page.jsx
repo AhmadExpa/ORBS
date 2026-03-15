@@ -95,6 +95,7 @@ export default function AdminSubscriptionsPage() {
     try {
       await apiFetch(`/admin/subscriptions/${selectedSubscription._id}/access`, {
         method: "PATCH",
+        authMode: "staff",
         body: {
           ...form,
           sharedDetails: sharedDetails

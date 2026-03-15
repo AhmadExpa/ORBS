@@ -36,7 +36,7 @@ export default function AdminInvoicesPage() {
                     type="button"
                     className="text-sm font-semibold text-sky-700"
                     onClick={async () => {
-                      await apiFetch(`/admin/invoices/${row._id}/regenerate`, { method: "POST" });
+                      await apiFetch(`/admin/invoices/${row._id}/regenerate`, { method: "POST", authMode: "staff" });
                       await refetch();
                     }}
                   >

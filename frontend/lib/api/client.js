@@ -3,9 +3,9 @@
 import { siteConfig } from "../constants/site";
 import { getStaffSessionToken } from "../auth/staff-client-session";
 
-export async function apiFetch(path, { method = "GET", body, token, isMultipart = false } = {}) {
+export async function apiFetch(path, { method = "GET", body, token, isMultipart = false, authMode = "none" } = {}) {
   const headers = {};
-  const resolvedToken = token || getStaffSessionToken();
+  const resolvedToken = token || (authMode === "staff" ? getStaffSessionToken() : "");
 
   if (resolvedToken) {
     headers.Authorization = `Bearer ${resolvedToken}`;

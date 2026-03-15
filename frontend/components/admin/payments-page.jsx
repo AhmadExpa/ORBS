@@ -38,6 +38,7 @@ export function AdminPaymentsPage() {
     try {
       await apiFetch(`/admin/payments/${selected._id}/review`, {
         method: "PATCH",
+        authMode: "staff",
         body: {
           status,
           adminRemarks: remarks,

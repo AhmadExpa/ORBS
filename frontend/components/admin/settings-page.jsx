@@ -32,6 +32,7 @@ export function SettingsPage() {
       await apiFetch("/admin/settings/staff-users", {
         method: "POST",
         body: staffForm,
+        authMode: "staff",
       });
       setStaffForm({ name: "", email: "", password: "", role: "support_agent" });
       setState({ saving: false, message: "Staff account created.", error: "" });
@@ -47,6 +48,7 @@ export function SettingsPage() {
     try {
       await apiFetch("/admin/settings/company-profile", {
         method: "PUT",
+        authMode: "staff",
         body: {
           group: "general",
           value: {
@@ -69,6 +71,7 @@ export function SettingsPage() {
       await apiFetch("/staff/auth/password", {
         method: "PATCH",
         body: passwordForm,
+        authMode: "staff",
       });
       setPasswordForm({ currentPassword: "", newPassword: "" });
       setState({ saving: false, message: "Password updated.", error: "" });

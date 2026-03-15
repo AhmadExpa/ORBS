@@ -12,7 +12,7 @@ export function useCustomerQuery({ queryKey, path, enabled = true }) {
     enabled: isLoaded && Boolean(userId) && enabled,
     queryFn: async () => {
       const token = await getToken();
-      return apiFetch(path, { token });
+      return apiFetch(path, { token, authMode: "customer" });
     },
   });
 }
@@ -21,7 +21,6 @@ export function useStaffQuery({ queryKey, path, enabled = true }) {
   return useQuery({
     queryKey,
     enabled,
-    queryFn: () => apiFetch(path),
+    queryFn: () => apiFetch(path, { authMode: "staff" }),
   });
 }
-

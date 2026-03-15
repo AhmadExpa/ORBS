@@ -32,7 +32,7 @@ export function AppShell({
 
     try {
       if (authMode === "staff") {
-        await apiFetch(logoutEndpoint, { method: "POST" });
+        await apiFetch(logoutEndpoint, { method: "POST", authMode: "staff" });
         clearStaffSessionToken();
         router.replace(logoutRedirectUrl);
         return;

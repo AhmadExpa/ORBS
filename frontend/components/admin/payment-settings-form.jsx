@@ -52,6 +52,7 @@ export function PaymentSettingsForm() {
         method: "PUT",
         body: formData,
         isMultipart: true,
+        authMode: "staff",
       });
       await refetch();
       setState({ saving: false, message: "Payment settings updated.", error: "" });

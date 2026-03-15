@@ -44,6 +44,7 @@ export function ProductsPage() {
     try {
       await apiFetch("/admin/products", {
         method: "POST",
+        authMode: "staff",
         body: {
           categoryId: form.categoryId,
           name: form.name,
@@ -79,6 +80,7 @@ export function ProductsPage() {
     try {
       await apiFetch("/admin/addons", {
         method: "POST",
+        authMode: "staff",
         body: {
           ...addonForm,
           monthlyPrice: Number(addonForm.monthlyPrice),

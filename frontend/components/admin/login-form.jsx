@@ -19,6 +19,7 @@ export function AdminLoginForm() {
       const response = await apiFetch("/staff/auth/login", {
         method: "POST",
         body: form,
+        authMode: "none",
       });
       setStaffSessionToken(response.token);
       router.push("/eo-admin");
