@@ -2,6 +2,7 @@ import Link from "next/link";
 import { productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
+import { OrbMascot } from "@/components/shared/orb-mascot";
 
 export function ServicePage({ slug }) {
   const category = serviceCategories.find((item) => item.slug === slug);
@@ -107,6 +108,12 @@ export function ServicePage({ slug }) {
               <CardDescription>Support and operations stay with our team across all managed services.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
+              <OrbMascot
+                size="sm"
+                eyebrow="Orbs Guide"
+                title="Need AI, support, or onboarding direction?"
+                description="Orbs is the ElevenOrbits character used across service guidance, FAQs, and support explanations."
+              />
               <p>Customers do not self-manage infra from this portal. We handle monitoring, maintenance, and day-to-day operations.</p>
               <p>Fixed-price plans move through checkout, manual payment verification, and wallet-based renewals. Contact-sales plans route through the department contact flow first.</p>
             </CardContent>

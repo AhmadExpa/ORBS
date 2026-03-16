@@ -15,6 +15,7 @@ import {
 import { productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
+import { OrbMascot } from "@/components/shared/orb-mascot";
 
 const highlightSlugs = [
   "basic-managed-vps",
@@ -109,6 +110,25 @@ const contactCards = [
     title: "Support",
     email: siteConfig.supportEmail,
     description: "Active customer support, operational follow-up, and service issue escalation.",
+  },
+];
+
+const faqItems = [
+  {
+    question: "Who manages the environment after the order is placed?",
+    answer: "ElevenOrbits handles provisioning, delivery, monitoring, support routing, and operational follow-up after approval.",
+  },
+  {
+    question: "How are AI systems and automation services delivered?",
+    answer: "AI servers, workflow automation, and AI solutions are delivered as managed workloads with stack guidance, rollout support, and ongoing ownership.",
+  },
+  {
+    question: "How does support work once I become a customer?",
+    answer: "Support tickets stay tied to the customer and the subscription, so follow-up, context, and service history remain connected.",
+  },
+  {
+    question: "What does Orbs represent on the site?",
+    answer: "Orbs is the ElevenOrbits guide used across FAQs, support, AI guidance, and onboarding surfaces to make technical guidance easier to follow.",
   },
 ];
 
@@ -275,6 +295,15 @@ export function LandingPage() {
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Operating Signals</p>
                   <Sparkles className="h-5 w-5 text-[color:var(--marketing-accent)]" />
+                </div>
+                <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#fff6ef_100%)] p-5">
+                  <OrbMascot
+                    size="sm"
+                    eyebrow="Meet Orbs"
+                    title="The ElevenOrbits guide for AI, support, and FAQs."
+                    description="Orbs appears wherever the site needs clearer guidance: AI workloads, support flows, onboarding context, and common questions."
+                    badge="Support + AI Guide"
+                  />
                 </div>
                 <div className="mt-5 space-y-3">
                   {heroSignals.map((item) => (
@@ -513,12 +542,47 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section id="faq" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
+        <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
+        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <div className="rounded-[2.6rem] border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
+              <OrbMascot
+                size="lg"
+                eyebrow="04 / Orbs Assistant"
+                title="One character for FAQs, support, and AI guidance."
+                description="Orbs is now the main ElevenOrbits character used anywhere the product needs a more human guide: onboarding explanations, support direction, AI recommendations, and customer-facing answers."
+                badge="Brand Guide Character"
+                align="center"
+              />
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
+                {["FAQs", "Support", "AI Guidance", "Onboarding"].map((item) => (
+                  <span key={item} className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqItems.map((item, index) => (
+                <div key={item.question} className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
+                  <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950">{item.question}</h3>
+                  <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="pricing" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
         <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid gap-10 xl:grid-cols-[280px_minmax(0,1fr)]">
             <div className="space-y-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">04 / Pricing</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">05 / Pricing</p>
               <h2 className="text-4xl font-semibold leading-[0.96] tracking-[-0.05em] text-slate-950 md:text-6xl">
                 Commercial starting points
                 <span className="block">for managed delivery.</span>
@@ -611,7 +675,7 @@ export function LandingPage() {
           <div className="overflow-hidden rounded-[2.8rem] border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
             <div className="grid gap-px bg-[color:var(--marketing-line)] xl:grid-cols-[1.08fr_0.92fr]">
               <div className="bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-8 md:p-10 xl:p-12">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">05 / Contact</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">06 / Contact</p>
                 <h2 className="mt-6 text-[clamp(3rem,7vw,6.5rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-slate-950">
                   Let&apos;s talk
                   <span className="block text-[color:var(--marketing-accent)]">about the next environment.</span>
@@ -620,6 +684,15 @@ export function LandingPage() {
                   Tell us what you need to host, automate, protect, or support. We will help shape the operating model, service path, and commercial starting
                   point that fits the work.
                 </p>
+
+                <div className="mt-8 rounded-[1.9rem] border border-slate-200 bg-white/90 p-5">
+                  <OrbMascot
+                    size="sm"
+                    eyebrow="Orbs Concierge"
+                    title="Need direction before you write?"
+                    description="Orbs marks the sections where ElevenOrbits explains pricing, AI options, support routes, and common pre-sales questions."
+                  />
+                </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href="/signup">

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Cpu, Phone, Server, Shield, Sparkles } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { EmptyState } from "@/components/shared/empty-state";
+import { OrbMascot } from "@/components/shared/orb-mascot";
 import { Topbar } from "@/components/shared/topbar";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -217,11 +218,16 @@ function RecommendationCard({ recommendation, isLoading }) {
   return (
     <Card className="overflow-hidden border-sky-200 bg-white">
       <CardHeader className="bg-sky-50">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Orbs AI Recommendation</p>
-        <CardTitle className="mt-3 text-slate-950">Suggested next service</CardTitle>
-        <CardDescription>
-          A catalog suggestion based on your current services, with priority on plans you are not already using.
-        </CardDescription>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Orbs AI Recommendation</p>
+            <CardTitle className="mt-3 text-slate-950">Suggested next service</CardTitle>
+            <CardDescription>
+              A catalog suggestion based on your current services, with priority on plans you are not already using.
+            </CardDescription>
+          </div>
+          <OrbMascot size="sm" frameClassName="border-sky-100 bg-white" className="hidden shrink-0 xl:inline-flex" />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
