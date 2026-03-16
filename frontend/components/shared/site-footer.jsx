@@ -4,7 +4,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="border-t border-slate-800 bg-slate-950 text-slate-300">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-6 py-14 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:items-center">
+      <div className="mx-auto w-full max-w-7xl px-6 py-14">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <Link
             href="/"
@@ -25,20 +25,6 @@ export function SiteFooter() {
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-7 text-slate-400">
               ElevenOrbits centralizes infrastructure delivery, AI systems, workflow execution, payment review, and support operations under one accountable team.
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[28px] border border-slate-800 bg-slate-900/70 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Operating Model</p>
-            <p className="mt-3 text-sm leading-7 text-slate-300">
-              Customer environments remain under ElevenOrbits operational control with monitored delivery, review workflows, and structured support handling.
-            </p>
-          </div>
-          <div className="rounded-[28px] border border-slate-800 bg-slate-900/70 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Company Standard</p>
-            <p className="mt-3 text-sm leading-7 text-slate-300">
-              Built for teams that want consistent execution, clean accountability, and one operating partner across technical systems.
             </p>
           </div>
         </div>

@@ -22,14 +22,16 @@ function LoadingCard({ lines = 3 }) {
 export function PageLoader({
   title = "Loading",
   subtitle = "Fetching the latest data for this screen.",
-  cardCount = 2,
+  cardCount = 1,
   lines = 3,
 }) {
+  const sectionCount = Math.min(Math.max(cardCount, 1), 1);
+
   return (
     <div>
       <Topbar title={title} subtitle={subtitle} />
       <div className="space-y-6 p-6">
-        {Array.from({ length: cardCount }).map((_, index) => (
+        {Array.from({ length: sectionCount }).map((_, index) => (
           <LoadingCard key={index} lines={lines} />
         ))}
       </div>
