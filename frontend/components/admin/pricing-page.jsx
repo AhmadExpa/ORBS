@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextInput } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -18,10 +20,11 @@ function formatAddonPreview(addon) {
 }
 
 export function PricingPage() {
-  const { data, refetch } = useStaffQuery({
+  const { data, refetch, isLoading } = useStaffQuery({
     queryKey: ["admin-pricing"],
     path: "/admin/pricing",
   });
+  const { showToast } = useActionToast();
   const [state, setState] = useState({ loading: "", message: "", error: "" });
 
   async function handleSavePlan(plan) {
@@ -40,8 +43,20 @@ export function PricingPage() {
       });
       await refetch();
       setState({ loading: "", message: "Pricing updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Pricing",
+        title: "Plan pricing updated",
+        description: `${plan.name} pricing has been saved.`,
+      });
     } catch (error) {
       setState({ loading: "", message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Pricing",
+        title: "Plan pricing failed",
+        description: error.message,
+      });
     }
   }
 
@@ -68,13 +83,29 @@ export function PricingPage() {
       });
       await refetch();
       setState({ loading: "", message: "Pricing updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Add-on Pricing",
+        title: "Add-on pricing updated",
+        description: `${addon.name} pricing has been saved.`,
+      });
     } catch (error) {
       setState({ loading: "", message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Add-on Pricing",
+        title: "Add-on pricing failed",
+        description: error.message,
+      });
     }
   }
 
   const plans = data?.plans || [];
   const addons = data?.addons || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Pricing Management" subtitle="Loading plans and add-on pricing..." cardCount={3} lines={4} />;
+  }
 
   return (
     <div>

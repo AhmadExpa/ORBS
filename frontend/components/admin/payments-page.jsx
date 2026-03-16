@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextArea } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -24,6 +26,7 @@ export function AdminPaymentsPage() {
     queryKey: ["admin-payments"],
     path: "/admin/payments",
   });
+  const { showToast } = useActionToast();
   const [selected, setSelected] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [state, setState] = useState({ loading: false, error: "" });
@@ -48,12 +51,28 @@ export function AdminPaymentsPage() {
       setRemarks("");
       await refetch();
       setState({ loading: false, error: "" });
+      showToast({
+        type: "success",
+        action: "Payment Review",
+        title: status === "approved" ? "Payment approved" : "Payment rejected",
+        description: `The payment submission has been marked as ${status}.`,
+      });
     } catch (error) {
       setState({ loading: false, error: error.message });
+      showToast({
+        type: "error",
+        action: "Payment Review",
+        title: "Review failed",
+        description: error.message,
+      });
     }
   }
 
   const submissions = data?.submissions || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Payment Verification" subtitle="Loading payment submissions..." cardCount={2} lines={4} />;
+  }
 
   return (
     <div>

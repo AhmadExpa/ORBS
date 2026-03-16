@@ -6,12 +6,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { MetricGrid } from "@/components/shared/metric-grid";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 
 export function PortalDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useActionToast();
   const [reviewMessage, setReviewMessage] = useState("");
   const paymentStatus = searchParams.get("payment");
   const { data, isLoading } = useCustomerQuery({
@@ -40,6 +43,12 @@ export function PortalDashboardPage() {
   const invoices = invoicesQuery.data?.invoices || [];
   const submissions = paymentsQuery.data?.submissions || [];
   const tickets = ticketsQuery.data?.tickets || [];
+  const dashboardLoading =
+    isLoading ||
+    profileQuery.isLoading ||
+    invoicesQuery.isLoading ||
+    paymentsQuery.isLoading ||
+    ticketsQuery.isLoading;
 
   useEffect(() => {
     if (paymentStatus !== "under-review") {
@@ -47,12 +56,22 @@ export function PortalDashboardPage() {
     }
 
     setReviewMessage("Your payment is under review.");
+    showToast({
+      type: "info",
+      action: "Payment Review",
+      title: "Payment under review",
+      description: "Your payment was received and is waiting for admin verification.",
+    });
 
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.delete("payment");
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `/portal?${nextQuery}` : "/portal", { scroll: false });
-  }, [paymentStatus, router, searchParams]);
+  }, [paymentStatus, router, searchParams, showToast]);
+
+  if (dashboardLoading && !data && !profileQuery.data && !invoicesQuery.data && !paymentsQuery.data && !ticketsQuery.data) {
+    return <PageLoader title="Customer Dashboard" subtitle="Loading subscriptions, invoices, payments, and support activity..." cardCount={3} lines={4} />;
+  }
 
   return (
     <div>
@@ -62,7 +81,7 @@ export function PortalDashboardPage() {
         actions={
           <>
             <Link href="/portal/services">
-              <Button>Order a Service</Button>
+              <Button>Order an App</Button>
             </Link>
             <Link href="/portal/payments">
               <Button variant="ghost">Top Up Balance</Button>
@@ -100,7 +119,7 @@ export function PortalDashboardPage() {
                   { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                 ]}
                 rows={subscriptions.slice(0, 5)}
-                emptyMessage={isLoading ? "Loading subscriptions..." : "No services yet."}
+                emptyMessage="No services yet."
               />
             </CardContent>
           </Card>

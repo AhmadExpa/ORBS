@@ -6,9 +6,12 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Stat
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 
 export function TicketThread({ ticketId }) {
   const { getToken } = useAuth();
+  const { showToast } = useActionToast();
   const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-ticket-thread", ticketId],
     path: `/tickets/${ticketId}/messages`,
@@ -30,13 +33,29 @@ export function TicketThread({ ticketId }) {
       setMessage("");
       await refetch();
       setState({ sending: false, error: "" });
+      showToast({
+        type: "success",
+        action: "Ticket Reply",
+        title: "Reply sent",
+        description: "Your reply has been added to the ticket thread.",
+      });
     } catch (error) {
       setState({ sending: false, error: error.message });
+      showToast({
+        type: "error",
+        action: "Ticket Reply",
+        title: "Reply failed",
+        description: error.message,
+      });
     }
   }
 
   const ticket = data?.ticket;
   const messages = data?.messages || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Ticket Thread" subtitle="Loading conversation..." cardCount={2} lines={4} />;
+  }
 
   return (
     <div>

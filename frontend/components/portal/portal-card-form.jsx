@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
@@ -27,9 +28,19 @@ const cardElementOptions = {
   },
 };
 
-function PortalCardFormInner({ disabled = false, note = "", onSubmit, pendingLabel, submitLabel }) {
+function PortalCardFormInner({
+  disabled = false,
+  note = "",
+  onSubmit,
+  pendingLabel,
+  submitLabel,
+  successTitle = "Card action completed",
+  errorTitle = "Card action failed",
+  actionLabel = "Payments",
+}) {
   const stripe = useStripe();
   const elements = useElements();
+  const { showToast } = useActionToast();
   const [state, setState] = useState({
     isSubmitting: false,
     message: "",
@@ -45,6 +56,12 @@ function PortalCardFormInner({ disabled = false, note = "", onSubmit, pendingLab
         message: "",
         error: "Card checkout is still loading. Please wait a moment and try again.",
       });
+      showToast({
+        type: "warning",
+        action: actionLabel,
+        title: errorTitle,
+        description: "Card checkout is still loading. Please wait a moment and try again.",
+      });
       return;
     }
 
@@ -54,6 +71,12 @@ function PortalCardFormInner({ disabled = false, note = "", onSubmit, pendingLab
         isSubmitting: false,
         message: "",
         error: "Card input is not ready yet. Please try again.",
+      });
+      showToast({
+        type: "warning",
+        action: actionLabel,
+        title: errorTitle,
+        description: "Card input is not ready yet. Please try again.",
       });
       return;
     }
@@ -76,11 +99,23 @@ function PortalCardFormInner({ disabled = false, note = "", onSubmit, pendingLab
         message: message || "",
         error: "",
       });
+      showToast({
+        type: "success",
+        action: actionLabel,
+        title: successTitle,
+        description: message || "The card action finished successfully.",
+      });
     } catch (error) {
       setState({
         isSubmitting: false,
         message: "",
         error: error.message || "The card action could not be completed.",
+      });
+      showToast({
+        type: "error",
+        action: actionLabel,
+        title: errorTitle,
+        description: error.message || "The card action could not be completed.",
       });
     }
   }
@@ -103,7 +138,16 @@ function PortalCardFormInner({ disabled = false, note = "", onSubmit, pendingLab
   );
 }
 
-export function PortalCardForm({ disabled = false, note = "", onSubmit, pendingLabel, submitLabel }) {
+export function PortalCardForm({
+  disabled = false,
+  note = "",
+  onSubmit,
+  pendingLabel,
+  submitLabel,
+  successTitle,
+  errorTitle,
+  actionLabel,
+}) {
   if (!stripePromise) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
@@ -120,6 +164,9 @@ export function PortalCardForm({ disabled = false, note = "", onSubmit, pendingL
         onSubmit={onSubmit}
         pendingLabel={pendingLabel}
         submitLabel={submitLabel}
+        successTitle={successTitle}
+        errorTitle={errorTitle}
+        actionLabel={actionLabel}
       />
     </Elements>
   );

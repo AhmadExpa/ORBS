@@ -4,15 +4,18 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextArea, TextInput } from "@/lib/ui";
 import { serviceCategories } from "@/lib/shared";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
 export function PaymentSettingsForm() {
-  const { data, refetch } = useStaffQuery({
+  const { data, refetch, isLoading } = useStaffQuery({
     queryKey: ["admin-payment-settings"],
     path: "/admin/payment-settings",
   });
+  const { showToast } = useActionToast();
   const [form, setForm] = useState({
     title: "",
     paymentLink: "",
@@ -56,12 +59,28 @@ export function PaymentSettingsForm() {
       });
       await refetch();
       setState({ saving: false, message: "Payment settings updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Payment Settings",
+        title: "Payment settings updated",
+        description: "Manual payment instructions and QR settings have been saved.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Payment Settings",
+        title: "Update failed",
+        description: error.message,
+      });
     }
   }
 
   const currentQrCode = data?.paymentSetting?.qrCodeImageUrl;
+
+  if (isLoading && !data) {
+    return <PageLoader title="Payment Settings" subtitle="Loading payment configuration..." cardCount={1} lines={5} />;
+  }
 
   return (
     <div>

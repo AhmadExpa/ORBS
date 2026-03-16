@@ -9,6 +9,14 @@
   --panel-bg: #ffffff;
   --panel-border: #e2e8f0;
   --accent: #0c6cf2;
+  --marketing-accent: #ff7a1a;
+  --marketing-accent-soft: rgba(255, 122, 26, 0.16);
+  --marketing-cool-soft: rgba(12, 108, 242, 0.12);
+  --marketing-line: rgba(148, 163, 184, 0.18);
+  --marketing-panel: rgba(255, 255, 255, 0.82);
+  --marketing-panel-strong: #fffdf9;
+  --marketing-panel-cool: #f4f8ff;
+  --marketing-panel-warm: #fff1e4;
 }
 
 * {
@@ -23,6 +31,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
+    radial-gradient(circle at top left, rgba(255, 122, 26, 0.1), transparent 24%),
     radial-gradient(circle at top right, rgba(12, 108, 242, 0.09), transparent 26%),
     radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.08), transparent 24%),
     var(--page-bg);
@@ -47,3 +56,47 @@ select {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+@layer utilities {
+  .marketing-grid {
+    background-image:
+      linear-gradient(to right, var(--marketing-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--marketing-line) 1px, transparent 1px);
+    background-size: 148px 148px;
+  }
+
+  .marketing-grid-fine {
+    background-image:
+      linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+    background-size: 74px 74px;
+  }
+
+  .marketing-glow {
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255, 122, 26, 0.22), transparent 24%),
+      radial-gradient(circle at 82% 12%, rgba(12, 108, 242, 0.14), transparent 22%),
+      radial-gradient(circle at 84% 80%, rgba(255, 162, 84, 0.12), transparent 20%);
+  }
+
+  .marketing-stage {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.76)),
+      radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+      radial-gradient(circle at right center, rgba(12, 108, 242, 0.08), transparent 26%);
+  }
+
+  .marketing-strata {
+    background-image:
+      linear-gradient(
+        128deg,
+        rgba(255, 122, 26, 0.16) 0%,
+        rgba(255, 122, 26, 0.16) 10%,
+        transparent 10%,
+        transparent 32%,
+        rgba(255, 122, 26, 0.09) 32%,
+        rgba(255, 122, 26, 0.09) 42%,
+        transparent 42%,
+        transparent 100%
+      );
+  }
+}

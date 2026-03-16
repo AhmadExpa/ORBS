@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 
@@ -35,11 +36,7 @@ export function ServiceDetail({ serviceId }) {
   const credentialsAssigned = hasAssignedCredentials(subscription);
 
   if (isLoading) {
-    return (
-      <div>
-        <Topbar title="Service Detail" subtitle="Loading service details..." />
-      </div>
-    );
+    return <PageLoader title="Service Detail" subtitle="Loading service details..." cardCount={2} lines={4} />;
   }
 
   if (!subscription) {

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { MetricGrid } from "@/components/shared/metric-grid";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 
@@ -14,6 +15,10 @@ export function AdminOverviewPage() {
 
   const recentPayments = data?.recentPayments || [];
   const recentTickets = data?.recentTickets || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Admin Dashboard" subtitle="Loading analytics, payments, and ticket activity..." cardCount={3} lines={4} />;
+  }
 
   return (
     <div>
@@ -41,7 +46,7 @@ export function AdminOverviewPage() {
                   { key: "submittedAt", label: "Submitted", render: (row) => new Date(row.submittedAt).toLocaleDateString() },
                 ]}
                 rows={recentPayments}
-                emptyMessage={isLoading ? "Loading..." : "No payment submissions yet."}
+                emptyMessage="No payment submissions yet."
               />
             </CardContent>
           </Card>
@@ -58,7 +63,7 @@ export function AdminOverviewPage() {
                   { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                 ]}
                 rows={recentTickets}
-                emptyMessage={isLoading ? "Loading..." : "No active tickets."}
+                emptyMessage="No active tickets."
               />
             </CardContent>
           </Card>

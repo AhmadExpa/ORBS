@@ -10,6 +10,8 @@ import { apiFetch } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 
 function savedCardLabel(user) {
   if (!user?.defaultPaymentMethodLast4) {
@@ -40,6 +42,7 @@ function wait(ms) {
 
 export function CheckoutPaymentView({ orderId }) {
   const { getToken } = useAuth();
+  const { showToast } = useActionToast();
   const [invoiceCode, setInvoiceCode] = useState("");
   const [proof, setProof] = useState(null);
   const [state, setState] = useState({
@@ -113,6 +116,14 @@ export function CheckoutPaymentView({ orderId }) {
           "Your payment is in process. After verification, it will be added to your account. International payments usually take less than 3–4 hours to process.",
         error: "",
       }));
+      showToast({
+        type: "info",
+        action: "Order Payment",
+        title: "Payment submitted",
+        description:
+          response.message ||
+          "Your payment is in process. After verification, it will be added to your account. International payments usually take less than 3–4 hours to process.",
+      });
       setInvoiceCode("");
       setProof(null);
       await refetchOrder();
@@ -123,6 +134,12 @@ export function CheckoutPaymentView({ orderId }) {
         message: "",
         error: requestError.message,
       }));
+      showToast({
+        type: "error",
+        action: "Order Payment",
+        title: "Payment submission failed",
+        description: requestError.message,
+      });
     }
   }
 
@@ -156,11 +173,7 @@ export function CheckoutPaymentView({ orderId }) {
   }
 
   if (orderQuery.isLoading) {
-    return (
-      <div>
-        <Topbar title="Checkout & Payment" subtitle="Loading order details..." />
-      </div>
-    );
+    return <PageLoader title="Checkout & Payment" subtitle="Loading order details..." cardCount={2} lines={4} />;
   }
 
   if (!order) {
@@ -250,6 +263,9 @@ export function CheckoutPaymentView({ orderId }) {
                       pendingLabel="Processing payment..."
                       onSubmit={handleCardPayment}
                       note="Card payments update the order automatically after confirmation."
+                      successTitle="Card payment completed"
+                      errorTitle="Card payment failed"
+                      actionLabel="Order Payment"
                     />
                   </div>
                 )}

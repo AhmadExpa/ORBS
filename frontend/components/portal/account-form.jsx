@@ -6,15 +6,18 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Text
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 
 export function AccountForm() {
   const { getToken } = useAuth();
   const { openUserProfile } = useClerk();
   const { user: clerkUser } = useUser();
-  const { data, refetch } = useCustomerQuery({
+  const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-profile"],
     path: "/profile/me",
   });
+  const { showToast } = useActionToast();
   const [form, setForm] = useState({ phone: "", secondaryEmail: "", address: "" });
   const [state, setState] = useState({ saving: false, message: "", error: "" });
 
@@ -41,9 +44,25 @@ export function AccountForm() {
       });
       await refetch();
       setState({ saving: false, message: "Account details updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Account",
+        title: "Account updated",
+        description: "Your profile details have been saved.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Account",
+        title: "Account update failed",
+        description: error.message,
+      });
     }
+  }
+
+  if (isLoading && !data) {
+    return <PageLoader title="Account Settings" subtitle="Loading your profile..." cardCount={1} lines={5} />;
   }
 
   return (

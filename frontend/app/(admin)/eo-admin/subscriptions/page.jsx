@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -35,6 +37,7 @@ export default function AdminSubscriptionsPage() {
     queryKey: ["admin-subscriptions"],
     path: "/admin/subscriptions",
   });
+  const { showToast } = useActionToast();
   const [selectedId, setSelectedId] = useState("");
   const [form, setForm] = useState({
     username: "",
@@ -108,13 +111,29 @@ export default function AdminSubscriptionsPage() {
       });
       await refetch();
       setState({ saving: false, message: "Subscription details saved.", error: "" });
+      showToast({
+        type: "success",
+        action: "Subscriptions",
+        title: "Subscription updated",
+        description: "Credentials and shared details have been saved.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Subscriptions",
+        title: "Subscription update failed",
+        description: error.message,
+      });
     }
   }
 
   const selectedIsServer = isServerSubscription(selectedSubscription);
   const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
+
+  if (isLoading && !data) {
+    return <PageLoader title="Subscriptions" subtitle="Loading subscriptions and provisioning details..." cardCount={3} lines={4} />;
+  }
 
   return (
     <div>

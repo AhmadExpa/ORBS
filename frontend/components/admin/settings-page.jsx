@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextArea, TextInput } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
 export function SettingsPage() {
-  const { data, refetch } = useStaffQuery({
+  const { data, refetch, isLoading } = useStaffQuery({
     queryKey: ["admin-settings"],
     path: "/admin/settings",
   });
+  const { showToast } = useActionToast();
   const [staffForm, setStaffForm] = useState({
     name: "",
     email: "",
@@ -36,8 +39,20 @@ export function SettingsPage() {
       });
       setStaffForm({ name: "", email: "", password: "", role: "support_agent" });
       setState({ saving: false, message: "Staff account created.", error: "" });
+      showToast({
+        type: "success",
+        action: "Settings",
+        title: "Staff user created",
+        description: "The internal staff account has been added.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Settings",
+        title: "Staff creation failed",
+        description: error.message,
+      });
     }
   }
 
@@ -58,8 +73,20 @@ export function SettingsPage() {
       });
       await refetch();
       setState({ saving: false, message: "Company profile setting updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Settings",
+        title: "Company setting updated",
+        description: "The company profile note has been saved.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Settings",
+        title: "Setting update failed",
+        description: error.message,
+      });
     }
   }
 
@@ -75,9 +102,25 @@ export function SettingsPage() {
       });
       setPasswordForm({ currentPassword: "", newPassword: "" });
       setState({ saving: false, message: "Password updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Settings",
+        title: "Password updated",
+        description: "Your staff password has been changed.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Settings",
+        title: "Password update failed",
+        description: error.message,
+      });
     }
+  }
+
+  if (isLoading && !data) {
+    return <PageLoader title="Admin Settings" subtitle="Loading admin settings..." cardCount={3} lines={4} />;
   }
 
   return (

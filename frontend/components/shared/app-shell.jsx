@@ -8,6 +8,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
 import { Button, ButtonThemeProvider } from "@/lib/ui";
+import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
 
@@ -25,6 +26,7 @@ export function AppShell({
 }) {
   const { signOut } = useClerk();
   const router = useRouter();
+  const { showToast } = useActionToast();
   const [logoutState, setLogoutState] = useState({ loading: false, error: "" });
 
   async function handleLogout() {
@@ -34,6 +36,12 @@ export function AppShell({
       if (authMode === "staff") {
         await apiFetch(logoutEndpoint, { method: "POST", authMode: "staff" });
         clearStaffSessionToken();
+        showToast({
+          type: "info",
+          action: "Session",
+          title: "Staff session closed",
+          description: "You have been signed out of the admin portal.",
+        });
         router.replace(logoutRedirectUrl);
         return;
       }
@@ -41,6 +49,12 @@ export function AppShell({
       await signOut({ redirectUrl: logoutRedirectUrl });
     } catch (error) {
       setLogoutState({ loading: false, error: error.message || "Unable to log out right now." });
+      showToast({
+        type: "error",
+        action: "Session",
+        title: "Log out failed",
+        description: error.message || "Unable to log out right now.",
+      });
       return;
     }
 

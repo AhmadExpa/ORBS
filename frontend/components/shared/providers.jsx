@@ -3,6 +3,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { FeedbackProvider } from "./feedback-layer";
 
 export function Providers({ children }) {
   const [queryClient] = useState(
@@ -34,7 +35,9 @@ export function Providers({ children }) {
       signInFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL || "/portal"}
       signUpFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || "/portal"}
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <FeedbackProvider>{children}</FeedbackProvider>
+      </QueryClientProvider>
     </ClerkProvider>
   );
 }

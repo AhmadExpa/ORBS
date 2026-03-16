@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextArea, TextInput } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -26,6 +28,7 @@ function getResponderName(selectedValue, supportAgents, fallbackName = "") {
 }
 
 export function AdminTicketsPage() {
+  const { showToast } = useActionToast();
   const ticketsQuery = useStaffQuery({
     queryKey: ["admin-tickets"],
     path: "/admin/tickets",
@@ -101,8 +104,20 @@ export function AdminTicketsPage() {
       });
       await refreshTicketData();
       setUpdateState({ saving: false, message: "Ticket updated.", error: "" });
+      showToast({
+        type: "success",
+        action: "Tickets",
+        title: "Ticket updated",
+        description: "The ticket workflow and assignment have been saved.",
+      });
     } catch (error) {
       setUpdateState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Tickets",
+        title: "Ticket update failed",
+        description: error.message,
+      });
     }
   }
 
@@ -129,9 +144,25 @@ export function AdminTicketsPage() {
       setReplyMessage("");
       await refreshTicketData();
       setReplyState({ sending: false, message: "Reply sent.", error: "" });
+      showToast({
+        type: "success",
+        action: "Tickets",
+        title: "Reply sent",
+        description: `The reply was sent as ${responderName}.`,
+      });
     } catch (error) {
       setReplyState({ sending: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Tickets",
+        title: "Reply failed",
+        description: error.message,
+      });
     }
+  }
+
+  if (ticketsQuery.isLoading && staffUsersQuery.isLoading && !ticketsQuery.data && !staffUsersQuery.data) {
+    return <PageLoader title="Tickets Management" subtitle="Loading ticket queue and support routing..." cardCount={3} lines={4} />;
   }
 
   return (

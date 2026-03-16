@@ -7,9 +7,12 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Data
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 
 export function SupportCenter() {
   const { getToken } = useAuth();
+  const { showToast } = useActionToast();
   const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-support"],
     path: "/tickets",
@@ -41,12 +44,28 @@ export function SupportCenter() {
       });
       await refetch();
       setState({ saving: false, message: "Ticket created successfully.", error: "" });
+      showToast({
+        type: "success",
+        action: "Support Ticket",
+        title: "Ticket created",
+        description: "Your support request has been added to the queue.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Support Ticket",
+        title: "Ticket creation failed",
+        description: error.message,
+      });
     }
   }
 
   const tickets = data?.tickets || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Support Tickets" subtitle="Loading ticket history and support form..." cardCount={2} lines={4} />;
+  }
 
   return (
     <div>

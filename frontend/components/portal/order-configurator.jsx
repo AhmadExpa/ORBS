@@ -34,6 +34,8 @@ import {
   getStorageMinimumQuantity,
 } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { apiFetch } from "@/lib/api/client";
 
 function getBillingSuffix(billingCycle) {
@@ -162,6 +164,7 @@ function buildPricingItems({ plan, billingCycle, selectedRegion, selectedStorage
 export function OrderConfigurator({ slug }) {
   const router = useRouter();
   const { getToken } = useAuth();
+  const { showToast } = useActionToast();
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedAddonIds, setSelectedAddonIds] = useState([]);
   const [selectedRegionId, setSelectedRegionId] = useState("");
@@ -322,18 +325,34 @@ export function OrderConfigurator({ slug }) {
           finalNote: finalNote.trim() || undefined,
         },
       });
+      showToast({
+        type: "success",
+        action: "Order",
+        title: "Order created",
+        description: "Your configuration has been saved and moved to checkout.",
+      });
       router.push(`/portal/checkout/${data.order._id}`);
     } catch (requestError) {
       setError(requestError.message);
+      showToast({
+        type: "error",
+        action: "Order",
+        title: "Order creation failed",
+        description: requestError.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   if (!plan) {
+    if (isLoading) {
+      return <PageLoader title="Order Configuration" subtitle="Loading plan details..." cardCount={2} lines={4} />;
+    }
+
     return (
       <div>
-        <Topbar title="Order Configuration" subtitle={isLoading ? "Loading plan details..." : "Plan not found."} />
+        <Topbar title="Order Configuration" subtitle="Plan not found." />
       </div>
     );
   }

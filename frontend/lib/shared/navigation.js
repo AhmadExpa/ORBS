@@ -1,6 +1,6 @@
 export const portalNavigation = [
   { href: "/portal", label: "Dashboard", icon: "layout-dashboard" },
-  { href: "/portal/services", label: "Services", icon: "server" },
+  { href: "/portal/services", label: "Apps", icon: "server" },
   { href: "/portal/subscriptions", label: "Subscriptions", icon: "package" },
   { href: "/portal/invoices", label: "Invoices", icon: "receipt" },
   { href: "/portal/payments", label: "Wallet & Payments", icon: "wallet" },

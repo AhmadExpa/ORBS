@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, TextArea, TextInput } from "@/lib/ui";
+import { useActionToast } from "@/components/shared/feedback-layer";
+import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -23,10 +25,11 @@ const initialPlan = {
 };
 
 export function ProductsPage() {
-  const { data, refetch } = useStaffQuery({
+  const { data, refetch, isLoading } = useStaffQuery({
     queryKey: ["admin-products"],
     path: "/admin/products",
   });
+  const { showToast } = useActionToast();
   const [form, setForm] = useState(initialPlan);
   const [addonForm, setAddonForm] = useState({
     categoryId: "",
@@ -68,8 +71,20 @@ export function ProductsPage() {
       setForm(initialPlan);
       await refetch();
       setState({ saving: false, message: "Product plan created.", error: "" });
+      showToast({
+        type: "success",
+        action: "Products",
+        title: "Plan created",
+        description: "The new product plan has been added.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Products",
+        title: "Plan creation failed",
+        description: error.message,
+      });
     }
   }
 
@@ -97,14 +112,30 @@ export function ProductsPage() {
       });
       await refetch();
       setState({ saving: false, message: "Add-on created.", error: "" });
+      showToast({
+        type: "success",
+        action: "Products",
+        title: "Add-on created",
+        description: "The new add-on has been added to the catalog.",
+      });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
+      showToast({
+        type: "error",
+        action: "Products",
+        title: "Add-on creation failed",
+        description: error.message,
+      });
     }
   }
 
   const categories = data?.categories || [];
   const plans = data?.plans || [];
   const addons = data?.addons || [];
+
+  if (isLoading && !data) {
+    return <PageLoader title="Products Management" subtitle="Loading categories, plans, and add-ons..." cardCount={3} lines={4} />;
+  }
 
   return (
     <div>
