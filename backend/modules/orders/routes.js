@@ -9,6 +9,7 @@ import { nextInvoiceNumber, generateInvoicePdf } from "../../services/invoice-se
 import { env } from "../../config/env.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { recordActivity } from "../../services/activity-log-service.js";
+import { cancelCustomerOrder } from "../../services/customer-cancellation-service.js";
 
 export const ordersRouter = express.Router();
 
@@ -280,5 +281,36 @@ ordersRouter.get(
     const paymentSetting = await PaymentSetting.findOne({ isActive: true }).sort({ updatedAt: -1 });
 
     res.json({ order, subscription, invoice, paymentSetting });
+  }),
+);
+
+ordersRouter.post(
+  "/:id/cancel",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const result = await cancelCustomerOrder({
+      orderId: req.params.id,
+      userId: req.auth.user._id,
+    });
+
+    await recordActivity({
+      actorId: req.auth.user._id,
+      actorRole: "customer",
+      action: "order.cancelled_by_customer",
+      targetType: "order",
+      targetId: String(result.order._id),
+      metadata: {
+        subscriptionId: result.subscription?._id ? String(result.subscription._id) : "",
+        invoiceId: result.invoice?._id ? String(result.invoice._id) : "",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "The order has been cancelled.",
+      order: result.order,
+      subscription: result.subscription,
+      invoice: result.invoice,
+    });
   }),
 );

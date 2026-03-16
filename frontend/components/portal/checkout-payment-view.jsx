@@ -58,8 +58,10 @@ export function CheckoutPaymentView({ orderId }) {
   const paymentSetting = orderQuery.data?.paymentSetting;
   const profile = profileQuery.data?.user;
   const lineItems = order?.lineItems || [];
+  const isCancelled = order?.status === "cancelled" || subscription?.status === "cancelled";
   const isPaid = invoice?.status === "paid" || order?.status === "approved";
-  const canTriggerPayments = Boolean(order) && !isPaid;
+  const canTriggerPayments = Boolean(order) && !isPaid && !isCancelled;
+  const canCancelOrder = order?.status === "approved" && invoice?.status === "paid" && !isCancelled;
   const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
   const refetchProfile = profileQuery.refetch;
@@ -164,6 +166,55 @@ export function CheckoutPaymentView({ orderId }) {
     return "Your payment was received. The order details are being refreshed now.";
   }
 
+  async function handleOrderCancel() {
+    const confirmed = window.confirm("Cancel this paid order and unsubscribe the linked service?");
+    if (!confirmed) {
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      isSubmitting: true,
+      message: "",
+      error: "",
+    }));
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/orders/${orderId}/cancel`, {
+        method: "POST",
+        token,
+      });
+
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        message: response.message || "The order has been cancelled.",
+        error: "",
+      }));
+      showToast({
+        type: "info",
+        action: "Order",
+        title: "Order cancelled",
+        description: response.message || "The order has been cancelled.",
+      });
+      await refetchOrder();
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        message: "",
+        error: error.message || "The order could not be cancelled.",
+      }));
+      showToast({
+        type: "error",
+        action: "Order",
+        title: "Cancellation failed",
+        description: error.message || "The order could not be cancelled.",
+      });
+    }
+  }
+
   if (orderQuery.isLoading) {
     return <PageLoader title="Checkout & Payment" subtitle="Loading order details..." cardCount={2} lines={4} />;
   }
@@ -243,7 +294,11 @@ export function CheckoutPaymentView({ orderId }) {
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   Enter card details here for an immediate payment. A successful payment can also keep a card available for future renewal fallback billing.
                 </p>
-                {isPaid ? (
+                {isCancelled ? (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
+                    This order has been cancelled and is no longer billable.
+                  </div>
+                ) : isPaid ? (
                   <div className="mt-5 rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-sm font-medium text-emerald-700">
                     This order has already been paid.
                   </div>
@@ -315,8 +370,13 @@ export function CheckoutPaymentView({ orderId }) {
               {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={!canTriggerPayments || state.isSubmitting}>
-                  {state.isSubmitting ? "Submitting payment..." : isPaid ? "Already Paid" : "Submit Payment Verification"}
+                  {state.isSubmitting ? "Submitting payment..." : isCancelled ? "Cancelled" : isPaid ? "Already Paid" : "Submit Payment Verification"}
                 </Button>
+                {canCancelOrder ? (
+                  <Button type="button" variant="ghost" disabled={state.isSubmitting} onClick={handleOrderCancel}>
+                    Cancel Order
+                  </Button>
+                ) : null}
                 {invoiceFileUrl ? (
                   <Link href={invoiceFileUrl} target="_blank">
                     <Button variant="ghost" type="button">Open Invoice PDF</Button>

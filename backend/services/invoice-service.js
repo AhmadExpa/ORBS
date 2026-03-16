@@ -226,7 +226,7 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
     doc.font("Helvetica-Bold").fontSize(24).fillColor("#ffffff").text("ElevenOrbits", brandX, cursorY + 26, {
       width: 250,
     });
-    doc.font("Helvetica").fontSize(11).fillColor("#cbd5e1").text("Professional service invoice", brandX, cursorY + 56, {
+    doc.font("Helvetica").fontSize(11).fillColor("#cbd5e1").text("Powering Your Digital Universe", brandX, cursorY + 56, {
       width: 250,
     });
     doc.text(`Support: ${supportEmail}`, brandX, cursorY + 74, { width: 250 });
