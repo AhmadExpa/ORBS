@@ -113,6 +113,7 @@ export function ServicePage({ slug }) {
                 eyebrow="Orbs Guide"
                 title="Need AI, support, or onboarding direction?"
                 description="Orbs is the ElevenOrbits character used across service guidance, FAQs, and support explanations."
+                align="stack"
               />
               <p>Customers do not self-manage infra from this portal. We handle monitoring, maintenance, and day-to-day operations.</p>
               <p>Fixed-price plans move through checkout, manual payment verification, and wallet-based renewals. Contact-sales plans route through the department contact flow first.</p>

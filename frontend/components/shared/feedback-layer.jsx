@@ -6,6 +6,7 @@ import { subscribeToApiActivity } from "@/lib/api/client";
 import { cn } from "@/lib/ui";
 
 const ActionToastContext = createContext(null);
+const LOADER_HIDE_DELAY_MS = 180;
 
 const TOAST_STYLES = {
   success: {
@@ -51,21 +52,25 @@ export function FeedbackProvider({ children }) {
 
   useEffect(() => {
     if (pendingRequests > 0) {
-      if (!loaderTimerRef.current) {
-        loaderTimerRef.current = window.setTimeout(() => {
-          setLoaderVisible(true);
-          loaderTimerRef.current = null;
-        }, 160);
+      if (loaderTimerRef.current) {
+        window.clearTimeout(loaderTimerRef.current);
+        loaderTimerRef.current = null;
       }
+
+      setLoaderVisible(true);
       return;
     }
 
-    if (loaderTimerRef.current) {
-      window.clearTimeout(loaderTimerRef.current);
-      loaderTimerRef.current = null;
+    if (!loaderVisible || loaderTimerRef.current) {
+      return;
     }
-    setLoaderVisible(false);
-  }, [pendingRequests]);
+
+    // Hold the overlay briefly so back-to-back API calls do not flash it off and on.
+    loaderTimerRef.current = window.setTimeout(() => {
+      setLoaderVisible(false);
+      loaderTimerRef.current = null;
+    }, LOADER_HIDE_DELAY_MS);
+  }, [loaderVisible, pendingRequests]);
 
   useEffect(
     () => () => {

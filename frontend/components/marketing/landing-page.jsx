@@ -303,6 +303,7 @@ export function LandingPage() {
                     title="The ElevenOrbits guide for AI, support, and FAQs."
                     description="Orbs appears wherever the site needs clearer guidance: AI workloads, support flows, onboarding context, and common questions."
                     badge="Support + AI Guide"
+                    align="stack"
                   />
                 </div>
                 <div className="mt-5 space-y-3">

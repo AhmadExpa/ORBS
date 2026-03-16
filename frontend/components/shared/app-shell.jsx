@@ -4,10 +4,10 @@ import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
-import { Button, ButtonThemeProvider } from "@/lib/ui";
+import { Button, ButtonThemeProvider, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui";
 import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
@@ -28,6 +28,43 @@ export function AppShell({
   const router = useRouter();
   const { showToast } = useActionToast();
   const [logoutState, setLogoutState] = useState({ loading: false, error: "" });
+  const [staffSessionState, setStaffSessionState] = useState({ checking: authMode === "staff", error: "" });
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (authMode !== "staff") {
+      setStaffSessionState({ checking: false, error: "" });
+      return () => {
+        isActive = false;
+      };
+    }
+
+    async function verifyStaffSession() {
+      setStaffSessionState({ checking: true, error: "" });
+
+      try {
+        await apiFetch("/staff/auth/me", { authMode: "staff" });
+
+        if (isActive) {
+          setStaffSessionState({ checking: false, error: "" });
+        }
+      } catch (error) {
+        if (isActive) {
+          setStaffSessionState({
+            checking: false,
+            error: error.message || "Unable to verify your admin session.",
+          });
+        }
+      }
+    }
+
+    verifyStaffSession();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authMode]);
 
   async function handleLogout() {
     setLogoutState({ loading: true, error: "" });
@@ -59,6 +96,45 @@ export function AppShell({
     }
 
     setLogoutState({ loading: false, error: "" });
+  }
+
+  if (authMode === "staff" && staffSessionState.checking) {
+    return (
+      <ButtonThemeProvider value="portal">
+        <div className="flex min-h-screen items-center justify-center bg-surface px-6 py-16">
+          <Card className="w-full max-w-md shadow-panel">
+            <CardHeader>
+              <CardTitle>Checking session</CardTitle>
+              <CardDescription>Validating your admin access before loading the dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">Please wait while we confirm the current staff session.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </ButtonThemeProvider>
+    );
+  }
+
+  if (authMode === "staff" && staffSessionState.error) {
+    return (
+      <ButtonThemeProvider value="portal">
+        <div className="flex min-h-screen items-center justify-center bg-surface px-6 py-16">
+          <Card className="w-full max-w-md shadow-panel">
+            <CardHeader>
+              <CardTitle>Session unavailable</CardTitle>
+              <CardDescription>{staffSessionState.error}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-600">Retry after signing in again or refreshing the admin page.</p>
+              <Button className="w-full" type="button" onClick={() => router.refresh()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ButtonThemeProvider>
+    );
   }
 
   return (

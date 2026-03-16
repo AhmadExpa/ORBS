@@ -28,7 +28,7 @@ export default function ServicesPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-16">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.2)]">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-center">
           <div>
             <SectionHeading
               eyebrow="Services"
