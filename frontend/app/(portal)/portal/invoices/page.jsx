@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { formatCurrency } from "@/lib/shared";
 import { PortalDataPage } from "@/components/portal/data-page";
 
@@ -21,7 +22,14 @@ export default function PortalInvoicesPage() {
         {
           key: "pdfUrl",
           label: "PDF",
-          render: (row) => (row.pdfUrl ? <Link className="font-semibold text-sky-700" href={row.pdfUrl} target="_blank">Download</Link> : "Pending"),
+          render: (row) =>
+            row.pdfUrl ? (
+              <Link className="font-semibold text-sky-700" href={resolvePublicFileUrl(row.pdfUrl)} target="_blank">
+                Download
+              </Link>
+            ) : (
+              "Pending"
+            ),
         },
       ]}
     />

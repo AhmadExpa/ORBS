@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
+import { apiFetch } from "@/lib/api/client";
+import { useStaffQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextArea, TextInput } from "@/lib/ui";
 import { serviceCategories } from "@/lib/shared";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
-import { useStaffQuery } from "@/lib/api/hooks";
-import { apiFetch } from "@/lib/api/client";
 
 export function PaymentSettingsForm() {
   const { data, refetch, isLoading } = useStaffQuery({
@@ -99,7 +100,7 @@ export function PaymentSettingsForm() {
                     {currentQrCode ? (
                       <Image
                         alt="Current QR code"
-                        src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000"}${currentQrCode}`}
+                        src={resolvePublicFileUrl(currentQrCode)}
                         width={220}
                         height={220}
                         className="h-auto w-full rounded-xl object-cover"

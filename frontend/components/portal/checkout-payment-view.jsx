@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput } from "@/lib/ui";
-import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
+import { useCustomerQuery } from "@/lib/api/hooks";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
@@ -23,15 +24,6 @@ function savedCardLabel(user) {
     : "Card";
 
   return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
-}
-
-function buildFileUrl(path) {
-  if (!path) {
-    return "";
-  }
-
-  const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000";
-  return `${apiBase}${path}`;
 }
 
 function wait(ms) {
@@ -68,7 +60,7 @@ export function CheckoutPaymentView({ orderId }) {
   const lineItems = order?.lineItems || [];
   const isPaid = invoice?.status === "paid" || order?.status === "approved";
   const canTriggerPayments = Boolean(order) && !isPaid;
-  const invoiceFileUrl = buildFileUrl(invoice?.pdfUrl);
+  const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
   const refetchProfile = profileQuery.refetch;
   const customerNote = String(order?.metadata?.customerNote || "").trim();
@@ -278,7 +270,7 @@ export function CheckoutPaymentView({ orderId }) {
                     {paymentSetting?.qrCodeImageUrl ? (
                       <Image
                         alt="Payment QR code"
-                        src={buildFileUrl(paymentSetting.qrCodeImageUrl)}
+                        src={resolvePublicFileUrl(paymentSetting.qrCodeImageUrl)}
                         width={220}
                         height={220}
                         className="h-auto w-full rounded-xl object-cover"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { Button, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { AdminResourcePage } from "@/components/admin/resource-page";
@@ -28,7 +29,7 @@ export default function AdminInvoicesPage() {
               render: (row) => (
                 <div className="flex items-center gap-3">
                   {row.pdfUrl ? (
-                    <Link className="font-semibold text-sky-700" href={row.pdfUrl} target="_blank">
+                    <Link className="font-semibold text-sky-700" href={resolvePublicFileUrl(row.pdfUrl)} target="_blank">
                       Download
                     </Link>
                   ) : null}

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextInput } from "@/lib/ui";
 import { apiFetch } from "@/lib/api/client";
 import { setStaffSessionToken } from "@/lib/auth/staff-client-session";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
 export function AdminLoginForm() {
-  const router = useRouter();
   const { showToast } = useActionToast();
   const [form, setForm] = useState({ email: "", password: "" });
   const [state, setState] = useState({ loading: false, error: "" });
@@ -30,8 +28,8 @@ export function AdminLoginForm() {
         title: "Signed in",
         description: "Redirecting to the admin dashboard.",
       });
-      router.push("/eo-admin");
-      router.refresh();
+      window.location.assign("/eo-admin");
+      return;
     } catch (error) {
       setState({ loading: false, error: error.message });
       showToast({
@@ -42,8 +40,6 @@ export function AdminLoginForm() {
       });
       return;
     }
-
-    setState({ loading: false, error: "" });
   }
 
   return (

@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { CreditCard, History, Landmark, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { paymentProcessingMessage } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
@@ -98,8 +99,7 @@ export function WalletPaymentsPage() {
   ).length;
   const isLoading = profileQuery.isLoading || paymentsQuery.isLoading || paymentSettingQuery.isLoading;
   const hasSavedCard = Boolean(user?.defaultPaymentMethodLast4);
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000";
-  const qrCodeUrl = paymentSetting?.qrCodeImageUrl ? `${apiBaseUrl}${paymentSetting.qrCodeImageUrl}` : null;
+  const qrCodeUrl = resolvePublicFileUrl(paymentSetting?.qrCodeImageUrl);
   const renewalModeLabel = hasSavedCard ? "Wallet first, saved-card fallback" : "Wallet only until a saved card is added";
 
   async function syncPortalPayments() {

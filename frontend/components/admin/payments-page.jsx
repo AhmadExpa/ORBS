@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { resolvePublicFileUrl } from "@/lib/api/file-url";
+import { apiFetch } from "@/lib/api/client";
+import { useStaffQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextArea } from "@/lib/ui";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
-import { useStaffQuery } from "@/lib/api/hooks";
-import { apiFetch } from "@/lib/api/client";
 
 function submissionTypeLabel(type) {
   if (type === "wallet_topup") {
@@ -126,7 +127,7 @@ export function AdminPaymentsPage() {
                   <div className="overflow-hidden rounded-2xl border border-slate-200">
                     <Image
                       alt="Payment proof"
-                      src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:4000"}${selected.screenshotUrl}`}
+                      src={resolvePublicFileUrl(selected.screenshotUrl)}
                       width={360}
                       height={240}
                       className="h-auto w-full object-cover"
