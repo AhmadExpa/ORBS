@@ -9,6 +9,7 @@ import {
   createPaymentIntent,
   createSetupCheckoutSession,
   createSetupIntent,
+  removeUserDefaultPaymentMethod,
   retrieveCheckoutSession,
   updateUserDefaultPaymentMethod,
 } from "../../services/stripe-service.js";
@@ -391,6 +392,41 @@ stripeRouter.post(
     }
 
     throw new HttpError(400, "Unsupported Stripe checkout session type.");
+  }),
+);
+
+stripeRouter.delete(
+  "/payment-method",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    if (!user.defaultPaymentMethodId) {
+      throw new HttpError(400, "No saved Stripe card is on file.");
+    }
+
+    const removed = await removeUserDefaultPaymentMethod({ user });
+
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: "stripe.card_removed",
+      targetType: "user",
+      targetId: String(user._id),
+      metadata: {
+        paymentMethodId: removed?.paymentMethodId || "",
+      },
+    });
+
+    await processSubscriptionRenewals({ userIds: [user._id] });
+
+    res.json({
+      success: true,
+      message: "Your saved card has been removed.",
+    });
   }),
 );
 

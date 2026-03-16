@@ -67,7 +67,7 @@ export function PaymentSettingsForm() {
     <div>
       <Topbar title="Payment Settings" subtitle="Upload the QR code, update instructions, and manage the fallback payment link." />
       <div className="p-6">
-        <Card className="max-w-4xl">
+        <Card>
           <CardHeader>
             <CardTitle>Manual Payment Configuration</CardTitle>
             <CardDescription>Only one active payment profile is expected in the initial rollout.</CardDescription>

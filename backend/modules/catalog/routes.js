@@ -60,7 +60,7 @@ catalogRouter.get(
         filter.categoryId = category._id;
       }
     }
-    const addons = await Addon.find(filter).sort({ name: 1 });
+    const addons = await Addon.find(filter).sort({ addonType: 1, sortOrder: 1, name: 1 });
     res.json({ addons });
   }),
 );

@@ -1,12 +1,38 @@
-import { calculatePlanPrice } from "../lib/shared/index.js";
+import { calculatePlanPrice, calculateStoragePrice, getAddonPrice } from "../lib/shared/index.js";
 
-export function buildOrderLineItems(plan, addons, billingCycle) {
+export function buildOrderLineItems(plan, addons, billingCycle, configuration = {}) {
   const baseAmount = calculatePlanPrice(plan, billingCycle);
-  const addonItems = addons.map((addon) => ({
+  const fixedAddonItems = addons.map((addon) => ({
     label: addon.name,
-    amount: billingCycle === "yearly" ? addon.yearlyPrice : addon.monthlyPrice,
+    amount: getAddonPrice(addon, billingCycle),
     type: "addon",
   }));
+  const configurationItems = [];
+
+  if (configuration.regionAddon) {
+    configurationItems.push({
+      label: `Region: ${configuration.regionAddon.name}`,
+      amount: getAddonPrice(configuration.regionAddon, billingCycle),
+      type: "region",
+    });
+  }
+
+  if (configuration.imageAddon) {
+    configurationItems.push({
+      label: `Image: ${configuration.imageAddon.name}`,
+      amount: getAddonPrice(configuration.imageAddon, billingCycle),
+      type: "image",
+    });
+  }
+
+  if (configuration.storageAddon && configuration.storageQuantity) {
+    const storageAmount = calculateStoragePrice(configuration.storageAddon, billingCycle, configuration.storageQuantity);
+    configurationItems.push({
+      label: `Storage: ${configuration.storageQuantity} ${configuration.storageAddon.unitLabel || "GB"} ${configuration.storageAddon.name}`,
+      amount: storageAmount,
+      type: "storage",
+    });
+  }
 
   return [
     {
@@ -14,7 +40,8 @@ export function buildOrderLineItems(plan, addons, billingCycle) {
       amount: baseAmount,
       type: "plan",
     },
-    ...addonItems,
+    ...configurationItems,
+    ...fixedAddonItems,
   ];
 }
 

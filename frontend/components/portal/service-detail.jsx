@@ -88,7 +88,7 @@ export function ServiceDetail({ serviceId }) {
             <Card>
               <CardHeader>
                 <CardTitle>Server Access</CardTitle>
-                <CardDescription>Credentials assigned by the admin team appear here for your VPS or VDS.</CardDescription>
+                <CardDescription>Credentials assigned by the admin team appear here after your VPS or VDS is provisioned.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-slate-600">
                 {credentialsAssigned ? (
@@ -118,7 +118,7 @@ export function ServiceDetail({ serviceId }) {
                   </>
                 ) : (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                    Server credentials have not been assigned yet. Contact the admin team if you need access.
+                    Server credentials have not been assigned yet. After approval and provisioning, the admin team will place the login, password, and IP details here.
                   </div>
                 )}
               </CardContent>

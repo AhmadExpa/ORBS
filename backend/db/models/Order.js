@@ -23,9 +23,9 @@ const orderSchema = new mongoose.Schema(
       index: true,
     },
     lineItems: { type: [lineItemSchema], default: [] },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true },
 );
 
 export const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);
-

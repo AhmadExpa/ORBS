@@ -261,23 +261,6 @@ function RecommendationCard({ recommendation, isLoading }) {
   );
 }
 
-function BrowseMoreCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Browse More Services</CardTitle>
-        <CardDescription>Open the catalog when you want to add another VPS, VDS, AI service, support plan, or security package.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm text-slate-600">
-        <p>Use the catalog to compare plans, pricing, and delivery models before placing the next order.</p>
-        <Link href="/services">
-          <Button>Browse More Services</Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ServerUsageSection({ subscriptions }) {
   return (
     <Card className="overflow-hidden border-sky-200 bg-white">
@@ -312,7 +295,7 @@ function ServerUsageSection({ subscriptions }) {
               <div className="mt-5 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Access</p>
-                  <p className="mt-2 font-semibold text-slate-950">{credentialsReady ? "Credentials assigned" : "Pending assignment"}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{credentialsReady ? "Credentials assigned" : "Admin provisioning"}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">IP Address</p>
@@ -648,7 +631,6 @@ export default function PortalServicesPage() {
           <SummaryCard subscriptions={currentSubscriptions} />
           <div className="space-y-6">
             <RecommendationCard recommendation={recommendation} isLoading={catalogQuery.isLoading} />
-            <BrowseMoreCard />
           </div>
         </div>
 

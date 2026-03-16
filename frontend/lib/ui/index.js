@@ -1,4 +1,4 @@
-export { Button } from "./button.jsx";
+export { Button, ButtonThemeProvider } from "./button.jsx";
 export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card.jsx";
 export { StatusBadge } from "./status-badge.jsx";
 export { DataTable } from "./data-table.jsx";

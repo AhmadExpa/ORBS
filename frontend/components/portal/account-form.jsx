@@ -58,7 +58,7 @@ export function AccountForm() {
         }
       />
       <div className="p-6">
-        <Card className="max-w-3xl">
+        <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
             <CardDescription>

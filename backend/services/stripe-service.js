@@ -72,6 +72,34 @@ export async function updateUserDefaultPaymentMethod({ user, customerId, payment
   return paymentMethod;
 }
 
+export async function removeUserDefaultPaymentMethod({ user }) {
+  assertStripeConfigured();
+
+  if (!user.defaultPaymentMethodId) {
+    return null;
+  }
+
+  const paymentMethodId = user.defaultPaymentMethodId;
+  const customerId = user.stripeCustomerId;
+
+  if (customerId) {
+    await stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: null,
+      },
+    });
+  }
+
+  await stripe.paymentMethods.detach(paymentMethodId);
+
+  user.defaultPaymentMethodId = "";
+  user.defaultPaymentMethodBrand = "";
+  user.defaultPaymentMethodLast4 = "";
+  await user.save();
+
+  return { paymentMethodId, customerId };
+}
+
 export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }) {
   assertStripeConfigured();
 

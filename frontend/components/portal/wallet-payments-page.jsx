@@ -70,6 +70,11 @@ export function WalletPaymentsPage() {
     message: "",
     error: "",
   });
+  const [removeCardState, setRemoveCardState] = useState({
+    saving: false,
+    message: "",
+    error: "",
+  });
 
   const user = profileData?.user;
   const submissions = paymentsData?.submissions || [];
@@ -184,6 +189,31 @@ export function WalletPaymentsPage() {
     return "Your wallet payment was received. The balance has been refreshed.";
   }
 
+  async function handleRemoveSavedCard() {
+    setRemoveCardState({ saving: true, message: "", error: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/payment-method", {
+        method: "DELETE",
+        token,
+      });
+
+      await syncPortalPayments();
+      setRemoveCardState({
+        saving: false,
+        message: response.message || "Your saved card has been removed.",
+        error: "",
+      });
+    } catch (error) {
+      setRemoveCardState({
+        saving: false,
+        message: "",
+        error: error.message || "The saved card could not be removed.",
+      });
+    }
+  }
+
   return (
     <div>
       <Topbar title="Wallet & Payments" subtitle="Use manual payments or direct card entry, save a card for renewals, and let subscriptions use wallet balance first with saved-card fallback second." />
@@ -219,6 +249,18 @@ export function WalletPaymentsPage() {
                       Save a card once and the renewal engine can charge any missing amount automatically whenever the wallet does not fully cover the subscription.
                     </p>
                   </div>
+                  {user?.defaultPaymentMethodLast4 ? (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm leading-6 text-slate-600">
+                        Remove the saved card if you do not want renewal fallback billing to use Stripe automatically.
+                      </div>
+                      <Button type="button" variant="ghost" disabled={removeCardState.saving} onClick={handleRemoveSavedCard}>
+                        {removeCardState.saving ? "Removing card..." : "Remove Saved Card"}
+                      </Button>
+                    </div>
+                  ) : null}
+                  {removeCardState.message ? <p className="text-sm font-medium text-emerald-700">{removeCardState.message}</p> : null}
+                  {removeCardState.error ? <p className="text-sm font-medium text-rose-600">{removeCardState.error}</p> : null}
                   <PortalCardForm
                     submitLabel={user?.defaultPaymentMethodLast4 ? "Update Saved Card" : "Save Card for Auto Renewals"}
                     pendingLabel={user?.defaultPaymentMethodLast4 ? "Updating card..." : "Saving card..."}

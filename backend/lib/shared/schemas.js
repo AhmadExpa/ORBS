@@ -23,6 +23,11 @@ export const productPlanSchema = z.object({
 export const orderQuoteSchema = z.object({
   productPlanId: z.string().min(1),
   addonIds: z.array(z.string()).default([]),
+  selectedRegionId: z.string().optional(),
+  selectedImageId: z.string().optional(),
+  selectedStorageId: z.string().optional(),
+  storageQuantity: z.coerce.number().min(0).optional(),
+  finalNote: z.string().trim().max(2000).optional(),
   billingCycle: z.enum(["monthly", "yearly"]),
 });
 

@@ -105,7 +105,7 @@ adminRouter.get(
     const [categories, plans, addons] = await Promise.all([
       ServiceCategory.find({}).sort({ sortOrder: 1 }),
       ProductPlan.find({}).populate("categoryId").sort({ sortOrder: 1 }),
-      Addon.find({}).populate("categoryId").sort({ name: 1 }),
+      Addon.find({}).populate("categoryId").sort({ addonType: 1, sortOrder: 1, name: 1 }),
     ]);
 
     res.json({ categories, plans, addons });
@@ -169,8 +169,11 @@ adminRouter.get(
   "/pricing",
   asyncHandler(async (req, res) => {
     ensureRole(req, ["admin", "support_agent"]);
-    const plans = await ProductPlan.find({}).populate("categoryId").sort({ sortOrder: 1 });
-    res.json({ plans });
+    const [plans, addons] = await Promise.all([
+      ProductPlan.find({}).populate("categoryId").sort({ sortOrder: 1 }),
+      Addon.find({}).populate("categoryId").sort({ addonType: 1, sortOrder: 1, name: 1 }),
+    ]);
+    res.json({ plans, addons });
   }),
 );
 

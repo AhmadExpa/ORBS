@@ -11,7 +11,7 @@ export default async function PortalLayout({ children }) {
   }
 
   return (
-    <AppShell items={portalNavigation} roleLabel="Customer Portal" logoSrc="/invoice.png" logoWidth={500} logoHeight={500} sidebarHref="/portal">
+    <AppShell items={portalNavigation} roleLabel="Customer Portal" sidebarHref="/portal">
       <ProfileSync />
       {children}
     </AppShell>

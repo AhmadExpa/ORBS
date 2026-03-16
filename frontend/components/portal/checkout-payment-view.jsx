@@ -68,6 +68,7 @@ export function CheckoutPaymentView({ orderId }) {
   const invoiceFileUrl = buildFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
   const refetchProfile = profileQuery.refetch;
+  const customerNote = String(order?.metadata?.customerNote || "").trim();
 
   const totalDue = useMemo(() => Number(invoice?.amount || order?.totalAmount || 0), [invoice?.amount, order?.totalAmount]);
 
@@ -174,7 +175,7 @@ export function CheckoutPaymentView({ orderId }) {
     <div>
       <Topbar
         title="Checkout & Payment"
-        subtitle="Review your plan, pay with direct card entry or submit a manual payment, and keep a saved card ready for future renewals."
+        subtitle="Review your plan, pay the order, and let the admin team assign the final server login details after approval and provisioning."
       />
       <div className="grid gap-6 p-6 lg:grid-cols-[1fr_360px]">
         <Card>
@@ -218,6 +219,17 @@ export function CheckoutPaymentView({ orderId }) {
                 </div>
               </div>
             ) : null}
+
+            {customerNote ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Deployment Note</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{customerNote}</p>
+              </div>
+            ) : null}
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+              Server login credentials are not chosen during checkout. After the order is approved, the admin team will provision the service and place the login, password, and IP details in your portal.
+            </div>
 
             <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">

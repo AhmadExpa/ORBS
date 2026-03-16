@@ -80,13 +80,40 @@ export async function ensureBootstrapData() {
       continue;
     }
 
-    const existingAddon = await Addon.findOne({ name: addonSeed.name });
+    const existingAddon = addonSeed.optionCode
+      ? await Addon.findOne({
+          categoryId: category._id,
+          $or: [{ optionCode: addonSeed.optionCode }, { name: addonSeed.name }],
+        })
+      : await Addon.findOne({ categoryId: category._id, name: addonSeed.name });
+
     if (!existingAddon) {
       await Addon.create({
         ...addonSeed,
         categoryId: category._id,
       });
+      continue;
     }
+
+    existingAddon.categoryId = category._id;
+    existingAddon.name = addonSeed.name;
+    existingAddon.description = addonSeed.description;
+    existingAddon.addonType = addonSeed.addonType || "feature";
+    existingAddon.selectionMode =
+      addonSeed.selectionMode || (existingAddon.addonType === "feature" ? "multi" : "single");
+    existingAddon.optionCode = addonSeed.optionCode || "";
+    existingAddon.monthlyPrice = addonSeed.monthlyPrice || 0;
+    existingAddon.yearlyPrice = addonSeed.yearlyPrice || 0;
+    existingAddon.includedQuantity = addonSeed.includedQuantity || 0;
+    existingAddon.pricePerUnitMonthly = addonSeed.pricePerUnitMonthly || 0;
+    existingAddon.pricePerUnitYearly = addonSeed.pricePerUnitYearly || 0;
+    existingAddon.unitLabel = addonSeed.unitLabel || "GB";
+    existingAddon.minQuantity = addonSeed.minQuantity || 0;
+    existingAddon.maxQuantity = addonSeed.maxQuantity || 0;
+    existingAddon.quantityStep = addonSeed.quantityStep || 1;
+    existingAddon.isActive = addonSeed.isActive ?? true;
+    existingAddon.sortOrder = addonSeed.sortOrder || 0;
+    await existingAddon.save();
   }
 
   const existingPaymentSetting = await PaymentSetting.findOne({ title: paymentSettingSeed.title });

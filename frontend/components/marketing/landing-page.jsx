@@ -23,7 +23,7 @@ export function LandingPage() {
 
   return (
     <div className="pb-16">
-      <section className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+      <section id="overview" className="mx-auto max-w-7xl scroll-mt-28 px-6 py-16 md:py-24">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-8">
             <div className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700">
@@ -74,7 +74,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="services" className="mx-auto max-w-7xl px-6 py-16">
+      <section id="services" className="mx-auto max-w-7xl scroll-mt-28 px-6 py-16">
         <SectionHeading
           eyebrow="Services"
           title="Service families are grouped around how customers actually buy and operate them."
@@ -111,13 +111,15 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section id="managed" className="mx-auto max-w-7xl scroll-mt-28 px-6 py-16">
         <div className="rounded-[2rem] border border-slate-200 bg-slate-950 px-8 py-12 text-white">
           <SectionHeading
             eyebrow="Managed Infrastructure"
             title="Your servers stay under ElevenOrbits operational control."
             description="Customers never self-manage infra here. Every managed service page, order screen, and subscription panel reinforces that our team handles the servers, support depth, and ongoing maintenance."
-            className="text-white"
+            eyebrowClassName="text-sky-400"
+            titleClassName="text-white"
+            descriptionClassName="text-slate-200"
           />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {[
@@ -133,7 +135,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing" className="mx-auto max-w-7xl px-6 py-16">
+      <section id="pricing" className="mx-auto max-w-7xl scroll-mt-28 px-6 py-16">
         <SectionHeading
           eyebrow="Pricing Highlights"
           title="Launch with seeded plans, then adjust everything from the admin dashboard."
@@ -167,7 +169,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="contact" className="mx-auto max-w-7xl px-6 py-16">
+      <section id="contact" className="mx-auto max-w-7xl scroll-mt-28 px-6 py-16">
         <div className="rounded-[2rem] border border-slate-200 bg-white px-8 py-12 shadow-panel">
           <SectionHeading
             eyebrow="Contact"

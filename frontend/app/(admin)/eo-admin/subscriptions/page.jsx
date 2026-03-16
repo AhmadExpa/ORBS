@@ -114,10 +114,11 @@ export default function AdminSubscriptionsPage() {
   }
 
   const selectedIsServer = isServerSubscription(selectedSubscription);
+  const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
 
   return (
     <div>
-      <Topbar title="Subscriptions" subtitle="Inspect subscriptions, assign server credentials, and define custom label/value details shared to customers." />
+      <Topbar title="Subscriptions" subtitle="Inspect subscriptions, review customer deployment notes, assign server credentials, and define shared portal details." />
       <div className="space-y-6 p-6">
         <Card>
           <CardHeader>
@@ -187,6 +188,9 @@ export default function AdminSubscriptionsPage() {
                               ? subscription.serviceAccess?.ipAddress || (hasAccess ? "Credential set saved" : "Waiting for credentials")
                               : `${detailsCount} shared detail${detailsCount === 1 ? "" : "s"}`}
                           </p>
+                          {subscription.metadata?.customerNote ? (
+                            <p className="mt-1 text-sm text-slate-500">Customer note attached</p>
+                          ) : null}
                         </div>
                         <StatusBadge status={subscription.status} />
                       </div>
@@ -215,6 +219,13 @@ export default function AdminSubscriptionsPage() {
                     {selectedSubscription.serviceAccess?.assignedAt ? (
                       <p><span className="font-semibold text-slate-900">Last updated:</span> {new Date(selectedSubscription.serviceAccess.assignedAt).toLocaleString()}</p>
                     ) : null}
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <h3 className="text-sm font-semibold text-slate-900">Customer Deployment Note</h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      {selectedCustomerNote || "No final provisioning note was included with this order."}
+                    </p>
                   </div>
 
                   {selectedIsServer ? (

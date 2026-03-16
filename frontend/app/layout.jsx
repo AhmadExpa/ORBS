@@ -10,6 +10,11 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata = {
   title: "ElevenOrbits",
   description: "Managed hosting, AI, workflow automation, and support services.",
+  icons: {
+    icon: "/invoice.png",
+    shortcut: "/invoice.png",
+    apple: "/invoice.png",
+  },
 };
 
 export default function RootLayout({ children }) {
