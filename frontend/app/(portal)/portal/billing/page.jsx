@@ -1,24 +1,12 @@
-"use client";
-
-import { formatCurrency } from "@/lib/shared";
-import { PortalDataPage } from "@/components/portal/data-page";
+import { InvoicesPage } from "@/components/portal/invoices-page";
 
 export default function PortalBillingPage() {
   return (
-    <PortalDataPage
+    <InvoicesPage
       title="Billing"
-      subtitle="Review invoice states and billing totals tied to your services."
-      path="/invoices"
-      queryKey={["portal-billing"]}
-      dataKey="invoices"
+      subtitle="Review invoice states, totals, and wallet-payable balances tied to your services."
       emptyTitle="No billing records yet"
       emptyDescription="Invoices appear after you create an order."
-      columns={[
-        { key: "invoiceNumber", label: "Invoice" },
-        { key: "amount", label: "Amount", render: (row) => formatCurrency(row.amount) },
-        { key: "status", label: "Status" },
-        { key: "issuedAt", label: "Issued", render: (row) => new Date(row.issuedAt).toLocaleDateString() },
-      ]}
     />
   );
 }

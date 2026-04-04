@@ -4,6 +4,7 @@ import { requireCustomer } from "../../middleware/require-customer.js";
 import { HttpError } from "../../utils/http-error.js";
 import { Invoice } from "../../db/models/index.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { payInvoiceWithWalletBalance } from "../../services/wallet-payment-service.js";
 
 export const invoicesRouter = express.Router();
 
@@ -29,5 +30,26 @@ invoicesRouter.get(
       throw new HttpError(404, "Invoice not found.");
     }
     res.json({ invoice });
+  }),
+);
+
+invoicesRouter.post(
+  "/:id/pay-with-wallet",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const result = await payInvoiceWithWalletBalance({
+      invoiceId: req.params.id,
+      userId: req.auth.user._id,
+    });
+
+    res.json({
+      success: true,
+      message: "The invoice has been paid from your wallet balance.",
+      invoice: result.invoice,
+      order: result.order,
+      subscription: result.subscription,
+      submission: result.submission,
+      user: result.user,
+    });
   }),
 );

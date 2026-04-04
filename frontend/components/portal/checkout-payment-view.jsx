@@ -39,6 +39,7 @@ export function CheckoutPaymentView({ orderId }) {
   const [proof, setProof] = useState(null);
   const [state, setState] = useState({
     isSubmitting: false,
+    action: "",
     message: "",
     error: "",
   });
@@ -68,6 +69,9 @@ export function CheckoutPaymentView({ orderId }) {
   const customerNote = String(order?.metadata?.customerNote || "").trim();
 
   const totalDue = useMemo(() => Number(invoice?.amount || order?.totalAmount || 0), [invoice?.amount, order?.totalAmount]);
+  const walletBalance = Number(profile?.accountBalance || 0);
+  const canPayWithWallet = Boolean(invoice?._id) && canTriggerPayments && totalDue > 0 && walletBalance >= totalDue;
+  const walletShortfall = Math.max(totalDue - walletBalance, 0);
 
   async function syncOrderState() {
     await Promise.all([refetchOrder(), refetchProfile()]);
@@ -80,6 +84,7 @@ export function CheckoutPaymentView({ orderId }) {
     setState((current) => ({
       ...current,
       isSubmitting: true,
+      action: "manual",
       message: "",
       error: "",
     }));
@@ -105,6 +110,7 @@ export function CheckoutPaymentView({ orderId }) {
       setState((current) => ({
         ...current,
         isSubmitting: false,
+        action: "",
         message:
           response.message ||
           "Your payment is in process. After verification, it will be added to your account. International payments usually take less than 3–4 hours to process.",
@@ -125,6 +131,7 @@ export function CheckoutPaymentView({ orderId }) {
       setState((current) => ({
         ...current,
         isSubmitting: false,
+        action: "",
         message: "",
         error: requestError.message,
       }));
@@ -166,6 +173,58 @@ export function CheckoutPaymentView({ orderId }) {
     return "Your payment was received. The order details are being refreshed now.";
   }
 
+  async function handleWalletPayment() {
+    if (!invoice?._id) {
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      isSubmitting: true,
+      action: "wallet",
+      message: "",
+      error: "",
+    }));
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/invoices/${invoice._id}/pay-with-wallet`, {
+        method: "POST",
+        token,
+        authMode: "customer",
+      });
+
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        action: "",
+        message: response.message || "The invoice has been paid from your wallet balance.",
+        error: "",
+      }));
+      showToast({
+        type: "success",
+        action: "Invoice",
+        title: "Wallet payment completed",
+        description: response.message || "The invoice has been paid from your wallet balance.",
+      });
+      await Promise.all([refetchOrder(), refetchProfile()]);
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        action: "",
+        message: "",
+        error: error.message || "The invoice could not be paid from wallet balance.",
+      }));
+      showToast({
+        type: "error",
+        action: "Invoice",
+        title: "Wallet payment failed",
+        description: error.message || "The invoice could not be paid from wallet balance.",
+      });
+    }
+  }
+
   async function handleOrderCancel() {
     const confirmed = window.confirm("Cancel this paid order and unsubscribe the linked service?");
     if (!confirmed) {
@@ -175,6 +234,7 @@ export function CheckoutPaymentView({ orderId }) {
     setState((current) => ({
       ...current,
       isSubmitting: true,
+      action: "cancel",
       message: "",
       error: "",
     }));
@@ -189,6 +249,7 @@ export function CheckoutPaymentView({ orderId }) {
       setState((current) => ({
         ...current,
         isSubmitting: false,
+        action: "",
         message: response.message || "The order has been cancelled.",
         error: "",
       }));
@@ -203,6 +264,7 @@ export function CheckoutPaymentView({ orderId }) {
       setState((current) => ({
         ...current,
         isSubmitting: false,
+        action: "",
         message: "",
         error: error.message || "The order could not be cancelled.",
       }));
@@ -350,6 +412,36 @@ export function CheckoutPaymentView({ orderId }) {
               </div>
             </div>
 
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-3xl">
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Wallet Balance Payment</p>
+                  <p className="mt-4 text-2xl font-semibold text-slate-950">{formatCurrency(walletBalance)} available</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Use your approved wallet top-up balance to settle this invoice immediately when the full amount is available.
+                  </p>
+                  {!canPayWithWallet && canTriggerPayments && walletShortfall > 0 ? (
+                    <p className="mt-3 text-sm font-medium text-amber-700">Top up {formatCurrency(walletShortfall)} more to pay this invoice from wallet balance.</p>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-col items-start gap-3 lg:items-end">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Invoice amount: <span className="font-semibold text-slate-950">{formatCurrency(totalDue)}</span>
+                  </div>
+                  <Button type="button" disabled={!canPayWithWallet || state.isSubmitting} onClick={handleWalletPayment}>
+                    {state.isSubmitting && state.action === "wallet"
+                      ? "Applying wallet balance..."
+                      : isPaid
+                        ? "Already Paid"
+                        : canPayWithWallet
+                          ? "Pay from Wallet Balance"
+                          : "Insufficient Wallet Balance"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleManualSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -370,7 +462,13 @@ export function CheckoutPaymentView({ orderId }) {
               {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={!canTriggerPayments || state.isSubmitting}>
-                  {state.isSubmitting ? "Submitting payment..." : isCancelled ? "Cancelled" : isPaid ? "Already Paid" : "Submit Payment Verification"}
+                  {state.isSubmitting && state.action === "manual"
+                    ? "Submitting payment..."
+                    : isCancelled
+                      ? "Cancelled"
+                      : isPaid
+                        ? "Already Paid"
+                        : "Submit Payment Verification"}
                 </Button>
                 {canCancelOrder ? (
                   <Button type="button" variant="ghost" disabled={state.isSubmitting} onClick={handleOrderCancel}>
@@ -402,7 +500,7 @@ export function CheckoutPaymentView({ orderId }) {
               <span className="font-semibold text-right text-slate-900">Wallet first, saved-card fallback</span>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              After approval, future renewals check wallet balance first. If the wallet is short and you have a saved card, the remaining amount can be charged automatically.
+              After approval, future renewals check wallet balance first. You can also settle this invoice directly from wallet balance when the available top-up amount fully covers the total.
             </div>
             <Link href="/portal/payments">
               <Button variant="ghost">Manage Wallet & Saved Card</Button>
