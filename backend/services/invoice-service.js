@@ -146,9 +146,48 @@ function drawOutlinedCard(doc, x, y, width, height) {
   doc.restore();
 }
 
+function measureTextBlockHeight(doc, { text, width, font = "Helvetica", fontSize = 11 }) {
+  doc.font(font).fontSize(fontSize);
+  return doc.heightOfString(String(text || ""), { width });
+}
+
+function getKeyValueHeight(doc, { width, label, value }) {
+  const labelHeight = measureTextBlockHeight(doc, {
+    text: String(label || "").toUpperCase(),
+    width,
+    font: "Helvetica-Bold",
+    fontSize: 9,
+  });
+  const valueHeight = measureTextBlockHeight(doc, {
+    text: value,
+    width,
+    font: "Helvetica",
+    fontSize: 11,
+  });
+
+  return labelHeight + 3 + valueHeight;
+}
+
+function getKeyValueGroupHeight(doc, { width, rows, gap = 10 }) {
+  return rows.reduce((sum, [label, value], index) => {
+    return sum + getKeyValueHeight(doc, { width, label, value }) + (index < rows.length - 1 ? gap : 0);
+  }, 0);
+}
+
 function drawKeyValue(doc, { x, y, width, label, value }) {
-  doc.font("Helvetica-Bold").fontSize(9).fillColor(palette.muted).text(label.toUpperCase(), x, y, { width });
-  doc.font("Helvetica").fontSize(11).fillColor(palette.text).text(value, x, y + 12, { width });
+  const labelText = String(label || "").toUpperCase();
+  const valueText = String(value || "");
+
+  doc.font("Helvetica-Bold").fontSize(9).fillColor(palette.muted).text(labelText, x, y, { width });
+  const labelHeight = doc.heightOfString(labelText, { width });
+
+  doc.font("Helvetica").fontSize(11).fillColor(palette.text).text(valueText, x, y + labelHeight + 3, { width });
+
+  return getKeyValueHeight(doc, {
+    width,
+    label: labelText,
+    value: valueText,
+  });
 }
 
 function drawStatusBadge(doc, status, x, y) {
@@ -248,45 +287,14 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
     const cardWidth = (contentWidth - cardGap) / 2;
     const billToX = pageMargin;
     const summaryX = billToX + cardWidth + cardGap;
-    const addressHeight = doc.heightOfString(customerAddress, {
-      width: cardWidth - 36,
-      align: "left",
-    });
-    const cardHeight = Math.max(220, 148 + addressHeight);
-
-    drawOutlinedCard(doc, billToX, cursorY, cardWidth, cardHeight);
-    drawOutlinedCard(doc, summaryX, cursorY, cardWidth, cardHeight);
-
-    doc.font("Helvetica-Bold").fontSize(11).fillColor(palette.text).text("Bill To", billToX + 18, cursorY + 18);
-    drawKeyValue(doc, {
-      x: billToX + 18,
-      y: cursorY + 46,
-      width: cardWidth - 36,
-      label: "Username",
-      value: customerName,
-    });
-    drawKeyValue(doc, {
-      x: billToX + 18,
-      y: cursorY + 84,
-      width: cardWidth - 36,
-      label: "Email",
-      value: customer?.email || "Not provided",
-    });
-    drawKeyValue(doc, {
-      x: billToX + 18,
-      y: cursorY + 122,
-      width: cardWidth - 36,
-      label: "Phone Number",
-      value: customerPhone,
-    });
-    doc.font("Helvetica-Bold").fontSize(9).fillColor(palette.muted).text("ADDRESS", billToX + 18, cursorY + 160, {
-      width: cardWidth - 36,
-    });
-    doc.font("Helvetica").fontSize(11).fillColor(palette.text).text(customerAddress, billToX + 18, cursorY + 172, {
-      width: cardWidth - 36,
-    });
-
-    doc.font("Helvetica-Bold").fontSize(11).fillColor(palette.text).text("Invoice Details", summaryX + 18, cursorY + 18);
+    const detailWidth = cardWidth - 36;
+    const detailRowGap = 10;
+    const billToRows = [
+      ["Name", customerName],
+      ["Email", customer?.email || "Not provided"],
+      ["Phone Number", customerPhone],
+      ["Address", customerAddress],
+    ];
     const summaryRows = [
       ["Service", planName || "Managed Service"],
       ["Billing Cycle", formatBillingCycle(invoice.billingCycle)],
@@ -296,15 +304,51 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
       ["Payment Reference", invoice.paymentReferenceCode || "Pending"],
       ["Invoice Total", formatMoney(invoice.amount, invoice.currency)],
     ];
+    const billToHeight = getKeyValueGroupHeight(doc, {
+      width: detailWidth,
+      rows: billToRows,
+      gap: detailRowGap,
+    });
+    const summaryHeight = getKeyValueGroupHeight(doc, {
+      width: detailWidth,
+      rows: summaryRows,
+      gap: detailRowGap,
+    });
+    const cardHeight = Math.max(220, 64 + Math.max(billToHeight, summaryHeight));
 
-    summaryRows.forEach(([label, value], index) => {
-      drawKeyValue(doc, {
-        x: summaryX + 18,
-        y: cursorY + 46 + index * 24,
-        width: cardWidth - 36,
+    drawOutlinedCard(doc, billToX, cursorY, cardWidth, cardHeight);
+    drawOutlinedCard(doc, summaryX, cursorY, cardWidth, cardHeight);
+
+    doc.font("Helvetica-Bold").fontSize(11).fillColor(palette.text).text("Bill To", billToX + 18, cursorY + 18);
+    let billToCursorY = cursorY + 46;
+    billToRows.forEach(([label, value], index) => {
+      billToCursorY += drawKeyValue(doc, {
+        x: billToX + 18,
+        y: billToCursorY,
+        width: detailWidth,
         label,
         value,
       });
+
+      if (index < billToRows.length - 1) {
+        billToCursorY += detailRowGap;
+      }
+    });
+
+    doc.font("Helvetica-Bold").fontSize(11).fillColor(palette.text).text("Invoice Details", summaryX + 18, cursorY + 18);
+    let summaryCursorY = cursorY + 46;
+    summaryRows.forEach(([label, value], index) => {
+      summaryCursorY += drawKeyValue(doc, {
+        x: summaryX + 18,
+        y: summaryCursorY,
+        width: detailWidth,
+        label,
+        value,
+      });
+
+      if (index < summaryRows.length - 1) {
+        summaryCursorY += detailRowGap;
+      }
     });
 
     cursorY += cardHeight + 24;
