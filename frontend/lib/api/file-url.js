@@ -18,10 +18,17 @@ function normalizePossibleUrl(value) {
   return trimmedValue;
 }
 
+function normalizeApiUrl(value) {
+  const fallbackApiUrl = "https://api.account.elevenorbits.com/api/v1";
+  const normalizedValue = normalizePossibleUrl(value || fallbackApiUrl)
+    .replace(/:\/\/api\.accounts\.elevenorbits\.com/iu, "://api.account.elevenorbits.com")
+    .replace(/\/+$/u, "");
+
+  return /\/api\/v1$/iu.test(normalizedValue) ? normalizedValue : `${normalizedValue}/api/v1`;
+}
+
 function getPublicApiOrigin() {
-  const configuredApiUrl = normalizePossibleUrl(process.env.NEXT_PUBLIC_API_URL || "");
-  const fallbackApiUrl = "http://localhost:4000";
-  const resolvedApiUrl = configuredApiUrl || fallbackApiUrl;
+  const resolvedApiUrl = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
   return resolvedApiUrl.replace(/\/api\/v1\/?$/i, "").replace(/\/+$/, "");
 }

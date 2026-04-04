@@ -111,3 +111,27 @@ export async function cancelCustomerOrder({
 
   return { order, subscription, invoice };
 }
+
+export async function deleteCustomerSubscriptionFromPortal({
+  subscriptionId,
+  userId,
+}) {
+  const subscription = await Subscription.findOne({ _id: subscriptionId, userId }).populate("productPlanId");
+
+  if (!subscription) {
+    throw new HttpError(404, "Subscription not found.");
+  }
+
+  if (subscription.customerDeletedAt) {
+    throw new HttpError(400, "This service has already been removed from your portal.");
+  }
+
+  if (!["cancelled", "expired"].includes(subscription.status)) {
+    throw new HttpError(400, "Only cancelled or expired services can be removed from your portal.");
+  }
+
+  subscription.customerDeletedAt = new Date();
+  await subscription.save();
+
+  return { subscription };
+}

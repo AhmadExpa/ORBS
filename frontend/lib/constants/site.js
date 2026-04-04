@@ -1,3 +1,30 @@
+function normalizePossibleUrl(value) {
+  const trimmedValue = String(value || "").trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  if (/^(https?)\/\//i.test(trimmedValue)) {
+    return trimmedValue.replace(/^(https?)\/\//i, "$1://");
+  }
+
+  if (/^\/\//.test(trimmedValue)) {
+    return `https:${trimmedValue}`;
+  }
+
+  return trimmedValue;
+}
+
+function normalizeApiUrl(value) {
+  const fallbackApiUrl = "https://api.account.elevenorbits.com/api/v1";
+  const normalizedValue = normalizePossibleUrl(value || fallbackApiUrl)
+    .replace(/:\/\/api\.accounts\.elevenorbits\.com/iu, "://api.account.elevenorbits.com")
+    .replace(/\/+$/u, "");
+
+  return /\/api\/v1$/iu.test(normalizedValue) ? normalizedValue : `${normalizedValue}/api/v1`;
+}
+
 const generalEmail = process.env.NEXT_PUBLIC_GENERAL_EMAIL || "hello@elevenorbits.com";
 const salesEmail = process.env.NEXT_PUBLIC_SALES_EMAIL || "sales@elevenorbits.com";
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com";
@@ -98,7 +125,7 @@ export const siteConfig = {
   departmentContacts,
   serviceDepartmentMap,
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1",
+  apiUrl: normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL),
 };
 
 export function getDepartmentContactByServiceSlug(slug) {

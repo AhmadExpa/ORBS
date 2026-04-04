@@ -17,11 +17,36 @@ function resolveStorageDir(relativePath, fallback) {
   return path.isAbsolute(relativePath) ? relativePath : path.resolve(backendRoot, relativePath);
 }
 
+function normalizePossibleUrl(value) {
+  const trimmedValue = String(value || "").trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  if (/^(https?)\/\//i.test(trimmedValue)) {
+    return trimmedValue.replace(/^(https?)\/\//i, "$1://");
+  }
+
+  if (/^\/\//.test(trimmedValue)) {
+    return `https:${trimmedValue}`;
+  }
+
+  return trimmedValue;
+}
+
+function normalizePublicApiOrigin(value) {
+  return normalizePossibleUrl(value || "https://api.account.elevenorbits.com")
+    .replace(/:\/\/api\.accounts\.elevenorbits\.com/iu, "://api.account.elevenorbits.com")
+    .replace(/\/api\/v1\/?$/iu, "")
+    .replace(/\/+$/u, "");
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  publicApiUrl: process.env.PUBLIC_FILE_BASE_URL || "http://localhost:4000",
+  publicApiUrl: normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL),
   mongodbUri: process.env.MONGODB_URI || "mongodb://localhost:27017/elevenorbits",
   jwtSecret: process.env.JWT_SECRET || "change-me",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com",

@@ -4,7 +4,7 @@ import { requireCustomer } from "../../middleware/require-customer.js";
 import { Subscription } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
-import { cancelCustomerSubscription } from "../../services/customer-cancellation-service.js";
+import { cancelCustomerSubscription, deleteCustomerSubscriptionFromPortal } from "../../services/customer-cancellation-service.js";
 
 export const subscriptionsRouter = express.Router();
 
@@ -14,7 +14,10 @@ subscriptionsRouter.get(
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
 
-    const subscriptions = await Subscription.find({ userId: req.auth.user._id })
+    const subscriptions = await Subscription.find({
+      userId: req.auth.user._id,
+      customerDeletedAt: { $exists: false },
+    })
       .populate({
         path: "productPlanId",
         populate: {
@@ -56,6 +59,34 @@ subscriptionsRouter.post(
       subscription: result.subscription,
       order: result.order,
       invoice: result.invoice,
+    });
+  }),
+);
+
+subscriptionsRouter.delete(
+  "/:id",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const result = await deleteCustomerSubscriptionFromPortal({
+      subscriptionId: req.params.id,
+      userId: req.auth.user._id,
+    });
+
+    await recordActivity({
+      actorId: req.auth.user._id,
+      actorRole: "customer",
+      action: "subscription.deleted_from_portal",
+      targetType: "subscription",
+      targetId: String(result.subscription._id),
+      metadata: {
+        status: result.subscription.status,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "The cancelled service has been removed from your portal.",
+      subscription: result.subscription,
     });
   }),
 );

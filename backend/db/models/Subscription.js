@@ -35,6 +35,7 @@ const subscriptionSchema = new mongoose.Schema(
     startDate: Date,
     renewalDate: Date,
     cancelAtPeriodEnd: { type: Boolean, default: false },
+    customerDeletedAt: Date,
     serviceAccess: { type: serviceAccessSchema, default: () => ({}) },
     sharedDetails: { type: [sharedDetailSchema], default: [] },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },

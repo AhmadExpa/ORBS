@@ -15,6 +15,51 @@ function canUnsubscribe(subscription) {
   return !["cancelled", "expired"].includes(subscription?.status);
 }
 
+function canDeleteFromPortal(subscription) {
+  return ["cancelled", "expired"].includes(subscription?.status);
+}
+
+function SubscriptionActionDialog({ action, isProcessing, onCancel, onConfirm }) {
+  if (!action) {
+    return null;
+  }
+
+  const planName = action.subscription?.productPlanId?.name || "this service";
+  const isDeleteAction = action.type === "delete";
+  const title = isDeleteAction ? "Remove Cancelled Service" : "Unsubscribe Service";
+  const description = isDeleteAction
+    ? `Remove ${planName} from your portal history? Billing records stay intact, but this service card will no longer appear in your portal.`
+    : `Unsubscribe from ${planName}? This will cancel the linked service in your portal and stop it from remaining active.`;
+  const confirmLabel = isDeleteAction ? "Delete from Portal" : "Unsubscribe";
+  const processingLabel = isDeleteAction ? "Removing..." : "Unsubscribing...";
+  const dismissLabel = isDeleteAction ? "Close" : "Keep Service";
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-6 backdrop-blur-sm">
+      <Card className="w-full max-w-lg overflow-hidden border-slate-200 shadow-[0_40px_120px_-48px_rgba(15,23,42,0.45)]">
+        <CardHeader className="bg-slate-50">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-950">{planName}</p>
+            <p className="mt-2">Status: {action.subscription?.status || "Unknown"}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="ghost" disabled={isProcessing} onClick={onCancel}>
+              {dismissLabel}
+            </Button>
+            <Button type="button" disabled={isProcessing} onClick={onConfirm}>
+              {isProcessing ? processingLabel : confirmLabel}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function PortalSubscriptionsPage() {
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
@@ -22,44 +67,66 @@ export default function PortalSubscriptionsPage() {
     queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
-  const [actionState, setActionState] = useState({ loadingId: "", error: "" });
+  const [actionState, setActionState] = useState({ loadingId: "", type: "", error: "" });
+  const [pendingAction, setPendingAction] = useState(null);
   const subscriptions = data?.subscriptions || [];
 
-  async function handleUnsubscribe(subscription) {
-    if (!canUnsubscribe(subscription)) {
+  function openActionDialog(type, subscription) {
+    if (type === "unsubscribe" && !canUnsubscribe(subscription)) {
       return;
     }
 
-    const planName = subscription.productPlanId?.name || "this service";
-    const confirmed = window.confirm(`Unsubscribe from ${planName}? This will cancel the linked service in your portal.`);
-    if (!confirmed) {
+    if (type === "delete" && !canDeleteFromPortal(subscription)) {
       return;
     }
 
-    setActionState({ loadingId: subscription._id, error: "" });
+    setPendingAction({ type, subscription });
+  }
+
+  function closeActionDialog() {
+    if (actionState.loadingId) {
+      return;
+    }
+
+    setPendingAction(null);
+  }
+
+  async function handleConfirmAction() {
+    if (!pendingAction?.subscription?._id) {
+      return;
+    }
+
+    const { subscription, type } = pendingAction;
+    const isDeleteAction = type === "delete";
+    setActionState({ loadingId: subscription._id, type, error: "" });
 
     try {
       const token = await getToken();
-      const response = await apiFetch(`/subscriptions/${subscription._id}/cancel`, {
-        method: "POST",
+      const response = await apiFetch(isDeleteAction ? `/subscriptions/${subscription._id}` : `/subscriptions/${subscription._id}/cancel`, {
+        method: isDeleteAction ? "DELETE" : "POST",
         token,
       });
 
       showToast({
         type: "info",
         action: "Subscription",
-        title: "Subscription cancelled",
-        description: response.message || "The subscription has been cancelled.",
+        title: isDeleteAction ? "Service removed" : "Subscription cancelled",
+        description: response.message || (isDeleteAction ? "The cancelled service has been removed from your portal." : "The subscription has been cancelled."),
       });
-      setActionState({ loadingId: "", error: "" });
+      setActionState({ loadingId: "", type: "", error: "" });
+      setPendingAction(null);
       await refetch();
     } catch (error) {
-      setActionState({ loadingId: "", error: error.message || "The subscription could not be cancelled." });
+      setActionState({
+        loadingId: "",
+        type: "",
+        error: error.message || (isDeleteAction ? "The service could not be removed from your portal." : "The subscription could not be cancelled."),
+      });
       showToast({
         type: "error",
         action: "Subscription",
-        title: "Unsubscribe failed",
-        description: error.message || "The subscription could not be cancelled.",
+        title: isDeleteAction ? "Delete failed" : "Unsubscribe failed",
+        description: error.message || (isDeleteAction ? "The service could not be removed from your portal." : "The subscription could not be cancelled."),
       });
     }
   }
@@ -130,9 +197,19 @@ export default function PortalSubscriptionsPage() {
                           type="button"
                           variant="ghost"
                           disabled={actionState.loadingId === row._id}
-                          onClick={() => handleUnsubscribe(row)}
+                          onClick={() => openActionDialog("unsubscribe", row)}
                         >
-                          {actionState.loadingId === row._id ? "Cancelling..." : "Unsubscribe"}
+                          {actionState.loadingId === row._id && actionState.type === "unsubscribe" ? "Cancelling..." : "Unsubscribe"}
+                        </Button>
+                      ) : canDeleteFromPortal(row) ? (
+                        <Button
+                          className="whitespace-nowrap"
+                          type="button"
+                          variant="ghost"
+                          disabled={actionState.loadingId === row._id}
+                          onClick={() => openActionDialog("delete", row)}
+                        >
+                          {actionState.loadingId === row._id && actionState.type === "delete" ? "Removing..." : "Delete from Portal"}
                         </Button>
                       ) : (
                         <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Unavailable</span>
@@ -161,6 +238,12 @@ export default function PortalSubscriptionsPage() {
           />
         )}
       </div>
+      <SubscriptionActionDialog
+        action={pendingAction}
+        isProcessing={Boolean(actionState.loadingId)}
+        onCancel={closeActionDialog}
+        onConfirm={handleConfirmAction}
+      />
     </div>
   );
 }
