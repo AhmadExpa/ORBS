@@ -16,11 +16,11 @@ const variantThemes = {
   },
   portal: {
     primary:
-      "border border-black bg-black text-white shadow-[0_14px_34px_rgba(15,23,42,0.18)] hover:-translate-y-0.5 hover:bg-slate-950 hover:shadow-[0_20px_40px_rgba(15,23,42,0.24)] active:translate-y-0 active:shadow-[0_10px_22px_rgba(15,23,42,0.16)] focus-visible:ring-slate-400",
+      "border border-black bg-black text-white shadow-[0_16px_36px_-18px_rgba(15,23,42,0.85)] hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-[0_22px_48px_-22px_rgba(15,23,42,0.9)] active:translate-y-0 active:shadow-[0_10px_24px_-16px_rgba(15,23,42,0.75)] focus-visible:ring-slate-400",
     secondary:
-      "border border-slate-900 bg-slate-900 text-white shadow-[0_14px_34px_rgba(15,23,42,0.18)] hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_20px_40px_rgba(15,23,42,0.24)] active:translate-y-0 active:shadow-[0_10px_22px_rgba(15,23,42,0.16)] focus-visible:ring-slate-400",
+      "border border-slate-900 bg-slate-900 text-white shadow-[0_16px_36px_-18px_rgba(15,23,42,0.78)] hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_22px_48px_-22px_rgba(15,23,42,0.86)] active:translate-y-0 active:shadow-[0_10px_24px_-16px_rgba(15,23,42,0.7)] focus-visible:ring-slate-400",
     ghost:
-      "border border-slate-200 bg-white text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-black hover:shadow-[0_16px_34px_rgba(15,23,42,0.1)] active:translate-y-0 active:shadow-[0_8px_18px_rgba(15,23,42,0.06)] focus-visible:ring-slate-300",
+      "border border-white/80 bg-white/82 text-slate-950 shadow-[0_14px_34px_-26px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] hover:-translate-y-0.5 hover:bg-white hover:text-black hover:shadow-[0_20px_44px_-28px_rgba(15,23,42,0.62)] active:translate-y-0 active:shadow-[0_10px_24px_-20px_rgba(15,23,42,0.52)] focus-visible:ring-slate-300",
   },
 };
 
@@ -37,7 +37,7 @@ export function Button({ asChild = false, className, variant = "primary", childr
   return (
     <Component
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold leading-5 tracking-[0.01em] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold leading-5 tracking-[0.01em] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
         resolvedVariants[variant] || resolvedVariants.primary,
         className,
       )}

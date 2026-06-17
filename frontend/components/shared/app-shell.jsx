@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -139,12 +139,15 @@ export function AppShell({
 
   return (
     <ButtonThemeProvider value="portal">
-      <div className="min-h-screen bg-surface">
-        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[296px_minmax(0,1fr)]">
-          <aside className="flex h-full flex-col border-r border-slate-200 bg-white px-5 py-6">
-            <Link href={sidebarHref} className="block rounded-[28px] border border-slate-200 bg-gradient-to-br from-stone-50 via-white to-sky-50 px-5 py-5 shadow-sm">
-              <div className="flex min-h-[164px] flex-col items-center justify-center text-center">
-                <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{roleLabel}</p>
+      <div className="min-h-screen bg-[linear-gradient(180deg,#fbfcff_0%,#f4f6fa_48%,#eef2f7_100%)] text-slate-950">
+        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[292px_minmax(0,1fr)]">
+          <aside className="z-40 flex h-full flex-col border-r border-white/70 bg-white/72 px-4 py-5 shadow-[18px_0_60px_-48px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen">
+            <Link
+              href={sidebarHref}
+              className="block rounded-[26px] border border-white/80 bg-white/82 px-5 py-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]"
+            >
+              <div className="flex min-h-[158px] flex-col items-center justify-center text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">{roleLabel}</p>
                 <BrandLogo
                   className="mt-5 h-12 w-full justify-center"
                   imageClassName="max-w-[220px]"
@@ -152,30 +155,29 @@ export function AppShell({
                   width={logoWidth}
                   height={logoHeight}
                 />
-                <p className="mt-4 text-sm text-slate-500">Managed by ElevenOrbits Team</p>
+                <p className="mt-4 text-sm font-medium text-slate-500">Managed by ElevenOrbits Team</p>
               </div>
             </Link>
-            <div className="mt-6 flex-1">
+            <div className="mt-5 flex-1 overflow-y-auto pr-1">
               <SidebarNav items={items} />
             </div>
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-5 rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-[0_20px_60px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (
                   <UserButton />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200">
                     <UserRound className="h-5 w-5" />
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Session Controls</p>
-                  <p className="text-xs text-slate-500">
-                    {authMode === "clerk" ? "Manage your account settings or sign out from here." : "End the current staff session from here."}
-                  </p>
+                  <p className="text-sm font-semibold text-slate-950">Signed in</p>
+                  <p className="text-xs font-medium text-slate-500">{authMode === "clerk" ? "Customer account" : "Staff account"}</p>
                 </div>
               </div>
               {logoutState.error ? <p className="mt-3 text-xs font-medium text-rose-600">{logoutState.error}</p> : null}
               <Button className="mt-4 w-full justify-center" type="button" variant="ghost" disabled={logoutState.loading} onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
                 {logoutState.loading ? "Logging out..." : "Log Out"}
               </Button>
             </div>

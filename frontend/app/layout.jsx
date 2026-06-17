@@ -1,11 +1,5 @@
 import "./globals.css";
-import { Space_Grotesk } from "next/font/google";
 import { Providers } from "@/components/shared/providers";
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-});
 
 export const metadata = {
   title: "ElevenOrbits",
@@ -19,8 +13,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={spaceGrotesk.variable} suppressHydrationWarning>
-      <body className={spaceGrotesk.className} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

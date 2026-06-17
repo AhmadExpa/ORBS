@@ -55,7 +55,7 @@ export function SidebarNav({ items }) {
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1.5">
+    <nav className="space-y-1">
       {items.map((item) => {
         const active = isNavItemActive(pathname, item.href);
         const Icon = iconMap[item.icon] || LayoutDashboard;
@@ -65,18 +65,18 @@ export function SidebarNav({ items }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
+              "group flex items-center gap-3 rounded-[20px] px-3 py-2.5 text-sm font-semibold transition duration-200",
               active
-                ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-100"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                ? "bg-slate-950 text-white shadow-[0_18px_45px_-30px_rgba(15,23,42,0.75)]"
+                : "text-slate-600 hover:bg-white/86 hover:text-slate-950 hover:shadow-[0_16px_42px_-34px_rgba(15,23,42,0.55)]",
             )}
           >
             <span
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition",
                 active
-                  ? "bg-white text-sky-700 shadow-sm ring-1 ring-sky-100"
-                  : "bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-700 group-hover:ring-1 group-hover:ring-slate-200",
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "bg-white/80 text-slate-500 ring-1 ring-slate-950/[0.05] group-hover:bg-slate-50 group-hover:text-slate-800",
               )}
             >
               <Icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
