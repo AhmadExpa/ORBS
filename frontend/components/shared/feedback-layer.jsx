@@ -127,18 +127,19 @@ export function FeedbackProvider({ children }) {
 
       <div
         className={cn(
-          "pointer-events-none fixed inset-0 z-[70] flex items-center justify-center p-6 transition duration-300",
+          "pointer-events-none fixed inset-0 z-[70] flex items-start justify-center p-6 pt-24 transition duration-300",
           loaderVisible ? "opacity-100" : "opacity-0",
         )}
+        aria-live="polite"
+        aria-label="Loading"
       >
-        <div className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-5 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.55)] backdrop-blur-xl">
-          <div className="flex min-w-[280px] items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <LoaderCircle className="h-5 w-5 animate-spin" />
+        <div className="overflow-hidden rounded-full border border-white/80 bg-white/90 px-3 py-3 shadow-[0_28px_90px_-45px_rgba(15,23,42,0.58)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
             </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Loading</p>
-              <p className="mt-1 text-sm font-medium text-slate-950">Fetching the latest response for this screen.</p>
+            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
+              <div className="loader-progress h-full rounded-full bg-slate-950" />
             </div>
           </div>
         </div>
