@@ -16,7 +16,7 @@ subscriptionsRouter.get(
 
     const subscriptions = await Subscription.find({
       userId: req.auth.user._id,
-      customerDeletedAt: { $exists: false },
+      customerDeletedAt: null,
     })
       .populate({
         path: "productPlanId",

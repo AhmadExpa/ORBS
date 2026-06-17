@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { query, withTransaction } from "./postgres-client.js";
 
 const registry = new Map();
-const operatorKeys = new Set(["$in", "$lte", "$gte", "$lt", "$gt", "$ne"]);
+const operatorKeys = new Set(["$in", "$lte", "$gte", "$lt", "$gt", "$ne", "$exists"]);
 
 function normalizeId(value) {
   if (value === undefined || value === null) {
@@ -199,8 +199,12 @@ class SqlBuilder {
       return `${expression} <> ${this.addParam(String(value))}`;
     }
 
+    if (operator === "$exists") {
+      return value ? `(data ? ${this.addParam(field)})` : `NOT (data ? ${this.addParam(field)})`;
+    }
+
     if (value === null) {
-      return `(NOT (data ? ${this.addParam(field)}) OR data->${this.addParam(field)} IS NULL)`;
+      return `(NOT (data ? ${this.addParam(field)}) OR data->>${this.addParam(field)} IS NULL)`;
     }
 
     if (this.model.config.arrayFields?.includes(field)) {
