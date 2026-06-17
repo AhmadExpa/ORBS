@@ -1,16 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, UserRound } from "lucide-react";
+import { CreditCard, LogOut, UserRound, Wallet } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
+import { useCustomerQuery } from "@/lib/api/hooks";
+import { formatCurrency } from "@/lib/shared";
 import { Button, ButtonThemeProvider, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui";
 import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
+
+function getSidebarMonthlyAmount(subscriptions = []) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  return subscriptions
+    .filter((subscription) => !["cancelled", "expired"].includes(subscription.status))
+    .reduce((sum, subscription) => {
+      const amount = Number(subscription.metadata?.billingAmount || 0);
+      if (amount <= 0) {
+        return sum;
+      }
+
+      if (subscription.billingCycle === "monthly") {
+        return sum + amount;
+      }
+
+      if (!subscription.renewalDate) {
+        return sum;
+      }
+
+      const renewalDate = new Date(subscription.renewalDate);
+      return renewalDate.getMonth() === currentMonth && renewalDate.getFullYear() === currentYear ? sum + amount : sum;
+    }, 0);
+}
 
 export function AppShell({
   items,
@@ -29,6 +57,18 @@ export function AppShell({
   const { showToast } = useActionToast();
   const [logoutState, setLogoutState] = useState({ loading: false, error: "" });
   const [staffSessionState, setStaffSessionState] = useState({ checking: authMode === "staff", error: "" });
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-sidebar-profile"],
+    path: "/profile/me",
+    enabled: authMode === "clerk",
+  });
+  const subscriptionsQuery = useCustomerQuery({
+    queryKey: ["portal-sidebar-subscriptions"],
+    path: "/subscriptions",
+    enabled: authMode === "clerk",
+  });
+  const walletBalance = Number(profileQuery.data?.user?.accountBalance || 0);
+  const monthlyAmount = getSidebarMonthlyAmount(subscriptionsQuery.data?.subscriptions || []);
 
   useEffect(() => {
     let isActive = true;
@@ -161,6 +201,31 @@ export function AppShell({
             <div className="mt-5 flex-1 overflow-y-auto pr-1">
               <SidebarNav items={items} />
             </div>
+            {authMode === "clerk" ? (
+              <div className="mt-5 rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-[0_20px_60px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Billing Snapshot</p>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white">
+                        <Wallet className="h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-600">Wallet</span>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-950">{formatCurrency(walletBalance)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 ring-1 ring-slate-950/[0.06]">
+                        <CreditCard className="h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-600">This Month</span>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-950">{formatCurrency(monthlyAmount)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="mt-5 rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-[0_20px_60px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (

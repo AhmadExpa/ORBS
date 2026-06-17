@@ -9,10 +9,14 @@ import {
   createPaymentIntent,
   createSetupCheckoutSession,
   createSetupIntent,
+  getUserSavedPaymentMethods,
+  removeUserPaymentMethod,
   removeUserDefaultPaymentMethod,
+  setUserPrimaryPaymentMethod,
   retrieveCheckoutSession,
   retrievePaymentIntent,
   retrieveSetupIntent,
+  updateUserCardAutoBilling,
   updateUserDefaultPaymentMethod,
 } from "../../services/stripe-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -603,6 +607,131 @@ stripeRouter.post(
     }
 
     throw new HttpError(400, "A Stripe checkout session, payment intent, or setup intent ID is required.");
+  }),
+);
+
+stripeRouter.get(
+  "/payment-methods",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    res.json({
+      paymentMethods: getUserSavedPaymentMethods(user),
+      defaultPaymentMethodId: user.defaultPaymentMethodId || "",
+      autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+    });
+  }),
+);
+
+stripeRouter.patch(
+  "/payment-methods/auto-billing",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const enabled = Boolean(req.body.enabled);
+    if (enabled && !user.defaultPaymentMethodId) {
+      throw new HttpError(400, "Choose a primary saved card before enabling automatic card fallback.");
+    }
+
+    await updateUserCardAutoBilling({ user, enabled });
+
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: enabled ? "stripe.card_auto_billing_enabled" : "stripe.card_auto_billing_disabled",
+      targetType: "user",
+      targetId: String(user._id),
+      metadata: {
+        defaultPaymentMethodId: user.defaultPaymentMethodId || "",
+      },
+    });
+
+    res.json({
+      success: true,
+      autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+      message: enabled
+        ? "Saved-card fallback billing has been enabled."
+        : "Saved-card fallback billing has been disabled. Wallet top-ups will remain available.",
+    });
+  }),
+);
+
+stripeRouter.patch(
+  "/payment-methods/:id/primary",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const paymentMethod = await setUserPrimaryPaymentMethod({
+      user,
+      paymentMethodId: req.params.id,
+    });
+
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: "stripe.primary_card_updated",
+      targetType: "user",
+      targetId: String(user._id),
+      metadata: {
+        paymentMethodId: paymentMethod.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      paymentMethod,
+      paymentMethods: getUserSavedPaymentMethods(user),
+      autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+      message: "Primary renewal card has been updated.",
+    });
+  }),
+);
+
+stripeRouter.delete(
+  "/payment-methods/:id",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const removed = await removeUserPaymentMethod({
+      user,
+      paymentMethodId: req.params.id,
+    });
+
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: "stripe.card_removed",
+      targetType: "user",
+      targetId: String(user._id),
+      metadata: {
+        paymentMethodId: removed?.paymentMethodId || "",
+      },
+    });
+
+    await processSubscriptionRenewals({ userIds: [user._id] });
+
+    res.json({
+      success: true,
+      paymentMethods: getUserSavedPaymentMethods(user),
+      autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+      message: "The saved card has been removed.",
+    });
   }),
 );
 

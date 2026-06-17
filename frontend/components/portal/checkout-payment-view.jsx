@@ -14,16 +14,37 @@ import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 
+function formatCardBrand(brand) {
+  const value = String(brand || "").trim();
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
+}
+
+function getPrimarySavedCard(user) {
+  const savedCards = Array.isArray(user?.savedPaymentMethods) ? user.savedPaymentMethods : [];
+  const primaryCard = savedCards.find((card) => card.isPrimary || String(card.id) === String(user?.defaultPaymentMethodId || ""));
+
+  if (primaryCard) {
+    return primaryCard;
+  }
+
+  if (user?.defaultPaymentMethodId) {
+    return {
+      id: user.defaultPaymentMethodId,
+      brand: user.defaultPaymentMethodBrand || "",
+      last4: user.defaultPaymentMethodLast4 || "",
+    };
+  }
+
+  return null;
+}
+
 function savedCardLabel(user) {
-  if (!user?.defaultPaymentMethodLast4) {
+  const primaryCard = getPrimarySavedCard(user);
+  if (!primaryCard?.last4) {
     return "No saved card on file yet.";
   }
 
-  const brand = user.defaultPaymentMethodBrand
-    ? `${user.defaultPaymentMethodBrand.charAt(0).toUpperCase()}${user.defaultPaymentMethodBrand.slice(1)}`
-    : "Card";
-
-  return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
+  return `${primaryCard.brandLabel || formatCardBrand(primaryCard.brand)} ending in ${primaryCard.last4}`;
 }
 
 function wait(ms) {

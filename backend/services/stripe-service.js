@@ -26,6 +26,71 @@ export function toStripeAmount(amount) {
   return Math.round(Number(amount || 0) * 100);
 }
 
+function formatCardBrand(brand) {
+  const value = String(brand || "").trim();
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
+}
+
+function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt } = {}) {
+  const card = paymentMethod?.card || {};
+
+  return {
+    id: paymentMethod?.id || "",
+    brand: card.brand || "",
+    brandLabel: formatCardBrand(card.brand),
+    last4: card.last4 || "",
+    expMonth: card.exp_month || card.expMonth || null,
+    expYear: card.exp_year || card.expYear || null,
+    funding: card.funding || "",
+    country: card.country || "",
+    isPrimary,
+    savedAt: savedAt || new Date().toISOString(),
+  };
+}
+
+export function getUserSavedPaymentMethods(user) {
+  const storedCards = Array.isArray(user?.savedPaymentMethods) ? user.savedPaymentMethods : [];
+  const cardsById = new Map(
+    storedCards
+      .filter((card) => card?.id)
+      .map((card) => [
+        String(card.id),
+        {
+          ...card,
+          brandLabel: card.brandLabel || formatCardBrand(card.brand),
+          isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
+        },
+      ]),
+  );
+
+  if (user?.defaultPaymentMethodId && !cardsById.has(String(user.defaultPaymentMethodId))) {
+    cardsById.set(String(user.defaultPaymentMethodId), {
+      id: user.defaultPaymentMethodId,
+      brand: user.defaultPaymentMethodBrand || "",
+      brandLabel: formatCardBrand(user.defaultPaymentMethodBrand),
+      last4: user.defaultPaymentMethodLast4 || "",
+      expMonth: null,
+      expYear: null,
+      funding: "",
+      country: "",
+      isPrimary: true,
+      savedAt: user.updatedAt?.toISOString?.() || new Date().toISOString(),
+    });
+  }
+
+  const defaultPaymentMethodId = String(user?.defaultPaymentMethodId || "");
+  return [...cardsById.values()].map((card) => ({
+    ...card,
+    isPrimary: defaultPaymentMethodId ? String(card.id) === defaultPaymentMethodId : Boolean(card.isPrimary),
+  }));
+}
+
+function applyPrimaryPaymentMethodFields(user, primaryCard) {
+  user.defaultPaymentMethodId = primaryCard?.id || "";
+  user.defaultPaymentMethodBrand = primaryCard?.brand || "";
+  user.defaultPaymentMethodLast4 = primaryCard?.last4 || "";
+}
+
 export async function ensureStripeCustomer(user) {
   assertStripeConfigured();
 
@@ -56,6 +121,12 @@ export async function updateUserDefaultPaymentMethod({ user, customerId, payment
   }
 
   const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+  const existingCards = getUserSavedPaymentMethods(user);
+  const existingCard = existingCards.find((card) => String(card.id) === String(paymentMethodId));
+  const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
+    isPrimary: true,
+    savedAt: existingCard?.savedAt,
+  });
 
   await stripe.customers.update(customerId, {
     invoice_settings: {
@@ -64,40 +135,129 @@ export async function updateUserDefaultPaymentMethod({ user, customerId, payment
   });
 
   user.stripeCustomerId = customerId;
-  user.defaultPaymentMethodId = paymentMethodId;
-  user.defaultPaymentMethodBrand = paymentMethod.card?.brand || "";
-  user.defaultPaymentMethodLast4 = paymentMethod.card?.last4 || "";
+  user.savedPaymentMethods = [
+    ...existingCards.filter((card) => String(card.id) !== String(paymentMethodId)),
+    paymentMethodSummary,
+  ].map((card) => ({
+    ...card,
+    isPrimary: String(card.id) === String(paymentMethodId),
+  }));
+  applyPrimaryPaymentMethodFields(user, paymentMethodSummary);
+  user.autoCardBillingEnabled = true;
   await user.save();
 
   return paymentMethod;
 }
 
-export async function removeUserDefaultPaymentMethod({ user }) {
+export async function setUserPrimaryPaymentMethod({ user, paymentMethodId }) {
   assertStripeConfigured();
 
-  if (!user.defaultPaymentMethodId) {
+  const savedCards = getUserSavedPaymentMethods(user);
+  const selectedCard = savedCards.find((card) => String(card.id) === String(paymentMethodId));
+
+  if (!selectedCard) {
+    throw new HttpError(404, "Saved card not found.");
+  }
+
+  if (!user.stripeCustomerId) {
+    throw new HttpError(400, "No Stripe customer is attached to this account.");
+  }
+
+  const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+  if (paymentMethod.customer && String(paymentMethod.customer) !== String(user.stripeCustomerId)) {
+    throw new HttpError(403, "This saved card does not belong to the authenticated customer.");
+  }
+
+  const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
+    isPrimary: true,
+    savedAt: selectedCard.savedAt,
+  });
+
+  await stripe.customers.update(user.stripeCustomerId, {
+    invoice_settings: {
+      default_payment_method: paymentMethodId,
+    },
+  });
+
+  user.savedPaymentMethods = savedCards.map((card) =>
+    String(card.id) === String(paymentMethodId)
+      ? paymentMethodSummary
+      : {
+          ...card,
+          isPrimary: false,
+        },
+  );
+  applyPrimaryPaymentMethodFields(user, paymentMethodSummary);
+  user.autoCardBillingEnabled = true;
+  await user.save();
+
+  return paymentMethodSummary;
+}
+
+export async function updateUserCardAutoBilling({ user, enabled }) {
+  const shouldEnable = Boolean(enabled);
+
+  if (shouldEnable && !user.defaultPaymentMethodId) {
     return null;
   }
 
-  const paymentMethodId = user.defaultPaymentMethodId;
-  const customerId = user.stripeCustomerId;
+  user.autoCardBillingEnabled = shouldEnable;
+  await user.save();
 
-  if (customerId) {
+  return {
+    autoCardBillingEnabled: user.autoCardBillingEnabled,
+  };
+}
+
+export async function removeUserPaymentMethod({ user, paymentMethodId }) {
+  assertStripeConfigured();
+
+  const savedCards = getUserSavedPaymentMethods(user);
+  const resolvedPaymentMethodId = paymentMethodId || user.defaultPaymentMethodId;
+
+  if (!resolvedPaymentMethodId) {
+    throw new HttpError(400, "No saved Stripe card is on file.");
+  }
+
+  const removedCard = savedCards.find((card) => String(card.id) === String(resolvedPaymentMethodId));
+  if (!removedCard) {
+    throw new HttpError(404, "Saved card not found.");
+  }
+
+  const customerId = user.stripeCustomerId;
+  const remainingCards = savedCards.filter((card) => String(card.id) !== String(resolvedPaymentMethodId));
+  const removedPrimaryCard = String(user.defaultPaymentMethodId || "") === String(resolvedPaymentMethodId) || removedCard.isPrimary;
+  const nextPrimaryCard = removedPrimaryCard ? remainingCards[0] : remainingCards.find((card) => card.isPrimary);
+
+  if (customerId && removedPrimaryCard) {
     await stripe.customers.update(customerId, {
       invoice_settings: {
-        default_payment_method: null,
+        default_payment_method: nextPrimaryCard?.id || null,
       },
     });
   }
 
-  await stripe.paymentMethods.detach(paymentMethodId);
+  await stripe.paymentMethods.detach(resolvedPaymentMethodId);
 
-  user.defaultPaymentMethodId = "";
-  user.defaultPaymentMethodBrand = "";
-  user.defaultPaymentMethodLast4 = "";
+  user.savedPaymentMethods = remainingCards.map((card) => ({
+    ...card,
+    isPrimary: nextPrimaryCard ? String(card.id) === String(nextPrimaryCard.id) : false,
+  }));
+
+  applyPrimaryPaymentMethodFields(user, nextPrimaryCard || null);
+  if (!nextPrimaryCard) {
+    user.autoCardBillingEnabled = false;
+  }
   await user.save();
 
-  return { paymentMethodId, customerId };
+  return { paymentMethodId: resolvedPaymentMethodId, customerId };
+}
+
+export async function removeUserDefaultPaymentMethod({ user }) {
+  return removeUserPaymentMethod({
+    user,
+    paymentMethodId: user.defaultPaymentMethodId,
+  });
 }
 
 export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }) {
@@ -186,6 +346,10 @@ export function createCheckoutLineItem({ name, description, amount }) {
 
 export async function createOffSessionCharge({ user, amount, description, metadata }) {
   assertStripeConfigured();
+
+  if (user.autoCardBillingEnabled === false) {
+    throw new HttpError(400, "Saved-card automatic billing is disabled for this customer.");
+  }
 
   if (!user.stripeCustomerId || !user.defaultPaymentMethodId) {
     throw new HttpError(400, "No saved Stripe card is available for this customer.");

@@ -109,6 +109,11 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
       const walletAmount = Math.min(walletBalance, amount);
       const remainingAmount = Number((amount - walletAmount).toFixed(2));
       const hasFullWalletBalance = walletBalance >= amount;
+      const canUseSavedCard =
+        user.autoCardBillingEnabled !== false &&
+        Boolean(user.stripeCustomerId) &&
+        Boolean(user.defaultPaymentMethodId) &&
+        isStripeConfigured();
 
       if (hasFullWalletBalance) {
         user.accountBalance = walletBalance - amount;
@@ -136,7 +141,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
         continue;
       }
 
-      if (remainingAmount > 0 && user.stripeCustomerId && user.defaultPaymentMethodId && isStripeConfigured()) {
+      if (remainingAmount > 0 && canUseSavedCard) {
         try {
           const paymentIntent = await createOffSessionCharge({
             user,

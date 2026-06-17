@@ -42,7 +42,11 @@ export const User = createPostgresModel("User", {
     defaultPaymentMethodId: "",
     defaultPaymentMethodBrand: "",
     defaultPaymentMethodLast4: "",
+    savedPaymentMethods: [],
+    autoCardBillingEnabled: true,
   },
+  arrayFields: ["savedPaymentMethods"],
+  booleanFields: ["autoCardBillingEnabled"],
   numericFields: ["accountBalance"],
 });
 

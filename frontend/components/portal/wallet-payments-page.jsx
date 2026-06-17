@@ -36,16 +36,50 @@ function submissionTypeLabel(type) {
   return "Subscription Payment";
 }
 
-function savedCardLabel(user) {
-  if (!user?.defaultPaymentMethodLast4) {
+function formatCardBrand(brand) {
+  const value = String(brand || "").trim();
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
+}
+
+function getSavedCards(user) {
+  const storedCards = Array.isArray(user?.savedPaymentMethods) ? user.savedPaymentMethods : [];
+  const cardsById = new Map(storedCards.filter((card) => card?.id).map((card) => [String(card.id), card]));
+
+  if (user?.defaultPaymentMethodId && !cardsById.has(String(user.defaultPaymentMethodId))) {
+    cardsById.set(String(user.defaultPaymentMethodId), {
+      id: user.defaultPaymentMethodId,
+      brand: user.defaultPaymentMethodBrand || "",
+      last4: user.defaultPaymentMethodLast4 || "",
+      isPrimary: true,
+    });
+  }
+
+  return [...cardsById.values()].map((card) => ({
+    ...card,
+    brandLabel: card.brandLabel || formatCardBrand(card.brand),
+    isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
+  }));
+}
+
+function getPrimaryCard(user) {
+  const savedCards = getSavedCards(user);
+  return savedCards.find((card) => card.isPrimary) || savedCards[0] || null;
+}
+
+function savedCardLabel(card) {
+  if (!card?.last4) {
     return "No saved card on file.";
   }
 
-  const brand = user.defaultPaymentMethodBrand
-    ? `${user.defaultPaymentMethodBrand.charAt(0).toUpperCase()}${user.defaultPaymentMethodBrand.slice(1)}`
-    : "Card";
+  return `${card.brandLabel || formatCardBrand(card.brand)} ending in ${card.last4}`;
+}
 
-  return `${brand} ending in ${user.defaultPaymentMethodLast4}`;
+function cardExpiryLabel(card) {
+  if (!card?.expMonth || !card?.expYear) {
+    return "Expiry not available";
+  }
+
+  return `Expires ${String(card.expMonth).padStart(2, "0")}/${String(card.expYear).slice(-2)}`;
 }
 
 function wait(ms) {
@@ -85,8 +119,9 @@ export function WalletPaymentsPage() {
     message: "",
     error: "",
   });
-  const [removeCardState, setRemoveCardState] = useState({
-    saving: false,
+  const [cardManagementState, setCardManagementState] = useState({
+    savingId: "",
+    action: "",
     message: "",
     error: "",
   });
@@ -94,13 +129,16 @@ export function WalletPaymentsPage() {
   const user = profileData?.user;
   const submissions = paymentsData?.submissions || [];
   const paymentSetting = paymentSettingQuery.data?.paymentSetting;
+  const savedCards = getSavedCards(user);
+  const primaryCard = getPrimaryCard(user);
   const pendingTopups = submissions.filter(
     (submission) => submission.submissionType === "wallet_topup" && submission.status === "pending_verification",
   ).length;
   const isLoading = profileQuery.isLoading || paymentsQuery.isLoading || paymentSettingQuery.isLoading;
-  const hasSavedCard = Boolean(user?.defaultPaymentMethodLast4);
+  const hasSavedCard = savedCards.length > 0;
+  const autoCardBillingEnabled = Boolean(primaryCard) && user?.autoCardBillingEnabled !== false;
   const qrCodeUrl = resolvePublicFileUrl(paymentSetting?.qrCodeImageUrl);
-  const renewalModeLabel = hasSavedCard ? "Wallet first, saved-card fallback" : "Wallet only until a saved card is added";
+  const renewalModeLabel = autoCardBillingEnabled ? "Wallet first, primary-card fallback" : "Wallet-only top-up mode";
 
   async function syncPortalPayments() {
     await Promise.all([refetchPayments(), refetchProfile()]);
@@ -194,7 +232,9 @@ export function WalletPaymentsPage() {
     });
 
     await syncPortalPayments();
-    return hasSavedCard ? "Your saved card has been updated." : "Your card is now saved for automatic renewals.";
+    return hasSavedCard
+      ? "Your card has been saved and set as the primary card."
+      : "Your card has been saved and set as the primary card. You can switch to wallet-only mode any time.";
   }
 
   async function handleCardTopup({ stripe, cardElement }) {
@@ -245,19 +285,99 @@ export function WalletPaymentsPage() {
     return "Your wallet payment was received. The balance has been refreshed.";
   }
 
-  async function handleRemoveSavedCard() {
-    setRemoveCardState({ saving: true, message: "", error: "" });
+  async function handleMakePrimaryCard(paymentMethodId) {
+    setCardManagementState({ savingId: paymentMethodId, action: "primary", message: "", error: "" });
 
     try {
       const token = await getToken();
-      const response = await apiFetch("/stripe/payment-method", {
+      const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/primary`, {
+        method: "PATCH",
+        token,
+      });
+
+      await syncPortalPayments();
+      setCardManagementState({
+        savingId: "",
+        action: "",
+        message: response.message || "Primary renewal card has been updated.",
+        error: "",
+      });
+      showToast({
+        type: "success",
+        action: "Saved Card",
+        title: "Primary card updated",
+        description: response.message || "Primary renewal card has been updated.",
+      });
+    } catch (error) {
+      setCardManagementState({
+        savingId: "",
+        action: "",
+        message: "",
+        error: error.message || "The primary card could not be updated.",
+      });
+      showToast({
+        type: "error",
+        action: "Saved Card",
+        title: "Primary card update failed",
+        description: error.message || "The primary card could not be updated.",
+      });
+    }
+  }
+
+  async function handleAutoBillingToggle(enabled) {
+    setCardManagementState({ savingId: "auto-billing", action: enabled ? "enable" : "disable", message: "", error: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/payment-methods/auto-billing", {
+        method: "PATCH",
+        token,
+        body: { enabled },
+      });
+
+      await syncPortalPayments();
+      setCardManagementState({
+        savingId: "",
+        action: "",
+        message: response.message || "Saved-card fallback billing preference has been updated.",
+        error: "",
+      });
+      showToast({
+        type: "success",
+        action: "Saved Card",
+        title: enabled ? "Card fallback enabled" : "Card fallback disabled",
+        description: response.message || "Saved-card fallback billing preference has been updated.",
+      });
+    } catch (error) {
+      setCardManagementState({
+        savingId: "",
+        action: "",
+        message: "",
+        error: error.message || "Saved-card fallback billing could not be updated.",
+      });
+      showToast({
+        type: "error",
+        action: "Saved Card",
+        title: "Billing preference failed",
+        description: error.message || "Saved-card fallback billing could not be updated.",
+      });
+    }
+  }
+
+  async function handleRemoveSavedCard(paymentMethodId) {
+    setCardManagementState({ savingId: paymentMethodId, action: "remove", message: "", error: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}`, {
         method: "DELETE",
         token,
       });
 
       await syncPortalPayments();
-      setRemoveCardState({
-        saving: false,
+      setCardManagementState({
+        savingId: "",
+        action: "",
         message: response.message || "Your saved card has been removed.",
         error: "",
       });
@@ -268,8 +388,9 @@ export function WalletPaymentsPage() {
         description: response.message || "Your saved card has been removed.",
       });
     } catch (error) {
-      setRemoveCardState({
-        saving: false,
+      setCardManagementState({
+        savingId: "",
+        action: "",
         message: "",
         error: error.message || "The saved card could not be removed.",
       });
@@ -324,9 +445,11 @@ export function WalletPaymentsPage() {
                 <p className="mt-2 text-sm text-slate-500">Manual submissions waiting for verification remain visible here.</p>
               </div>
               <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved Card</p>
-                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950">{hasSavedCard ? "Saved and active" : "Not added yet"}</p>
-                <p className="mt-2 text-sm text-slate-500">{savedCardLabel(user)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved Cards</p>
+                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950">
+                  {hasSavedCard ? `${savedCards.length} saved card${savedCards.length === 1 ? "" : "s"}` : "Not added yet"}
+                </p>
+                <p className="mt-2 text-sm text-slate-500">{savedCardLabel(primaryCard)}</p>
               </div>
               <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Renewal Mode</p>
@@ -427,37 +550,108 @@ export function WalletPaymentsPage() {
         {activeSection === "saved-card" ? (
           <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
             <CardHeader>
-              <CardTitle>Saved Card</CardTitle>
-              <CardDescription>Manage the card used as fallback for renewal billing when wallet balance is not enough.</CardDescription>
+              <CardTitle>Saved Cards</CardTitle>
+              <CardDescription>Save multiple cards, choose the primary renewal card, or keep renewals wallet-only.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-6">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="max-w-3xl">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Renewal Card Status</p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{savedCardLabel(user)}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Renewal Billing Mode</p>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{renewalModeLabel}</p>
                     <p className="mt-3 text-sm leading-7 text-slate-600">
-                      Add one verified card to keep automatic fallback billing available. The wallet still remains the first billing source for subscriptions.
+                      The wallet is checked first. When saved-card fallback is enabled, the primary card is charged only for any remaining renewal amount.
                     </p>
                   </div>
 
                   {hasSavedCard ? (
-                    <Button type="button" variant="ghost" disabled={removeCardState.saving} onClick={handleRemoveSavedCard} className="min-w-[180px] justify-center">
-                      {removeCardState.saving ? "Removing card..." : "Remove Saved Card"}
+                    <Button
+                      type="button"
+                      variant={autoCardBillingEnabled ? "ghost" : "primary"}
+                      disabled={cardManagementState.savingId === "auto-billing"}
+                      onClick={() => handleAutoBillingToggle(!autoCardBillingEnabled)}
+                      className="min-w-[220px] justify-center"
+                    >
+                      {cardManagementState.savingId === "auto-billing"
+                        ? "Updating billing..."
+                        : autoCardBillingEnabled
+                          ? "Use Wallet Only"
+                          : "Enable Card Fallback"}
                     </Button>
                   ) : null}
                 </div>
 
-                {removeCardState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{removeCardState.message}</p> : null}
-                {removeCardState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{removeCardState.error}</p> : null}
+                {cardManagementState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{cardManagementState.message}</p> : null}
+                {cardManagementState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{cardManagementState.error}</p> : null}
+              </div>
+
+              <div className="space-y-3">
+                {savedCards.length ? (
+                  savedCards.map((card) => {
+                    const isSavingThisCard = cardManagementState.savingId === card.id;
+
+                    return (
+                      <div key={card.id} className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                          <div className="flex min-w-0 items-center gap-4">
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                              <CreditCard className="h-5 w-5" />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-base font-semibold text-slate-950">{savedCardLabel(card)}</p>
+                                {card.isPrimary ? (
+                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                    Primary
+                                  </span>
+                                ) : null}
+                                {card.isPrimary && autoCardBillingEnabled ? (
+                                  <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                                    Renewal fallback
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="mt-1 text-sm text-slate-500">{cardExpiryLabel(card)}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {!card.isPrimary ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                disabled={isSavingThisCard}
+                                onClick={() => handleMakePrimaryCard(card.id)}
+                              >
+                                {isSavingThisCard && cardManagementState.action === "primary" ? "Updating..." : "Make Primary"}
+                              </Button>
+                            ) : null}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              disabled={isSavingThisCard}
+                              onClick={() => handleRemoveSavedCard(card.id)}
+                            >
+                              {isSavingThisCard && cardManagementState.action === "remove" ? "Removing..." : "Remove"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-[1.6rem] border border-dashed border-slate-200 bg-white p-6 text-sm leading-7 text-slate-600">
+                    No cards are saved yet. You can keep using wallet top-ups, or save a card below and decide whether it should be used for renewal fallback.
+                  </div>
+                )}
               </div>
 
               <div className="rounded-[1.8rem] border border-slate-200 bg-white p-6">
                 <PortalCardForm
-                  submitLabel={hasSavedCard ? "Update Saved Card" : "Save Card for Auto Renewals"}
-                  pendingLabel={hasSavedCard ? "Updating card..." : "Saving card..."}
+                  submitLabel={hasSavedCard ? "Add Another Card" : "Save Card"}
+                  pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
                   onSubmit={handleSaveCard}
-                  successTitle={hasSavedCard ? "Saved card updated" : "Saved card added"}
+                  successTitle={hasSavedCard ? "Saved card added" : "Saved card added"}
                   errorTitle="Saved card action failed"
                   actionLabel="Saved Card"
                 />
