@@ -221,3 +221,19 @@ export async function retrieveCheckoutSession(sessionId) {
     expand: ["payment_intent.payment_method", "setup_intent.payment_method"],
   });
 }
+
+export async function retrievePaymentIntent(paymentIntentId) {
+  assertStripeConfigured();
+
+  return stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ["payment_method"],
+  });
+}
+
+export async function retrieveSetupIntent(setupIntentId) {
+  assertStripeConfigured();
+
+  return stripe.setupIntents.retrieve(setupIntentId, {
+    expand: ["payment_method"],
+  });
+}

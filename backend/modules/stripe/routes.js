@@ -11,6 +11,8 @@ import {
   createSetupIntent,
   removeUserDefaultPaymentMethod,
   retrieveCheckoutSession,
+  retrievePaymentIntent,
+  retrieveSetupIntent,
   updateUserDefaultPaymentMethod,
 } from "../../services/stripe-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -18,6 +20,7 @@ import { HttpError } from "../../utils/http-error.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
+import { withTransaction } from "../../db/postgres-model.js";
 
 export const stripeRouter = express.Router();
 export const stripeWebhookRouter = express.Router();
@@ -56,6 +59,33 @@ async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionI
   return PaymentSubmission.findOne(filters.length === 1 ? filters[0] : { $or: filters });
 }
 
+function assertGatewayResourceBelongsToUser({ metadata, user }) {
+  if (!metadata?.userId || String(metadata.userId) !== String(user._id)) {
+    throw new HttpError(403, "This Stripe payment does not belong to the authenticated customer.");
+  }
+}
+
+async function rejectPendingManualOrderSubmissions(orderId, reason) {
+  if (!orderId) {
+    return;
+  }
+
+  const pendingSubmissions = await PaymentSubmission.find({
+    orderId,
+    submissionType: "order_payment",
+    status: "pending_verification",
+  });
+
+  await Promise.all(
+    pendingSubmissions.map(async (submission) => {
+      submission.status = "rejected";
+      submission.adminRemarks = reason;
+      submission.reviewedAt = new Date();
+      await submission.save();
+    }),
+  );
+}
+
 async function findOrderPaymentContext({ orderId, userId }) {
   const order = await Order.findOne({ _id: orderId, userId }).populate("productPlanId");
   if (!order) {
@@ -71,140 +101,165 @@ async function findOrderPaymentContext({ orderId, userId }) {
 }
 
 async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
-  const { order, subscription, invoice } = await findOrderPaymentContext({
-    orderId: metadata?.orderId,
-    userId: user._id,
-  });
+  return withTransaction(async () => {
+    assertGatewayResourceBelongsToUser({ metadata, user });
 
-  const existingSubmission = await findExistingGatewaySubmission({
-    paymentIntentId,
-    checkoutSessionId,
-  });
-  if (existingSubmission) {
-    return existingSubmission;
-  }
-
-  if (paymentMethodId && customerId) {
-    await updateUserDefaultPaymentMethod({
-      user,
-      customerId,
-      paymentMethodId,
+    const { order, subscription, invoice } = await findOrderPaymentContext({
+      orderId: metadata?.orderId,
+      userId: user._id,
     });
-  }
 
-  order.status = "approved";
-  await order.save();
-
-  if (subscription) {
-    subscription.status = "active";
-    subscription.startDate = new Date();
-    subscription.renewalDate = addBillingPeriod(new Date(), subscription.billingCycle);
-    subscription.metadata = {
-      ...subscription.metadata,
-      billingAmount: order.totalAmount,
-      lastStripePaymentIntentId: paymentIntentId,
-      ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
-    };
-    await subscription.save();
-  }
-
-  if (invoice) {
-    invoice.status = "paid";
-    invoice.paidAt = new Date();
-    invoice.paymentMethodType = "stripe_card";
-    invoice.paymentReferenceCode = paymentIntentId;
-    const pdfData = await generateInvoicePdf({
-      invoice,
-      customer: user,
-      planName: subscription?.productPlanId?.name || order.productPlanId?.name || "Managed Service",
-      supportEmail: env.supportEmail,
+    const existingSubmission = await findExistingGatewaySubmission({
+      paymentIntentId,
+      checkoutSessionId,
     });
-    invoice.pdfPath = pdfData.pdfPath;
-    invoice.pdfUrl = pdfData.pdfUrl;
-    await invoice.save();
-  }
+    if (existingSubmission) {
+      return existingSubmission;
+    }
 
-  const submission = await PaymentSubmission.create({
-    userId: user._id,
-    orderId: order._id,
-    subscriptionId: subscription?._id,
-    submissionType: "order_payment",
-    amount: order.totalAmount,
-    invoiceCode: paymentIntentId || checkoutSessionId,
-    paymentMethodType: "stripe_card",
-    status: "approved",
-    adminRemarks: "Stripe payment completed automatically.",
-    gateway: "stripe",
-    gatewayPaymentId: paymentIntentId,
-    gatewayCheckoutSessionId: checkoutSessionId,
-    submittedAt: new Date(),
-    reviewedAt: new Date(),
-  });
+    if (order.status === "cancelled") {
+      throw new HttpError(400, "Cancelled orders cannot be paid.");
+    }
 
-  await recordActivity({
-    actorId: user._id,
-    actorRole: "customer",
-    action: "payment.completed_via_stripe",
-    targetType: "payment_submission",
-    targetId: String(submission._id),
-    metadata: {
-      orderId: String(order._id),
+    if (order.status === "approved" || invoice?.status === "paid") {
+      throw new HttpError(400, "This order has already been paid.");
+    }
+
+    if (paymentMethodId && customerId) {
+      await updateUserDefaultPaymentMethod({
+        user,
+        customerId,
+        paymentMethodId,
+      });
+    }
+
+    await rejectPendingManualOrderSubmissions(
+      order._id,
+      "Superseded by a completed Stripe card payment.",
+    );
+
+    order.status = "approved";
+    await order.save();
+
+    if (subscription) {
+      subscription.status = "active";
+      subscription.startDate = new Date();
+      subscription.renewalDate = addBillingPeriod(new Date(), subscription.billingCycle);
+      subscription.metadata = {
+        ...subscription.metadata,
+        billingAmount: order.totalAmount,
+        lastStripePaymentIntentId: paymentIntentId,
+        ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
+      };
+      await subscription.save();
+    }
+
+    if (invoice) {
+      invoice.status = "paid";
+      invoice.paidAt = new Date();
+      invoice.paymentMethodType = "stripe_card";
+      invoice.paymentReferenceCode = paymentIntentId;
+      const pdfData = await generateInvoicePdf({
+        invoice,
+        customer: user,
+        planName: subscription?.productPlanId?.name || order.productPlanId?.name || "Managed Service",
+        supportEmail: env.supportEmail,
+      });
+      invoice.pdfPath = pdfData.pdfPath;
+      invoice.pdfUrl = pdfData.pdfUrl;
+      await invoice.save();
+    }
+
+    const submission = await PaymentSubmission.create({
+      userId: user._id,
+      orderId: order._id,
+      subscriptionId: subscription?._id,
+      submissionType: "order_payment",
       amount: order.totalAmount,
-    },
-  });
+      invoiceCode: paymentIntentId || checkoutSessionId,
+      paymentMethodType: "stripe_card",
+      status: "approved",
+      adminRemarks: "Stripe payment completed automatically.",
+      gateway: "stripe",
+      gatewayPaymentId: paymentIntentId,
+      gatewayCheckoutSessionId: checkoutSessionId,
+      submittedAt: new Date(),
+      reviewedAt: new Date(),
+    });
 
-  return submission;
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: "payment.completed_via_stripe",
+      targetType: "payment_submission",
+      targetId: String(submission._id),
+      metadata: {
+        orderId: String(order._id),
+        amount: order.totalAmount,
+      },
+    });
+
+    return submission;
+  });
 }
 
 async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
-  const existingSubmission = await findExistingGatewaySubmission({
-    paymentIntentId,
-    checkoutSessionId,
-  });
-  if (existingSubmission) {
-    return existingSubmission;
-  }
+  return withTransaction(async () => {
+    assertGatewayResourceBelongsToUser({ metadata, user });
 
-  if (paymentMethodId && customerId) {
-    await updateUserDefaultPaymentMethod({
-      user,
-      customerId,
-      paymentMethodId,
+    const existingSubmission = await findExistingGatewaySubmission({
+      paymentIntentId,
+      checkoutSessionId,
     });
-  }
+    if (existingSubmission) {
+      return existingSubmission;
+    }
 
-  const amount = Number(metadata?.amount || 0);
-  user.accountBalance = Number(user.accountBalance || 0) + amount;
-  await user.save();
-  await processSubscriptionRenewals({ userIds: [user._id] });
+    if (paymentMethodId && customerId) {
+      await updateUserDefaultPaymentMethod({
+        user,
+        customerId,
+        paymentMethodId,
+      });
+    }
 
-  const submission = await PaymentSubmission.create({
-    userId: user._id,
-    submissionType: "wallet_topup",
-    amount,
-    invoiceCode: paymentIntentId || checkoutSessionId,
-    paymentMethodType: "stripe_card",
-    status: "approved",
-    adminRemarks: "Stripe wallet top-up completed automatically.",
-    gateway: "stripe",
-    gatewayPaymentId: paymentIntentId,
-    gatewayCheckoutSessionId: checkoutSessionId,
-    submittedAt: new Date(),
-    reviewedAt: new Date(),
-  });
+    const amount = Number(metadata?.amount || 0);
+    if (!amount || amount <= 0) {
+      throw new HttpError(400, "Stripe wallet top-up metadata is missing a valid amount.");
+    }
 
-  await recordActivity({
-    actorId: user._id,
-    actorRole: "customer",
-    action: "wallet.topup_completed_via_stripe",
-    targetType: "payment_submission",
-    targetId: String(submission._id),
-    metadata: {
+    user.accountBalance = Number(user.accountBalance || 0) + amount;
+    await user.save();
+    await processSubscriptionRenewals({ userIds: [user._id] });
+
+    const submission = await PaymentSubmission.create({
+      userId: user._id,
+      submissionType: "wallet_topup",
       amount,
-    },
-  });
+      invoiceCode: paymentIntentId || checkoutSessionId,
+      paymentMethodType: "stripe_card",
+      status: "approved",
+      adminRemarks: "Stripe wallet top-up completed automatically.",
+      gateway: "stripe",
+      gatewayPaymentId: paymentIntentId,
+      gatewayCheckoutSessionId: checkoutSessionId,
+      submittedAt: new Date(),
+      reviewedAt: new Date(),
+    });
 
-  return submission;
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: "wallet.topup_completed_via_stripe",
+      targetType: "payment_submission",
+      targetId: String(submission._id),
+      metadata: {
+        amount,
+      },
+    });
+
+    return submission;
+  });
 }
 
 async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, customerId }) {
@@ -235,6 +290,124 @@ async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, c
     paymentMethodId,
     setupIntentId,
   };
+}
+
+async function finalizeCheckoutSession({ session, user }) {
+  const metadataType = session.metadata?.type;
+  assertGatewayResourceBelongsToUser({ metadata: session.metadata, user });
+
+  const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+  const paymentMethodId = normalizePaymentMethodId(session.payment_intent?.payment_method);
+  const setupIntentId = typeof session.setup_intent === "string" ? session.setup_intent : session.setup_intent?.id;
+  const setupPaymentMethodId = normalizePaymentMethodId(session.setup_intent?.payment_method);
+  const customerId = normalizeCustomerId(session.customer);
+
+  if (metadataType === "wallet_topup") {
+    if (session.payment_status !== "paid") {
+      throw new HttpError(400, "The Stripe wallet top-up is not paid yet.");
+    }
+
+    const submission = await finalizeStripeWalletTopup({
+      paymentIntentId,
+      checkoutSessionId: session.id,
+      metadata: session.metadata,
+      user,
+      paymentMethodId,
+      customerId,
+    });
+
+    return { type: metadataType, submission };
+  }
+
+  if (metadataType === "order_payment") {
+    if (session.payment_status !== "paid") {
+      throw new HttpError(400, "The Stripe order payment is not paid yet.");
+    }
+
+    const submission = await finalizeStripeOrderPayment({
+      paymentIntentId,
+      checkoutSessionId: session.id,
+      metadata: session.metadata,
+      user,
+      paymentMethodId,
+      customerId,
+    });
+
+    return { type: metadataType, submission };
+  }
+
+  if (metadataType === "card_setup") {
+    const card = await finalizeStripeCardSetup({
+      user,
+      paymentMethodId: setupPaymentMethodId,
+      setupIntentId,
+      customerId,
+    });
+
+    return { type: metadataType, card };
+  }
+
+  throw new HttpError(400, "Unsupported Stripe checkout session type.");
+}
+
+async function finalizePaymentIntent({ paymentIntent, user }) {
+  const metadataType = paymentIntent.metadata?.type;
+  assertGatewayResourceBelongsToUser({ metadata: paymentIntent.metadata, user });
+
+  if (paymentIntent.status !== "succeeded") {
+    throw new HttpError(400, "The Stripe payment is not completed yet.");
+  }
+
+  const paymentMethodId = normalizePaymentMethodId(paymentIntent.payment_method);
+  const customerId = normalizeCustomerId(paymentIntent.customer);
+
+  if (metadataType === "wallet_topup") {
+    const submission = await finalizeStripeWalletTopup({
+      paymentIntentId: paymentIntent.id,
+      metadata: paymentIntent.metadata,
+      user,
+      paymentMethodId,
+      customerId,
+    });
+
+    return { type: metadataType, submission };
+  }
+
+  if (metadataType === "order_payment") {
+    const submission = await finalizeStripeOrderPayment({
+      paymentIntentId: paymentIntent.id,
+      metadata: paymentIntent.metadata,
+      user,
+      paymentMethodId,
+      customerId,
+    });
+
+    return { type: metadataType, submission };
+  }
+
+  throw new HttpError(400, "Unsupported Stripe payment intent type.");
+}
+
+async function finalizeSetupIntent({ setupIntent, user }) {
+  const metadataType = setupIntent.metadata?.type;
+  assertGatewayResourceBelongsToUser({ metadata: setupIntent.metadata, user });
+
+  if (setupIntent.status !== "succeeded") {
+    throw new HttpError(400, "The Stripe card setup is not completed yet.");
+  }
+
+  if (metadataType !== "card_setup") {
+    throw new HttpError(400, "Unsupported Stripe setup intent type.");
+  }
+
+  const card = await finalizeStripeCardSetup({
+    user,
+    paymentMethodId: normalizePaymentMethodId(setupIntent.payment_method),
+    setupIntentId: setupIntent.id,
+    customerId: normalizeCustomerId(setupIntent.customer),
+  });
+
+  return { type: metadataType, card };
 }
 
 stripeRouter.post(
@@ -395,6 +568,44 @@ stripeRouter.post(
   }),
 );
 
+stripeRouter.post(
+  "/finalize",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const checkoutSessionId = String(req.body.checkoutSessionId || "").trim();
+    const paymentIntentId = String(req.body.paymentIntentId || "").trim();
+    const setupIntentId = String(req.body.setupIntentId || "").trim();
+
+    if (checkoutSessionId) {
+      const session = await retrieveCheckoutSession(checkoutSessionId);
+      const result = await finalizeCheckoutSession({ session, user });
+      res.json({ success: true, ...result });
+      return;
+    }
+
+    if (paymentIntentId) {
+      const paymentIntent = await retrievePaymentIntent(paymentIntentId);
+      const result = await finalizePaymentIntent({ paymentIntent, user });
+      res.json({ success: true, ...result });
+      return;
+    }
+
+    if (setupIntentId) {
+      const setupIntent = await retrieveSetupIntent(setupIntentId);
+      const result = await finalizeSetupIntent({ setupIntent, user });
+      res.json({ success: true, ...result });
+      return;
+    }
+
+    throw new HttpError(400, "A Stripe checkout session, payment intent, or setup intent ID is required.");
+  }),
+);
+
 stripeRouter.delete(
   "/payment-method",
   requireCustomer,
@@ -442,47 +653,10 @@ stripeWebhookRouter.post(
 
     if (event.type === "checkout.session.completed") {
       const session = await retrieveCheckoutSession(event.data.object.id);
-      const metadataType = session.metadata?.type;
       const user = await User.findById(session.metadata?.userId);
 
       if (user) {
-        const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
-        const paymentMethodId = normalizePaymentMethodId(session.payment_intent?.payment_method);
-        const setupIntentId =
-          typeof session.setup_intent === "string" ? session.setup_intent : session.setup_intent?.id;
-        const setupPaymentMethodId = normalizePaymentMethodId(session.setup_intent?.payment_method);
-        const customerId = normalizeCustomerId(session.customer);
-
-        if (metadataType === "wallet_topup" && session.payment_status === "paid") {
-          await finalizeStripeWalletTopup({
-            paymentIntentId,
-            checkoutSessionId: session.id,
-            metadata: session.metadata,
-            user,
-            paymentMethodId,
-            customerId,
-          });
-        }
-
-        if (metadataType === "order_payment" && session.payment_status === "paid") {
-          await finalizeStripeOrderPayment({
-            paymentIntentId,
-            checkoutSessionId: session.id,
-            metadata: session.metadata,
-            user,
-            paymentMethodId,
-            customerId,
-          });
-        }
-
-        if (metadataType === "card_setup" && setupPaymentMethodId) {
-          await finalizeStripeCardSetup({
-            user,
-            paymentMethodId: setupPaymentMethodId,
-            setupIntentId,
-            customerId,
-          });
-        }
+        await finalizeCheckoutSession({ session, user });
       }
     }
 
@@ -491,29 +665,8 @@ stripeWebhookRouter.post(
       const metadataType = paymentIntent.metadata?.type;
       const user = await User.findById(paymentIntent.metadata?.userId);
 
-      if (user) {
-        const paymentMethodId = normalizePaymentMethodId(paymentIntent.payment_method);
-        const customerId = normalizeCustomerId(paymentIntent.customer);
-
-        if (metadataType === "wallet_topup") {
-          await finalizeStripeWalletTopup({
-            paymentIntentId: paymentIntent.id,
-            metadata: paymentIntent.metadata,
-            user,
-            paymentMethodId,
-            customerId,
-          });
-        }
-
-        if (metadataType === "order_payment") {
-          await finalizeStripeOrderPayment({
-            paymentIntentId: paymentIntent.id,
-            metadata: paymentIntent.metadata,
-            user,
-            paymentMethodId,
-            customerId,
-          });
-        }
+      if (user && ["wallet_topup", "order_payment"].includes(metadataType)) {
+        await finalizePaymentIntent({ paymentIntent, user });
       }
     }
 
@@ -521,13 +674,8 @@ stripeWebhookRouter.post(
       const setupIntent = event.data.object;
       const user = await User.findById(setupIntent.metadata?.userId);
 
-      if (user) {
-        await finalizeStripeCardSetup({
-          user,
-          paymentMethodId: normalizePaymentMethodId(setupIntent.payment_method),
-          setupIntentId: setupIntent.id,
-          customerId: normalizeCustomerId(setupIntent.customer),
-        });
+      if (user && setupIntent.metadata?.type === "card_setup") {
+        await finalizeSetupIntent({ setupIntent, user });
       }
     }
 

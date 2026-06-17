@@ -36,7 +36,7 @@ async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planN
     subscriptionId: subscription._id,
     orderId: subscription.orderId,
     amount,
-    currency: "USD",
+    currency: env.stripeCurrency.toUpperCase(),
     billingCycle: subscription.billingCycle,
     status,
     paymentMethodType,

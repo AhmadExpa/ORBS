@@ -169,6 +169,18 @@ export function CheckoutPaymentView({ orderId }) {
       throw new Error(result.error.message || "The payment could not be completed.");
     }
 
+    if (!result.paymentIntent?.id) {
+      throw new Error("Stripe confirmed the payment but did not return a payment intent ID.");
+    }
+
+    await apiFetch("/stripe/finalize", {
+      method: "POST",
+      token,
+      body: {
+        paymentIntentId: result.paymentIntent.id,
+      },
+    });
+
     await syncOrderState();
     return "Your payment was received. The order details are being refreshed now.";
   }

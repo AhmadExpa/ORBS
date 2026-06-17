@@ -9,6 +9,7 @@ import { Invoice, Order, PaymentSetting, PaymentSubmission, Subscription } from 
 import { recordActivity } from "../../services/activity-log-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
+import { withTransaction } from "../../db/postgres-model.js";
 
 export const paymentsRouter = express.Router();
 
@@ -52,25 +53,29 @@ paymentsRouter.post(
     const screenshotUrl = req.file ? `/files/uploads/payment-proofs/${req.file.filename}` : "";
 
     if (payload.submissionType === "wallet_topup") {
-      const submission = await PaymentSubmission.create({
-        userId: req.auth.user._id,
-        submissionType: "wallet_topup",
-        amount: payload.amount,
-        invoiceCode: payload.invoiceCode,
-        paymentMethodType: payload.paymentMethodType,
-        screenshotUrl,
-        status: "pending_verification",
-      });
-
-      await recordActivity({
-        actorId: req.auth.user._id,
-        actorRole: "customer",
-        action: "wallet.topup_submitted",
-        targetType: "payment_submission",
-        targetId: String(submission._id),
-        metadata: {
+      const submission = await withTransaction(async () => {
+        const submission = await PaymentSubmission.create({
+          userId: req.auth.user._id,
+          submissionType: "wallet_topup",
           amount: payload.amount,
-        },
+          invoiceCode: payload.invoiceCode,
+          paymentMethodType: payload.paymentMethodType,
+          screenshotUrl,
+          status: "pending_verification",
+        });
+
+        await recordActivity({
+          actorId: req.auth.user._id,
+          actorRole: "customer",
+          action: "wallet.topup_submitted",
+          targetType: "payment_submission",
+          targetId: String(submission._id),
+          metadata: {
+            amount: payload.amount,
+          },
+        });
+
+        return submission;
       });
 
       res.status(201).json({
@@ -86,50 +91,62 @@ paymentsRouter.post(
       throw new HttpError(404, "Order not found.");
     }
 
+    const invoice = await Invoice.findOne({ orderId: order._id });
+    if (order.status === "cancelled") {
+      throw new HttpError(400, "Cancelled orders cannot receive payment submissions.");
+    }
+
+    if (order.status === "approved" || invoice?.status === "paid") {
+      throw new HttpError(400, "This order has already been paid.");
+    }
+
     const subscription = await Subscription.findOne({ orderId: order._id, userId: req.auth.user._id }).populate(
       "productPlanId",
     );
 
-    const submission = await PaymentSubmission.create({
-      userId: req.auth.user._id,
-      orderId: order._id,
-      subscriptionId: subscription?._id,
-      submissionType: "order_payment",
-      amount: order.totalAmount,
-      invoiceCode: payload.invoiceCode,
-      paymentMethodType: payload.paymentMethodType,
-      screenshotUrl,
-      status: "pending_verification",
-    });
-
-    order.status = "pending_verification";
-    await order.save();
-
-    const invoice = await Invoice.findOne({ orderId: order._id });
-    if (invoice) {
-      invoice.paymentReferenceCode = payload.invoiceCode;
-      invoice.paymentMethodType = payload.paymentMethodType;
-      const pdfData = await generateInvoicePdf({
-        invoice,
-        customer: req.auth.user,
-        planName: subscription?.productPlanId?.name || "Managed Service",
-        supportEmail: env.supportEmail,
-      });
-      invoice.pdfPath = pdfData.pdfPath;
-      invoice.pdfUrl = pdfData.pdfUrl;
-      await invoice.save();
-    }
-
-    await recordActivity({
-      actorId: req.auth.user._id,
-      actorRole: "customer",
-      action: "payment.submitted",
-      targetType: "payment_submission",
-      targetId: String(submission._id),
-      metadata: {
-        orderId: String(order._id),
+    const submission = await withTransaction(async () => {
+      const submission = await PaymentSubmission.create({
+        userId: req.auth.user._id,
+        orderId: order._id,
+        subscriptionId: subscription?._id,
+        submissionType: "order_payment",
         amount: order.totalAmount,
-      },
+        invoiceCode: payload.invoiceCode,
+        paymentMethodType: payload.paymentMethodType,
+        screenshotUrl,
+        status: "pending_verification",
+      });
+
+      order.status = "pending_verification";
+      await order.save();
+
+      if (invoice) {
+        invoice.paymentReferenceCode = payload.invoiceCode;
+        invoice.paymentMethodType = payload.paymentMethodType;
+        const pdfData = await generateInvoicePdf({
+          invoice,
+          customer: req.auth.user,
+          planName: subscription?.productPlanId?.name || "Managed Service",
+          supportEmail: env.supportEmail,
+        });
+        invoice.pdfPath = pdfData.pdfPath;
+        invoice.pdfUrl = pdfData.pdfUrl;
+        await invoice.save();
+      }
+
+      await recordActivity({
+        actorId: req.auth.user._id,
+        actorRole: "customer",
+        action: "payment.submitted",
+        targetType: "payment_submission",
+        targetId: String(submission._id),
+        metadata: {
+          orderId: String(order._id),
+          amount: order.totalAmount,
+        },
+      });
+
+      return submission;
     });
 
     res.status(201).json({

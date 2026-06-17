@@ -1,22 +1,7 @@
-import mongoose from "mongoose";
-import { env } from "../config/env.js";
-
-const DEFAULT_DATABASE_NAME = "elevenorbits";
-
-function resolveConnectionOptions(uri) {
-  try {
-    const parsedUri = new URL(uri);
-    if (parsedUri.pathname && parsedUri.pathname !== "/") {
-      return {};
-    }
-  } catch {
-    return {};
-  }
-
-  return { dbName: DEFAULT_DATABASE_NAME };
-}
+import { ensurePostgresSchema } from "./postgres-schema.js";
+import { query } from "./postgres-client.js";
 
 export async function connectToDatabase() {
-  mongoose.set("strictQuery", true);
-  await mongoose.connect(env.mongodbUri, resolveConnectionOptions(env.mongodbUri));
+  await query("SELECT 1");
+  await ensurePostgresSchema();
 }

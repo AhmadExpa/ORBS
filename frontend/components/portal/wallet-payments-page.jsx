@@ -181,6 +181,18 @@ export function WalletPaymentsPage() {
       throw new Error(result.error.message || "The card could not be saved.");
     }
 
+    if (!result.setupIntent?.id) {
+      throw new Error("Stripe confirmed the card setup but did not return a setup intent ID.");
+    }
+
+    await apiFetch("/stripe/finalize", {
+      method: "POST",
+      token,
+      body: {
+        setupIntentId: result.setupIntent.id,
+      },
+    });
+
     await syncPortalPayments();
     return hasSavedCard ? "Your saved card has been updated." : "Your card is now saved for automatic renewals.";
   }
@@ -214,6 +226,18 @@ export function WalletPaymentsPage() {
     if (result.error) {
       throw new Error(result.error.message || "The wallet top-up could not be completed.");
     }
+
+    if (!result.paymentIntent?.id) {
+      throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
+    }
+
+    await apiFetch("/stripe/finalize", {
+      method: "POST",
+      token,
+      body: {
+        paymentIntentId: result.paymentIntent.id,
+      },
+    });
 
     await syncPortalPayments();
     setInstantAmount("");

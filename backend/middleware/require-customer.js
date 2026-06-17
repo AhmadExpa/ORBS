@@ -1,8 +1,9 @@
 import { User } from "../db/models/index.js";
 import { HttpError } from "../utils/http-error.js";
 import { verifyClerkRequestToken } from "../services/clerk-auth-service.js";
+import { ensureCustomerProfile } from "../services/customer-profile-service.js";
 
-async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidToken = false } = {}) {
+async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidToken = false, autoCreate = false } = {}) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -26,7 +27,11 @@ async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidTo
     return null;
   }
 
-  const user = await User.findOne({ clerkId: payload.sub });
+  let user = await User.findOne({ clerkId: payload.sub });
+  if (!user && autoCreate) {
+    user = await ensureCustomerProfile({ payload });
+  }
+
   if (!user) {
     if (allowUnsynced) {
       return {
@@ -61,7 +66,7 @@ export async function attachCustomer(req, res, next) {
 
 export async function requireCustomer(req, res, next) {
   try {
-    const authContext = await findUserFromRequest(req);
+    const authContext = await findUserFromRequest(req, { autoCreate: true });
     if (!authContext?.user) {
       throw new HttpError(401, "Customer authentication required.");
     }

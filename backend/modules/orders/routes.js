@@ -10,6 +10,7 @@ import { env } from "../../config/env.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { cancelCustomerOrder } from "../../services/customer-cancellation-service.js";
+import { withTransaction } from "../../db/postgres-model.js";
 
 export const ordersRouter = express.Router();
 
@@ -176,58 +177,74 @@ ordersRouter.post(
       throw new HttpError(400, "This plan requires a contact sales flow.");
     }
 
-    const order = await Order.create({
-      userId: req.auth.user._id,
-      productPlanId: quote.plan._id,
-      addons: quote.addons.map((addon) => addon._id),
-      billingCycle: quote.billingCycle,
-      totalAmount: quote.totalAmount,
-      status: "pending_verification",
-      lineItems: quote.lineItems,
-      metadata: {
-        regionAddonId: quote.regionAddon?._id || null,
-        imageAddonId: quote.imageAddon?._id || null,
-        storageAddonId: quote.storageAddon?._id || null,
-        storageQuantity: quote.storageQuantity || 0,
-        configurationDetails: quote.configurationDetails,
-        customerNote: quote.finalNote || "",
-      },
-    });
+    const { order, subscription, invoice } = await withTransaction(async () => {
+      const order = await Order.create({
+        userId: req.auth.user._id,
+        productPlanId: quote.plan._id,
+        addons: quote.addons.map((addon) => addon._id),
+        billingCycle: quote.billingCycle,
+        totalAmount: quote.totalAmount,
+        status: "pending_verification",
+        lineItems: quote.lineItems,
+        metadata: {
+          regionAddonId: quote.regionAddon?._id || null,
+          imageAddonId: quote.imageAddon?._id || null,
+          storageAddonId: quote.storageAddon?._id || null,
+          storageQuantity: quote.storageQuantity || 0,
+          configurationDetails: quote.configurationDetails,
+          customerNote: quote.finalNote || "",
+        },
+      });
 
-    const subscription = await Subscription.create({
-      userId: req.auth.user._id,
-      orderId: order._id,
-      productPlanId: quote.plan._id,
-      addons: quote.addons.map((addon) => addon._id),
-      billingCycle: quote.billingCycle,
-      status: "pending_verification",
-      sharedDetails: quote.configurationDetails,
-      metadata: {
-        managedBy: "ElevenOrbits Team",
-        regionAddonId: quote.regionAddon?._id || null,
-        imageAddonId: quote.imageAddon?._id || null,
-        storageAddonId: quote.storageAddon?._id || null,
-        storageQuantity: quote.storageQuantity || 0,
-        customerNote: quote.finalNote || "",
-      },
-    });
+      const subscription = await Subscription.create({
+        userId: req.auth.user._id,
+        orderId: order._id,
+        productPlanId: quote.plan._id,
+        addons: quote.addons.map((addon) => addon._id),
+        billingCycle: quote.billingCycle,
+        status: "pending_verification",
+        sharedDetails: quote.configurationDetails,
+        metadata: {
+          managedBy: "ElevenOrbits Team",
+          regionAddonId: quote.regionAddon?._id || null,
+          imageAddonId: quote.imageAddon?._id || null,
+          storageAddonId: quote.storageAddon?._id || null,
+          storageQuantity: quote.storageQuantity || 0,
+          customerNote: quote.finalNote || "",
+        },
+      });
 
-    const invoiceNumber = await nextInvoiceNumber(Invoice);
-    const invoice = await Invoice.create({
-      userId: req.auth.user._id,
-      subscriptionId: subscription._id,
-      orderId: order._id,
-      invoiceNumber,
-      amount: quote.totalAmount,
-      currency: "USD",
-      status: "pending",
-      paymentMethodType: "pending_confirmation",
-      lineItems: quote.lineItems.map((item) => ({
-        label: item.label,
-        amount: item.amount,
-        quantity: item.quantity || 1,
-      })),
-      billingCycle: quote.billingCycle,
+      const invoiceNumber = await nextInvoiceNumber(Invoice);
+      const invoice = await Invoice.create({
+        userId: req.auth.user._id,
+        subscriptionId: subscription._id,
+        orderId: order._id,
+        invoiceNumber,
+        amount: quote.totalAmount,
+        currency: env.stripeCurrency.toUpperCase(),
+        status: "pending",
+        paymentMethodType: "pending_confirmation",
+        lineItems: quote.lineItems.map((item) => ({
+          label: item.label,
+          amount: item.amount,
+          quantity: item.quantity || 1,
+        })),
+        billingCycle: quote.billingCycle,
+      });
+
+      await recordActivity({
+        actorId: req.auth.user._id,
+        actorRole: "customer",
+        action: "order.created",
+        targetType: "order",
+        targetId: String(order._id),
+        metadata: {
+          billingCycle: quote.billingCycle,
+          totalAmount: quote.totalAmount,
+        },
+      });
+
+      return { order, subscription, invoice };
     });
 
     const pdfData = await generateInvoicePdf({
@@ -242,18 +259,6 @@ ordersRouter.post(
     await invoice.save();
 
     const paymentSetting = await PaymentSetting.findOne({ isActive: true }).sort({ updatedAt: -1 });
-
-    await recordActivity({
-      actorId: req.auth.user._id,
-      actorRole: "customer",
-      action: "order.created",
-      targetType: "order",
-      targetId: String(order._id),
-      metadata: {
-        billingCycle: quote.billingCycle,
-        totalAmount: quote.totalAmount,
-      },
-    });
 
     res.status(201).json({
       order,

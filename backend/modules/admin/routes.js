@@ -355,6 +355,20 @@ adminRouter.patch(
       User.findById(submission.userId),
     ]);
 
+    if (submission.submissionType === "order_payment" && status === "approved") {
+      if (!order) {
+        throw new HttpError(404, "Linked order not found.");
+      }
+
+      if (order.status === "cancelled") {
+        throw new HttpError(400, "Cancelled orders cannot be approved for payment.");
+      }
+
+      if (order.status === "approved" || invoice?.status === "paid") {
+        throw new HttpError(400, "This order has already been paid.");
+      }
+    }
+
     submission.status = status;
     submission.adminRemarks = adminRemarks;
     submission.reviewedAt = new Date();

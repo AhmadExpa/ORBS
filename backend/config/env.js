@@ -47,7 +47,7 @@ export const env = {
   port: Number(process.env.PORT || 4000),
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   publicApiUrl: normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL),
-  mongodbUri: process.env.MONGODB_URI || "mongodb://localhost:27017/elevenorbits",
+  databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || "",
   jwtSecret: process.env.JWT_SECRET || "change-me",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com",
   clerkSecretKey: process.env.CLERK_SECRET_KEY || "",

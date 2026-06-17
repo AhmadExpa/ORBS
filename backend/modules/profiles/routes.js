@@ -5,6 +5,7 @@ import { User } from "../../db/models/index.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { verifyClerkRequestToken } from "../../services/clerk-auth-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { syncCustomerProfile } from "../../services/customer-profile-service.js";
 
 export const profilesRouter = express.Router();
 
@@ -28,38 +29,10 @@ profilesRouter.post(
   "/sync",
   asyncHandler(async (req, res) => {
     const payload = await verifyCustomerRequest(req);
-
-    const email =
-      payload.email ||
-      payload.email_address ||
-      payload?.emailAddresses?.[0]?.emailAddress ||
-      req.body.email;
-
-    const name =
-      req.body.name ||
-      [payload.first_name, payload.last_name].filter(Boolean).join(" ") ||
-      payload.username ||
-      "ElevenOrbits Customer";
-
-    if (!email) {
-      throw new HttpError(400, "Email is required for profile sync.");
-    }
-
-    const user = await User.findOneAndUpdate(
-      { clerkId: payload.sub },
-      {
-        clerkId: payload.sub,
-        name,
-        email,
-        phone: req.body.phone || "",
-        secondaryEmail: req.body.secondaryEmail || "",
-        address: req.body.address || "",
-        company: req.body.company || "",
-        billingAddress: req.body.billingAddress || {},
-        role: "customer",
-      },
-      { new: true, upsert: true },
-    );
+    const user = await syncCustomerProfile({
+      payload,
+      body: req.body,
+    });
 
     res.json({ user });
   }),

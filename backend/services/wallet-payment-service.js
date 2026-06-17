@@ -4,6 +4,7 @@ import { HttpError } from "../utils/http-error.js";
 import { recordActivity } from "./activity-log-service.js";
 import { addBillingPeriod } from "./billing-cycle-service.js";
 import { generateInvoicePdf } from "./invoice-service.js";
+import { withTransaction } from "../db/postgres-model.js";
 
 function isRenewalInvoice(invoice) {
   return String(invoice?.paymentReferenceCode || "").startsWith("renewal_");
@@ -201,60 +202,62 @@ async function finalizeRenewalInvoicePayment({
 }
 
 export async function payInvoiceWithWalletBalance({ invoiceId, userId }) {
-  const invoice = await Invoice.findOne({ _id: invoiceId, userId });
-  if (!invoice) {
-    throw new HttpError(404, "Invoice not found.");
-  }
+  return withTransaction(async () => {
+    const invoice = await Invoice.findOne({ _id: invoiceId, userId });
+    if (!invoice) {
+      throw new HttpError(404, "Invoice not found.");
+    }
 
-  if (!["pending", "rejected"].includes(invoice.status)) {
-    throw new HttpError(400, "Only unpaid invoices can be settled from wallet balance.");
-  }
+    if (!["pending", "rejected"].includes(invoice.status)) {
+      throw new HttpError(400, "Only unpaid invoices can be settled from wallet balance.");
+    }
 
-  const amount = Number(invoice.amount || 0);
-  if (amount <= 0) {
-    throw new HttpError(400, "This invoice does not have a valid payable amount.");
-  }
+    const amount = Number(invoice.amount || 0);
+    if (amount <= 0) {
+      throw new HttpError(400, "This invoice does not have a valid payable amount.");
+    }
 
-  const [customer, order, subscription] = await Promise.all([
-    User.findById(userId),
-    invoice.orderId ? Order.findById(invoice.orderId).populate("productPlanId") : Promise.resolve(null),
-    invoice.subscriptionId ? Subscription.findById(invoice.subscriptionId).populate("productPlanId") : Promise.resolve(null),
-  ]);
+    const [customer, order, subscription] = await Promise.all([
+      User.findById(userId),
+      invoice.orderId ? Order.findById(invoice.orderId).populate("productPlanId") : Promise.resolve(null),
+      invoice.subscriptionId ? Subscription.findById(invoice.subscriptionId).populate("productPlanId") : Promise.resolve(null),
+    ]);
 
-  if (!customer) {
-    throw new HttpError(404, "User not found.");
-  }
+    if (!customer) {
+      throw new HttpError(404, "User not found.");
+    }
 
-  const updatedCustomer = await User.findOneAndUpdate(
-    { _id: userId, accountBalance: { $gte: amount } },
-    { $inc: { accountBalance: -amount } },
-    { new: true },
-  );
+    const updatedCustomer = await User.findOneAndUpdate(
+      { _id: userId, accountBalance: { $gte: amount } },
+      { $inc: { accountBalance: -amount } },
+      { new: true },
+    );
 
-  if (!updatedCustomer) {
-    throw new HttpError(400, "Your wallet balance is not enough to pay this invoice.");
-  }
+    if (!updatedCustomer) {
+      throw new HttpError(400, "Your wallet balance is not enough to pay this invoice.");
+    }
 
-  const paymentReferenceCode = buildWalletPaymentReference(invoice);
+    const paymentReferenceCode = buildWalletPaymentReference(invoice);
 
-  const result = isRenewalInvoice(invoice)
-    ? await finalizeRenewalInvoicePayment({
-        invoice,
-        order,
-        subscription,
-        customer: updatedCustomer,
-        paymentReferenceCode,
-      })
-    : await finalizeOrderInvoicePayment({
-        invoice,
-        order,
-        subscription,
-        customer: updatedCustomer,
-        paymentReferenceCode,
-      });
+    const result = isRenewalInvoice(invoice)
+      ? await finalizeRenewalInvoicePayment({
+          invoice,
+          order,
+          subscription,
+          customer: updatedCustomer,
+          paymentReferenceCode,
+        })
+      : await finalizeOrderInvoicePayment({
+          invoice,
+          order,
+          subscription,
+          customer: updatedCustomer,
+          paymentReferenceCode,
+        });
 
-  return {
-    ...result,
-    user: updatedCustomer,
-  };
+    return {
+      ...result,
+      user: updatedCustomer,
+    };
+  });
 }
