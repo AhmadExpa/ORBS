@@ -174,6 +174,8 @@ export const Invoice = createPostgresModel("Invoice", {
     status: "pending",
     pdfUrl: "",
     pdfPath: "",
+    pdfStorageKey: "",
+    pdfStorageProvider: "local",
     paymentMethodType: "pending_confirmation",
     paymentReferenceCode: "",
     lineItems: [],

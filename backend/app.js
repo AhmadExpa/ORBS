@@ -17,6 +17,11 @@ import { stripeRouter, stripeWebhookRouter } from "./modules/stripe/routes.js";
 import { ticketsRouter } from "./modules/tickets/routes.js";
 import { staffAuthRouter } from "./modules/staffAuth/routes.js";
 import { adminRouter } from "./modules/admin/routes.js";
+import {
+  isObjectStorageEnabled,
+  storageObjectExists,
+  streamStorageObjectToResponse,
+} from "./services/storage-service.js";
 
 const app = express();
 
@@ -37,6 +42,59 @@ app.use(attachStaff);
 
 app.use("/files/uploads", express.static(env.uploadDir));
 app.use("/files/invoices", express.static(env.invoiceDir));
+app.get("/files/uploads/*", async (req, res, next) => {
+  try {
+    if (!isObjectStorageEnabled()) {
+      next();
+      return;
+    }
+
+    const relativePath = req.params[0];
+    const key = `uploads/${relativePath}`;
+    const exists = await storageObjectExists(key);
+    if (!exists) {
+      next();
+      return;
+    }
+
+    res.setHeader("Cache-Control", "private, max-age=0, no-store");
+    await streamStorageObjectToResponse({
+      key,
+      res,
+      fileName: relativePath.split("/").pop(),
+      disposition: "inline",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+app.get("/files/invoices/*", async (req, res, next) => {
+  try {
+    if (!isObjectStorageEnabled()) {
+      next();
+      return;
+    }
+
+    const relativePath = req.params[0];
+    const key = `invoices/${relativePath}`;
+    const exists = await storageObjectExists(key);
+    if (!exists) {
+      next();
+      return;
+    }
+
+    res.setHeader("Cache-Control", "private, max-age=0, no-store");
+    await streamStorageObjectToResponse({
+      key,
+      res,
+      contentType: "application/pdf",
+      fileName: relativePath.split("/").pop(),
+      disposition: "inline",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });

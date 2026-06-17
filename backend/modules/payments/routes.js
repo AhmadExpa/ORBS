@@ -9,6 +9,7 @@ import { Invoice, Order, PaymentSetting, PaymentSubmission, Subscription } from 
 import { recordActivity } from "../../services/activity-log-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
+import { persistUploadedFile } from "../../services/storage-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
 
 export const paymentsRouter = express.Router();
@@ -50,7 +51,7 @@ paymentsRouter.post(
   uploadPaymentProof.single("proof"),
   asyncHandler(async (req, res) => {
     const payload = paymentSubmissionSchema.parse(req.body);
-    const screenshotUrl = req.file ? `/files/uploads/payment-proofs/${req.file.filename}` : "";
+    const screenshotUrl = req.file ? await persistUploadedFile({ file: req.file, directory: "payment-proofs" }) : "";
 
     if (payload.submissionType === "wallet_topup") {
       const submission = await withTransaction(async () => {
@@ -131,6 +132,8 @@ paymentsRouter.post(
         });
         invoice.pdfPath = pdfData.pdfPath;
         invoice.pdfUrl = pdfData.pdfUrl;
+        invoice.pdfStorageKey = pdfData.pdfStorageKey;
+        invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
         await invoice.save();
       }
 

@@ -23,6 +23,7 @@ import { recordActivity } from "../../services/activity-log-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { env } from "../../config/env.js";
 import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { persistUploadedFile } from "../../services/storage-service.js";
 
 export const adminRouter = express.Router();
 
@@ -304,6 +305,8 @@ adminRouter.post(
     });
     invoice.pdfPath = pdfData.pdfPath;
     invoice.pdfUrl = pdfData.pdfUrl;
+    invoice.pdfStorageKey = pdfData.pdfStorageKey;
+    invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
     res.json({ invoice });
   }),
@@ -432,6 +435,8 @@ adminRouter.patch(
       });
       invoice.pdfPath = pdfData.pdfPath;
       invoice.pdfUrl = pdfData.pdfUrl;
+      invoice.pdfStorageKey = pdfData.pdfStorageKey;
+      invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
       await invoice.save();
     }
 
@@ -478,7 +483,7 @@ adminRouter.put(
     };
 
     if (req.file) {
-      update.qrCodeImageUrl = `/files/uploads/qr-codes/${req.file.filename}`;
+      update.qrCodeImageUrl = await persistUploadedFile({ file: req.file, directory: "qr-codes" });
     } else if (req.body.removeQrCode === "true") {
       update.qrCodeImageUrl = "";
     } else {

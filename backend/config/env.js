@@ -59,4 +59,12 @@ export const env = {
   stripeCurrency: (process.env.STRIPE_CURRENCY || "usd").toLowerCase(),
   uploadDir: resolveStorageDir(process.env.UPLOAD_DIR, "storage/uploads"),
   invoiceDir: resolveStorageDir(process.env.INVOICE_DIR, "storage/invoices"),
+  storageDriver: (process.env.STORAGE_DRIVER || "").toLowerCase(),
+  r2AccountId: process.env.R2_ACCOUNT_ID || "",
+  r2Endpoint: process.env.R2_ENDPOINT || "",
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+  r2Bucket: process.env.R2_BUCKET || "",
+  r2PublicBaseUrl: normalizePossibleUrl(process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/u, ""),
+  r2KeyPrefix: String(process.env.R2_KEY_PREFIX || "").replace(/^\/+|\/+$/g, ""),
 };

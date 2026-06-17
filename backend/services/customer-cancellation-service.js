@@ -28,6 +28,8 @@ async function voidPendingInvoice({ invoice, customer, planName }) {
 
   invoice.pdfPath = pdfData.pdfPath;
   invoice.pdfUrl = pdfData.pdfUrl;
+  invoice.pdfStorageKey = pdfData.pdfStorageKey;
+  invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
   await invoice.save();
 
   return invoice;

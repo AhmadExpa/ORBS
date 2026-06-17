@@ -256,6 +256,8 @@ ordersRouter.post(
 
     invoice.pdfPath = pdfData.pdfPath;
     invoice.pdfUrl = pdfData.pdfUrl;
+    invoice.pdfStorageKey = pdfData.pdfStorageKey;
+    invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
 
     const paymentSetting = await PaymentSetting.findOne({ isActive: true }).sort({ updatedAt: -1 });

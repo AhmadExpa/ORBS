@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
+import { PassThrough } from "stream";
 import { fileURLToPath } from "url";
 import PDFDocument from "pdfkit";
 import { env } from "../config/env.js";
 import { generateInvoiceNumber } from "../utils/invoice-number.js";
-import { toPublicFileUrl } from "./storage-service.js";
+import { isObjectStorageEnabled, toPublicFileUrl, uploadBufferToStorage, writeBufferToFile } from "./storage-service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -220,6 +221,7 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
   const fileName = `${invoice.invoiceNumber}.pdf`;
   const filePath = path.join(env.invoiceDir, fileName);
   const fileUrl = toPublicFileUrl(`/files/invoices/${fileName}`);
+  const storageKey = `invoices/${fileName}`;
 
   const normalizedItems = normalizeLineItems(invoice, planName);
   const subtotal = normalizedItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -229,7 +231,7 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
   const paymentMethod = formatPaymentMethodLabel(invoice?.paymentMethodType, invoice?.paymentReferenceCode);
   const pageMargin = 44;
 
-  await new Promise((resolve, reject) => {
+  const pdfBuffer = await new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "A4",
       margin: 0,
@@ -238,9 +240,11 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
         Author: "ElevenOrbits",
       },
     });
-    const stream = fs.createWriteStream(filePath);
+    const stream = new PassThrough();
+    const chunks = [];
 
-    stream.on("finish", resolve);
+    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on("finish", () => resolve(Buffer.concat(chunks)));
     stream.on("error", reject);
     doc.on("error", reject);
     doc.pipe(stream);
@@ -529,8 +533,25 @@ export async function generateInvoicePdf({ invoice, customer, planName, supportE
     doc.end();
   });
 
+  writeBufferToFile(filePath, pdfBuffer);
+
+  let uploadedFile = null;
+  if (isObjectStorageEnabled()) {
+    try {
+      uploadedFile = await uploadBufferToStorage({
+        key: storageKey,
+        data: pdfBuffer,
+        contentType: "application/pdf",
+      });
+    } catch (error) {
+      console.error("Invoice PDF upload to object storage failed", error);
+    }
+  }
+
   return {
     pdfPath: filePath,
-    pdfUrl: fileUrl,
+    pdfUrl: uploadedFile?.publicUrl || fileUrl,
+    pdfStorageKey: uploadedFile?.storageKey || storageKey,
+    pdfStorageProvider: uploadedFile?.storageProvider || "local",
   };
 }

@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/lib/api/client";
-import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
+import { siteConfig } from "@/lib/constants/site";
 import { formatCurrency } from "@/lib/shared";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge } from "@/lib/ui";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -26,6 +25,8 @@ export function InvoicesPage({
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
   const [payingInvoiceId, setPayingInvoiceId] = useState("");
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState("");
+  const [regeneratingInvoices, setRegeneratingInvoices] = useState(false);
 
   const invoicesQuery = useCustomerQuery({
     queryKey: ["portal-invoices-page"],
@@ -77,6 +78,80 @@ export function InvoicesPage({
     }
   }
 
+  async function handleInvoiceDownload(invoice) {
+    if (!invoice?._id || downloadingInvoiceId) {
+      return;
+    }
+
+    setDownloadingInvoiceId(invoice._id);
+
+    try {
+      const token = await getToken();
+      const response = await fetch(`${siteConfig.apiUrl}/invoices/${invoice._id}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.message || "Invoice download failed.");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${invoice.invoiceNumber || "invoice"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      showToast({
+        type: "error",
+        action: "Invoice",
+        title: "Download failed",
+        description: error.message || "The invoice could not be downloaded.",
+      });
+    } finally {
+      setDownloadingInvoiceId("");
+    }
+  }
+
+  async function handleRegenerateInvoices() {
+    if (regeneratingInvoices) {
+      return;
+    }
+
+    setRegeneratingInvoices(true);
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/invoices/regenerate", {
+        method: "POST",
+        token,
+        authMode: "customer",
+      });
+
+      await invoicesQuery.refetch();
+      showToast({
+        type: "success",
+        action: "Invoice",
+        title: "Invoices regenerated",
+        description: `${response.regenerated || 0} invoice PDF${response.regenerated === 1 ? "" : "s"} refreshed from your billing records.`,
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        action: "Invoice",
+        title: "Regeneration failed",
+        description: error.message || "Invoices could not be regenerated right now.",
+      });
+    } finally {
+      setRegeneratingInvoices(false);
+    }
+  }
+
   if ((invoicesQuery.isLoading || profileQuery.isLoading) && !invoicesQuery.data && !profileQuery.data) {
     return <PageLoader title={title} subtitle={subtitle} cardCount={3} lines={4} />;
   }
@@ -108,9 +183,14 @@ export function InvoicesPage({
 
         {invoices.length ? (
           <Card>
-            <CardHeader>
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>Wallet payments post immediately when the available balance fully covers the invoice amount.</CardDescription>
+            <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>Wallet payments post immediately when the available balance fully covers the invoice amount.</CardDescription>
+              </div>
+              <Button type="button" variant="secondary" disabled={regeneratingInvoices} onClick={handleRegenerateInvoices}>
+                {regeneratingInvoices ? "Refreshing PDFs..." : "Regenerate PDFs"}
+              </Button>
             </CardHeader>
             <CardContent>
               <DataTable
@@ -127,6 +207,7 @@ export function InvoicesPage({
                       const shortfall = Math.max(rowAmount - walletBalance, 0);
                       const canPayFromWallet = isWalletPayable(row) && walletBalance >= rowAmount;
                       const isPaying = payingInvoiceId === row._id;
+                      const isDownloading = downloadingInvoiceId === row._id;
 
                       let walletLabel = "Unavailable";
                       if (isPaying) {
@@ -139,13 +220,9 @@ export function InvoicesPage({
 
                       return (
                         <div className="flex flex-wrap items-center gap-2">
-                          {row.pdfUrl ? (
-                            <Link className="font-semibold text-sky-700" href={resolvePublicFileUrl(row.pdfUrl)} target="_blank">
-                              Download
-                            </Link>
-                          ) : (
-                            <span className="text-slate-500">Pending PDF</span>
-                          )}
+                          <Button type="button" variant="secondary" disabled={Boolean(downloadingInvoiceId)} onClick={() => handleInvoiceDownload(row)}>
+                            {isDownloading ? "Downloading..." : "Download"}
+                          </Button>
                           {isWalletPayable(row) ? (
                             <Button
                               type="button"

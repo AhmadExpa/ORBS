@@ -7,6 +7,7 @@ import { uploadSupportAttachment } from "../../middleware/uploads.js";
 import { HttpError } from "../../utils/http-error.js";
 import { StaffUser, SupportMessage, SupportTicket, User } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
+import { persistUploadedFile } from "../../services/storage-service.js";
 
 export const ticketsRouter = express.Router();
 
@@ -171,6 +172,9 @@ ticketsRouter.post(
   uploadSupportAttachment.array("attachments", 3),
   asyncHandler(async (req, res) => {
     const payload = supportTicketSchema.parse(req.body);
+    const attachments = await Promise.all(
+      (req.files || []).map((file) => persistUploadedFile({ file, directory: "support-attachments" })),
+    );
     const ticket = await SupportTicket.create({
       userId: req.auth.user._id,
       subject: payload.subject,
@@ -188,7 +192,7 @@ ticketsRouter.post(
       senderId: req.auth.user._id,
       publicSenderName: req.auth.user.name || req.auth.user.email || "Customer",
       message: payload.message,
-      attachments: (req.files || []).map((file) => `/files/uploads/support-attachments/${file.filename}`),
+      attachments,
     });
 
     await recordActivity({
@@ -234,6 +238,9 @@ ticketsRouter.post(
     const payload = supportReplySchema.parse(req.body);
     const sender = getSenderContext(req);
     const publicSenderName = await resolvePublicSenderName({ req, ticket, payload });
+    const attachments = await Promise.all(
+      (req.files || []).map((file) => persistUploadedFile({ file, directory: "support-attachments" })),
+    );
 
     const message = await SupportMessage.create({
       ticketId: ticket._id,
@@ -241,7 +248,7 @@ ticketsRouter.post(
       senderId: sender.senderId,
       publicSenderName,
       message: payload.message,
-      attachments: (req.files || []).map((file) => `/files/uploads/support-attachments/${file.filename}`),
+      attachments,
     });
 
     ticket.lastReplyAt = new Date();
