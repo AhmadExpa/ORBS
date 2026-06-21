@@ -60,7 +60,7 @@ export function TicketThread({ ticketId }) {
   return (
     <div>
       <Topbar title={ticket?.subject || "Ticket Thread"} subtitle={ticket?.category || "Support"} />
-      <div className="grid gap-6 p-6 xl:grid-cols-[1fr_320px]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
             <CardTitle>Conversation</CardTitle>

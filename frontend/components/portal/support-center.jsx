@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { LifeBuoy } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextArea, TextInput } from "@/lib/ui";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
-import { OrbMascot } from "@/components/shared/orb-mascot";
 
 export function SupportCenter() {
   const { getToken } = useAuth();
@@ -71,7 +71,7 @@ export function SupportCenter() {
   return (
     <div>
       <Topbar title="Support Tickets" subtitle="Open tickets, review history, and reply in threaded conversations." />
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_24px_70px_-56px_rgba(15,23,42,0.2)]">
           <CardContent className="p-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">
@@ -80,7 +80,6 @@ export function SupportCenter() {
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Talk to ElevenOrbits support with the right context from the start.</h2>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
                   Use the support center to open service-linked tickets, describe the issue clearly, and keep the conversation attached to your operational history.
-                  Orbs marks the help surfaces across the site so support, AI guidance, and onboarding all feel connected.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {["Ticket History", "Linked Services", "Threaded Replies", "Fast Escalation"].map((item) => (
@@ -90,14 +89,19 @@ export function SupportCenter() {
                   ))}
                 </div>
               </div>
-              <div className="xl:justify-self-end">
-                <OrbMascot
-                  size="md"
-                  eyebrow="Orbs Support Guide"
-                  title="Need help?"
-                  description="Open the ticket with clear details and the team will take it forward from the admin side."
-                  align="center"
-                />
+              <div className="rounded-lg border border-slate-200 bg-white p-5 xl:justify-self-end">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
+                    <LifeBuoy className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Support Desk</p>
+                    <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950">Clear details help the team act faster.</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                      Link the ticket to the right service and include the operational details the admin team should review.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

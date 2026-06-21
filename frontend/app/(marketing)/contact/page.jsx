@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
 import { siteConfig } from "@/lib/constants/site";
+import { getLoginPath, getSignupPath } from "@/lib/shared";
 
 export default function ContactPage() {
   return (
@@ -28,10 +29,10 @@ export default function ContactPage() {
             <CardDescription>Create an account to manage subscriptions, invoices, payments, and tickets.</CardDescription>
           </CardHeader>
           <CardContent className="flex gap-3">
-            <Link href="/signup">
+            <Link href={getSignupPath()}>
               <Button>Sign Up</Button>
             </Link>
-            <Link href="/login">
+            <Link href={getLoginPath()}>
               <Button variant="ghost">Log In</Button>
             </Link>
           </CardContent>

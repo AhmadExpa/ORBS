@@ -179,14 +179,14 @@ export function AppShell({
 
   return (
     <ButtonThemeProvider value="portal">
-      <div className="min-h-screen bg-[linear-gradient(180deg,#fbfcff_0%,#f4f6fa_48%,#eef2f7_100%)] text-slate-950">
-        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[292px_minmax(0,1fr)]">
-          <aside className="z-40 flex h-full flex-col border-r border-white/70 bg-white/72 px-4 py-5 shadow-[18px_0_60px_-48px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f9fafb_0%,#f4f6fa_52%,#eef2f6_100%)] text-slate-950">
+        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-slate-200/80 bg-white/88 px-4 py-4 shadow-[18px_0_52px_-46px_rgba(15,23,42,0.42)] backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
             <Link
               href={sidebarHref}
-              className="block rounded-[26px] border border-white/80 bg-white/82 px-5 py-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]"
+              className="block rounded-lg border border-slate-200/80 bg-white/94 px-4 py-4 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.5)] ring-1 ring-white/70"
             >
-              <div className="flex min-h-[158px] flex-col items-center justify-center text-center">
+              <div className="flex min-h-[130px] flex-col items-center justify-center text-center">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">{roleLabel}</p>
                 <BrandLogo
                   className="mt-5 h-12 w-full justify-center"
@@ -198,16 +198,16 @@ export function AppShell({
                 <p className="mt-4 text-sm font-medium text-slate-500">Managed by ElevenOrbits Team</p>
               </div>
             </Link>
-            <div className="mt-5 flex-1 overflow-y-auto pr-1">
+            <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
               <SidebarNav items={items} />
             </div>
             {authMode === "clerk" ? (
-              <div className="mt-5 rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-[0_20px_60px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]">
+              <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Billing Snapshot</p>
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
                         <Wallet className="h-4 w-4" />
                       </span>
                       <span className="text-sm font-semibold text-slate-600">Wallet</span>
@@ -216,7 +216,7 @@ export function AppShell({
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 ring-1 ring-slate-950/[0.06]">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-950/[0.06]">
                         <CreditCard className="h-4 w-4" />
                       </span>
                       <span className="text-sm font-semibold text-slate-600">This Month</span>
@@ -226,12 +226,12 @@ export function AppShell({
                 </div>
               </div>
             ) : null}
-            <div className="mt-5 rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-[0_20px_60px_-48px_rgba(15,23,42,0.5)] ring-1 ring-slate-950/[0.04]">
+            <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (
                   <UserButton />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600 ring-1 ring-slate-200">
                     <UserRound className="h-5 w-5" />
                   </div>
                 )}
@@ -247,7 +247,7 @@ export function AppShell({
               </Button>
             </div>
           </aside>
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0 overflow-x-hidden">{children}</main>
         </div>
       </div>
     </ButtonThemeProvider>

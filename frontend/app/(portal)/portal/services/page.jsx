@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Cpu, Phone, Server, Shield, Sparkles } from "lucide-react";
+import { ArrowRight, Cpu, Phone, Server, Shield } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { EmptyState } from "@/components/shared/empty-state";
-import { OrbMascot } from "@/components/shared/orb-mascot";
 import { Topbar } from "@/components/shared/topbar";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -154,7 +153,7 @@ function SummaryCard({ subscriptions }) {
               Your portal now separates current services by how they are used, so servers, automation, support, and security do not all look the same.
             </CardDescription>
           </div>
-          <Sparkles className="h-8 w-8 shrink-0 text-sky-600" />
+          <Server className="h-8 w-8 shrink-0 text-sky-600" />
         </div>
       </CardHeader>
       <CardContent className="space-y-6 bg-white p-6">
@@ -220,18 +219,20 @@ function RecommendationCard({ recommendation, isLoading }) {
       <CardHeader className="bg-sky-50">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Orbs AI Recommendation</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Service Recommendation</p>
             <CardTitle className="mt-3 text-slate-950">Suggested next service</CardTitle>
             <CardDescription>
               A catalog suggestion based on your current services, with priority on plans you are not already using.
             </CardDescription>
           </div>
-          <OrbMascot size="sm" frameClassName="border-sky-100 bg-white" className="hidden shrink-0 xl:inline-flex" />
+          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-sky-700 ring-1 ring-sky-100 xl:inline-flex">
+            <Server className="h-5 w-5" />
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Preparing your Orbs AI recommendation...</p>
+          <p className="text-sm text-slate-500">Preparing your recommendation...</p>
         ) : recommendation ? (
           <>
             <div className="rounded-3xl border border-sky-100 bg-slate-50 p-5">
@@ -625,14 +626,14 @@ export default function PortalServicesPage() {
     <div>
       <Topbar
         title="Services"
-        subtitle="See the services you are currently using, review your Orbs AI recommendation, and jump into the wider catalog when you need more."
+        subtitle="See the services you are currently using, review the next recommended plan, and jump into the wider catalog when you need more."
         actions={
           <Link href="/services">
             <Button>Browse More Services</Button>
           </Link>
         }
       />
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <SummaryCard subscriptions={currentSubscriptions} />
           <div className="space-y-6">

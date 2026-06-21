@@ -76,7 +76,7 @@ export function AccountForm() {
           </Button>
         }
       />
-      <div className="p-6">
+      <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>

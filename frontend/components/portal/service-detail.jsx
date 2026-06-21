@@ -53,7 +53,7 @@ export function ServiceDetail({ serviceId }) {
         title={subscription.productPlanId?.name || "Managed Service"}
         subtitle={isServer ? "Server access and renewal details for this deployment." : `${categoryName} managed and operated by ElevenOrbits.`}
       />
-      <div className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-6">
           <Card>
             <CardHeader>

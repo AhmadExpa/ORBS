@@ -25,6 +25,10 @@ function normalizeApiUrl(value) {
   return /\/api\/v1$/iu.test(normalizedValue) ? normalizedValue : `${normalizedValue}/api/v1`;
 }
 
+function normalizeSiteUrl(value) {
+  return normalizePossibleUrl(value || "https://elevenorbits.com").replace(/\/+$/u, "");
+}
+
 const generalEmail = process.env.NEXT_PUBLIC_GENERAL_EMAIL || "hello@elevenorbits.com";
 const salesEmail = process.env.NEXT_PUBLIC_SALES_EMAIL || "sales@elevenorbits.com";
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com";
@@ -124,6 +128,7 @@ export const siteConfig = {
   securityEmail,
   departmentContacts,
   serviceDepartmentMap,
+  publicUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_MARKETING_URL),
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   apiUrl: normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL),
 };

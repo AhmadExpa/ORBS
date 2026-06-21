@@ -67,6 +67,7 @@ export const serviceFamilies = [
   {
     name: "Servers",
     description: "Managed compute foundations for hosted applications and business systems.",
+    pageSlug: "managed-servers",
     categorySlugs: ["vps", "vds"],
     includes: ["VPS", "VDS"],
     techHighlights: ["KVM / Proxmox", "Ubuntu / AlmaLinux", "Nginx / Apache", "Managed backups"],
@@ -74,6 +75,7 @@ export const serviceFamilies = [
   {
     name: "Call Centers",
     description: "Dialer operations, support workflows, and service coordination for active teams.",
+    pageSlug: "voip-services",
     categorySlugs: ["vicidial", "development-support"],
     includes: ["Vicidial", "Support"],
     techHighlights: ["Vicidial", "Asterisk", "SIP routing", "Operational runbooks"],
@@ -81,6 +83,7 @@ export const serviceFamilies = [
   {
     name: "AI Services",
     description: "AI-ready infrastructure, automation layers, and managed model services.",
+    pageSlug: "ai-services",
     categorySlugs: ["ai-servers", "workflows", "ai-solutions"],
     includes: ["AI Servers", "Workflow Automation", "AI Solutions"],
     techHighlights: ["GPU compute", "n8n", "DeepSeek", "Clawbot"],
@@ -88,11 +91,289 @@ export const serviceFamilies = [
   {
     name: "Cybersecurity",
     description: "Managed security posture hardening and incident readiness for hosted systems.",
+    pageSlug: "cybersecurity-services",
     categorySlugs: ["cybersecurity"],
     includes: ["Basic", "Premium", "Platinum"],
     techHighlights: ["WAF", "SIEM", "EDR", "Patch governance"],
   },
 ];
+
+export const serviceVerticals = [
+  {
+    slug: "managed-servers",
+    name: "Managed Servers",
+    shortName: "Servers",
+    eyebrow: "Managed VPS and VDS",
+    title: "Managed server hosting for businesses that need uptime, support, and operational ownership.",
+    description:
+      "ElevenOrbits provides managed VPS and VDS services for production websites, business systems, private applications, and hosted operations that need real support behind the infrastructure.",
+    seoTitle: "Managed Servers, VPS and VDS Hosting | ElevenOrbits",
+    seoDescription:
+      "Managed VPS and VDS hosting from ElevenOrbits with provisioning, monitoring, server hardening, backups, support, and renewal management.",
+    categorySlugs: ["vps", "vds"],
+    primaryKeyword: "managed servers",
+    keywords: ["managed VPS", "managed VDS", "business server hosting", "managed infrastructure", "server management"],
+    audience: ["SaaS teams", "business websites", "call centers", "agencies", "internal operations"],
+    outcomes: [
+      "Provisioned VPS and VDS environments with clear handoff notes.",
+      "Managed operating system, web server, firewall, and backup baseline.",
+      "Support tickets and service history attached to the customer account.",
+      "Recurring billing and wallet-based renewals handled through the portal.",
+    ],
+    process: [
+      "Choose a managed VPS or VDS plan.",
+      "Configure region, storage, image, and operational add-ons where available.",
+      "Submit payment and wait for verification.",
+      "Receive managed service access after ElevenOrbits provisions the environment.",
+    ],
+    faqs: [
+      {
+        question: "What is included in ElevenOrbits managed server hosting?",
+        answer:
+          "Managed server hosting includes provisioning, baseline hardening, monitoring, support routing, maintenance coordination, and renewal management through the customer portal.",
+      },
+      {
+        question: "Should I choose managed VPS or managed VDS?",
+        answer:
+          "Managed VPS is a strong fit for standard websites and applications. Managed VDS is better when you need stronger isolation, dedicated resources, and more predictable performance.",
+      },
+      {
+        question: "Can ElevenOrbits help migrate an existing server?",
+        answer:
+          "Yes. Migration planning can be handled through sales or support so the target environment, access details, and cutover steps are defined before work begins.",
+      },
+    ],
+  },
+  {
+    slug: "ai-services",
+    name: "AI Services",
+    shortName: "AI",
+    eyebrow: "AI infrastructure and solutions",
+    title: "Managed AI services for private deployments, AI servers, APIs, and workflow automation.",
+    description:
+      "ElevenOrbits delivers AI servers, managed DeepSeek services, workflow automation, and AI product rollout support for teams that need practical AI systems instead of disconnected experiments.",
+    seoTitle: "Managed AI Services, AI Servers and Automation | ElevenOrbits",
+    seoDescription:
+      "Managed AI services from ElevenOrbits covering AI servers, DeepSeek API access, private model deployment, AI workflows, and automation support.",
+    categorySlugs: ["ai-servers", "ai-solutions", "workflows"],
+    primaryKeyword: "managed AI services",
+    keywords: ["AI servers", "DeepSeek services", "AI automation", "private AI deployment", "managed AI infrastructure"],
+    audience: ["AI product teams", "automation teams", "support operations", "data-driven businesses", "technical founders"],
+    outcomes: [
+      "GPU-ready or private model infrastructure aligned to the workload.",
+      "Managed API, prompt, and workflow operations support.",
+      "AI-assisted automation connected to business systems.",
+      "Clear support and escalation path after deployment.",
+    ],
+    process: [
+      "Select AI servers, AI solutions, or workflow automation.",
+      "Define model, API, workflow, or integration requirements.",
+      "Confirm the deployment path and commercial plan.",
+      "Operate the AI service through the ElevenOrbits support and billing flow.",
+    ],
+    faqs: [
+      {
+        question: "What AI services does ElevenOrbits provide?",
+        answer:
+          "ElevenOrbits provides managed AI servers, DeepSeek API access, private model deployment support, AI workflow automation, and AI product rollout assistance.",
+      },
+      {
+        question: "Can AI services connect with existing business tools?",
+        answer:
+          "Yes. Workflow automation can connect CRMs, support desks, forms, APIs, webhooks, and other business tools depending on the scope and integration access.",
+      },
+      {
+        question: "Do I need my own AI infrastructure team?",
+        answer:
+          "No. The service is designed for teams that want managed AI infrastructure and implementation support without hiring a dedicated internal operations team first.",
+      },
+    ],
+  },
+  {
+    slug: "voip-services",
+    name: "VoIP and Vicidial Services",
+    shortName: "VoIP",
+    eyebrow: "Call center operations",
+    title: "Managed VoIP and Vicidial services for call centers that need stable dialer operations.",
+    description:
+      "ElevenOrbits supports Vicidial, Asterisk, SIP routing, queue review, dialer tuning, and call-center operations through recurring managed service plans.",
+    seoTitle: "Managed VoIP and Vicidial Services | ElevenOrbits",
+    seoDescription:
+      "Managed VoIP and Vicidial services for call centers, including Asterisk support, SIP routing, dialer tuning, queue review, and operational support.",
+    categorySlugs: ["vicidial", "development-support"],
+    primaryKeyword: "managed VoIP services",
+    keywords: ["Vicidial management", "VoIP support", "Asterisk support", "call center dialer", "SIP routing"],
+    audience: ["call centers", "sales teams", "support teams", "BPO operations", "outbound dialing teams"],
+    outcomes: [
+      "Vicidial and Asterisk operations handled by a managed support team.",
+      "Queue, SIP, and routing issues tracked through a support workflow.",
+      "Recurring support plans sized for small and growing call centers.",
+      "Technical changes coordinated with business impact in mind.",
+    ],
+    process: [
+      "Choose a Vicidial management plan.",
+      "Share current dialer, SIP, queue, and operational context.",
+      "Let the team review setup and support requirements.",
+      "Use support tickets for ongoing dialer and VoIP operations.",
+    ],
+    faqs: [
+      {
+        question: "Does ElevenOrbits manage Vicidial systems?",
+        answer:
+          "Yes. ElevenOrbits offers recurring Vicidial management plans for maintenance, tuning, support routing, SIP coordination, and operational issue handling.",
+      },
+      {
+        question: "Can you help with SIP and Asterisk issues?",
+        answer:
+          "Yes. VoIP support can include SIP routing, Asterisk-related troubleshooting, dialer behavior review, and coordination around call-center service quality.",
+      },
+      {
+        question: "Is VoIP support available as a monthly service?",
+        answer:
+          "Yes. Vicidial management plans are available as monthly managed services, with higher-touch support available for larger operations.",
+      },
+    ],
+  },
+  {
+    slug: "cybersecurity-services",
+    name: "Cybersecurity Services",
+    shortName: "Security",
+    eyebrow: "Managed security operations",
+    title: "Managed cybersecurity services for hosted systems, applications, and operational risk.",
+    description:
+      "ElevenOrbits helps businesses strengthen hosted environments with hardening, monitoring, WAF tuning, patch governance, incident coordination, and security review cadence.",
+    seoTitle: "Managed Cybersecurity Services | ElevenOrbits",
+    seoDescription:
+      "Managed cybersecurity services from ElevenOrbits including hardening, monitoring, WAF tuning, SIEM guidance, patch governance, and incident response coordination.",
+    categorySlugs: ["cybersecurity"],
+    primaryKeyword: "managed cybersecurity services",
+    keywords: ["cybersecurity services", "managed security", "server hardening", "WAF tuning", "incident response"],
+    audience: ["hosted businesses", "SaaS platforms", "ecommerce teams", "server owners", "operations leaders"],
+    outcomes: [
+      "Baseline security hardening for hosted systems.",
+      "Security alert triage and operational response coordination.",
+      "WAF, firewall, patch, and access-control review.",
+      "Executive-level risk summaries available on premium plans.",
+    ],
+    process: [
+      "Select the security coverage level.",
+      "Review current hosting, application, access, and risk context.",
+      "Apply hardening, monitoring, and operational response workflows.",
+      "Continue with recurring posture reviews and incident coordination.",
+    ],
+    faqs: [
+      {
+        question: "What does managed cybersecurity include?",
+        answer:
+          "Managed cybersecurity can include baseline hardening, firewall and WAF review, alert triage, incident coordination, patch governance, and recurring security posture review.",
+      },
+      {
+        question: "Is this a replacement for compliance certification?",
+        answer:
+          "No. ElevenOrbits managed cybersecurity improves operational security posture, but formal compliance certification requires a dedicated audit and compliance scope.",
+      },
+      {
+        question: "Can cybersecurity be added to managed servers?",
+        answer:
+          "Yes. Cybersecurity services can complement managed VPS, VDS, AI servers, and other hosted systems that need stronger hardening and response coverage.",
+      },
+    ],
+  },
+  {
+    slug: "workflow-automation",
+    name: "Workflow Automation",
+    shortName: "Automation",
+    eyebrow: "n8n and AI workflows",
+    title: "Workflow automation services for teams that want connected operations and AI-assisted execution.",
+    description:
+      "ElevenOrbits builds and manages workflow automation across apps, webhooks, APIs, customer operations, and AI-assisted business processes.",
+    seoTitle: "Workflow Automation and n8n Services | ElevenOrbits",
+    seoDescription:
+      "Workflow automation services using n8n, APIs, webhooks, and AI integrations for connected operations, support workflows, and business process automation.",
+    categorySlugs: ["workflows"],
+    primaryKeyword: "workflow automation services",
+    keywords: ["n8n automation", "AI workflows", "business automation", "webhook automation", "API integrations"],
+    audience: ["operations teams", "founders", "support teams", "sales teams", "agencies"],
+    outcomes: [
+      "Automated workflows connecting the tools your team already uses.",
+      "AI-assisted steps for routing, summarization, drafting, and classification.",
+      "Operational monitoring and revision support on managed plans.",
+      "Clear ownership for integration changes and workflow reliability.",
+    ],
+    process: [
+      "Identify the business process to automate.",
+      "Choose a workflow plan or request enterprise scoping.",
+      "Connect apps, APIs, webhooks, and AI services.",
+      "Run and improve workflows through a managed support cycle.",
+    ],
+    faqs: [
+      {
+        question: "What can ElevenOrbits automate?",
+        answer:
+          "ElevenOrbits can automate lead routing, support handoffs, notifications, reporting, CRM updates, data movement, AI summaries, and other API-based workflows.",
+      },
+      {
+        question: "Do you use n8n for workflow automation?",
+        answer:
+          "Yes. n8n is one of the supported workflow orchestration tools, alongside APIs, webhooks, and AI service integrations.",
+      },
+      {
+        question: "Can automation include AI?",
+        answer:
+          "Yes. AI can be added for classification, summarization, drafting, decision support, and workflow routing where it is suitable for the process.",
+      },
+    ],
+  },
+  {
+    slug: "managed-it-support",
+    name: "Managed IT and Development Support",
+    shortName: "IT Support",
+    eyebrow: "Technical support coverage",
+    title: "Managed IT and development support for teams that need reliable technical execution.",
+    description:
+      "ElevenOrbits provides recurring support coverage, implementation help, troubleshooting, change coordination, and managed technical assistance for active business systems.",
+    seoTitle: "Managed IT and Development Support | ElevenOrbits",
+    seoDescription:
+      "Managed IT and development support from ElevenOrbits for troubleshooting, implementation help, change coordination, technical support, and operational execution.",
+    categorySlugs: ["development-support"],
+    primaryKeyword: "managed IT support",
+    keywords: ["managed IT support", "development support", "technical support", "implementation help", "change coordination"],
+    audience: ["small businesses", "SaaS teams", "agencies", "operations teams", "technical founders"],
+    outcomes: [
+      "Recurring technical support with clear ticket ownership.",
+      "Implementation help for infrastructure, applications, and workflow changes.",
+      "Support plans that scale from basic coverage to custom engineering help.",
+      "Operational notes and handoffs tied to the customer account.",
+    ],
+    process: [
+      "Choose a support plan or request a custom support scope.",
+      "Share systems, priorities, access process, and support expectations.",
+      "Use tickets for issues, changes, and operational support requests.",
+      "Review recurring needs and expand coverage when needed.",
+    ],
+    faqs: [
+      {
+        question: "What is included in managed IT and development support?",
+        answer:
+          "Support can include troubleshooting, implementation assistance, infrastructure changes, release coordination, application support, and recurring technical help.",
+      },
+      {
+        question: "Can support be used with other ElevenOrbits services?",
+        answer:
+          "Yes. Development support can complement managed servers, AI services, cybersecurity, VoIP, and workflow automation.",
+      },
+      {
+        question: "Is advanced support custom scoped?",
+        answer:
+          "Yes. Advanced development support is scoped around the systems, change volume, and technical requirements of the customer.",
+      },
+    ],
+  },
+];
+
+export function getServiceVertical(slug) {
+  return serviceVerticals.find((vertical) => vertical.slug === slug);
+}
 
 export const productPlanSeeds = [
   {

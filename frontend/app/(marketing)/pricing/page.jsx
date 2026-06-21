@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
+import { getPurchasePath, productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
 
 export default function PricingPage() {
@@ -42,7 +42,7 @@ export default function PricingPage() {
                         ))}
                       </ul>
                       {plan.techStack?.length ? <p className="text-sm text-slate-600">Tech stack: {plan.techStack.join(", ")}</p> : null}
-                      <Link href={plan.contactSalesOnly ? "/#contact" : `/portal/order/${plan.slug}`}>
+                      <Link href={getPurchasePath(plan)}>
                         <Button className="w-full">{plan.contactSalesOnly ? "Contact Sales" : "Choose Plan"}</Button>
                       </Link>
                     </CardContent>

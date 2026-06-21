@@ -148,7 +148,7 @@ export default function PortalSubscriptionsPage() {
         title="Subscriptions"
         subtitle="Track billing cycle, renewal dates, and the wallet-driven automatic deduction status for all subscriptions."
       />
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/portal/services">
             <Button>Order Another Service</Button>

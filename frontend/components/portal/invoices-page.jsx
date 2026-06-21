@@ -160,7 +160,7 @@ export function InvoicesPage({
     <div>
       <Topbar title={title} subtitle={subtitle} />
 
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
           <CardContent className="grid gap-4 p-6 md:grid-cols-3">
             <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">

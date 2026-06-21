@@ -8,14 +8,12 @@ import {
   PhoneCall,
   ServerCog,
   ShieldCheck,
-  Sparkles,
   Wallet,
   Workflow,
 } from "lucide-react";
-import { productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
+import { getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
-import { OrbMascot } from "@/components/shared/orb-mascot";
 
 const highlightSlugs = [
   "basic-managed-vps",
@@ -127,8 +125,8 @@ const faqItems = [
     answer: "Support tickets stay tied to the customer and the subscription, so follow-up, context, and service history remain connected.",
   },
   {
-    question: "What does Orbs represent on the site?",
-    answer: "Orbs is the ElevenOrbits guide used across FAQs, support, AI guidance, and onboarding surfaces to make technical guidance easier to follow.",
+    question: "What happens before checkout?",
+    answer: "Customers create or access an account first, then configure the selected service, complete card payment, and continue to the portal after confirmation.",
   },
 ];
 
@@ -238,7 +236,7 @@ export function LandingPage() {
                     </p>
 
                     <div className="mt-9 flex flex-wrap gap-3">
-                      <Link href="/signup">
+                      <Link href={getSignupPath()}>
                         <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">
                           Get Started
                         </Button>
@@ -294,17 +292,16 @@ export function LandingPage() {
               <div className="rounded-[2.8rem] border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.26)] backdrop-blur">
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Operating Signals</p>
-                  <Sparkles className="h-5 w-5 text-[color:var(--marketing-accent)]" />
+                  <ShieldCheck className="h-5 w-5 text-[color:var(--marketing-accent)]" />
                 </div>
                 <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#fff6ef_100%)] p-5">
-                  <OrbMascot
-                    size="sm"
-                    eyebrow="Meet Orbs"
-                    title="The ElevenOrbits guide for AI, support, and FAQs."
-                    description="Orbs appears wherever the site needs clearer guidance: AI workloads, support flows, onboarding context, and common questions."
-                    badge="Support + AI Guide"
-                    align="stack"
-                  />
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Service Standard</p>
+                  <p className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.03em] text-slate-950">
+                    Clear ownership from selection to handoff.
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-slate-600">
+                    Every order keeps plan details, payment state, fulfillment notes, and support context connected to the customer account.
+                  </p>
                 </div>
                 <div className="mt-5 space-y-3">
                   {heroSignals.map((item) => (
@@ -365,7 +362,7 @@ export function LandingPage() {
                 return (
                   <Link
                     key={family.name}
-                    href={`/services/${family.categorySlugs[0]}`}
+                    href={`/${family.pageSlug || `services/${family.categorySlugs[0]}`}`}
                     className={cn(
                       "group relative flex min-h-[470px] flex-col overflow-hidden px-7 py-8 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-54px_rgba(15,23,42,0.28)]",
                       theme.cardClassName,
@@ -548,16 +545,15 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
             <div className="rounded-[2.6rem] border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
-              <OrbMascot
-                size="lg"
-                eyebrow="04 / Orbs Assistant"
-                title="One character for FAQs, support, and AI guidance."
-                description="Orbs is now the main ElevenOrbits character used anywhere the product needs a more human guide: onboarding explanations, support direction, AI recommendations, and customer-facing answers."
-                badge="Brand Guide Character"
-                align="center"
-              />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--marketing-accent)]">04 / Customer Guidance</p>
+              <h2 className="mt-5 text-4xl font-semibold leading-[0.98] tracking-[-0.05em] text-slate-950 md:text-5xl">
+                Direct answers before a customer opens the portal.
+              </h2>
+              <p className="mt-5 text-sm leading-7 text-slate-600">
+                Public guidance focuses on how services are bought, provisioned, billed, and supported, so the portal only starts once the customer is ready to configure.
+              </p>
               <div className="mt-7 flex flex-wrap justify-center gap-2">
-                {["FAQs", "Support", "AI Guidance", "Onboarding"].map((item) => (
+                {["FAQs", "Support", "Billing", "Onboarding"].map((item) => (
                   <span key={item} className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                     {item}
                   </span>
@@ -591,7 +587,7 @@ export function LandingPage() {
               <p className="text-sm leading-7 text-slate-600">
                 These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, payment settings, and renewals.
               </p>
-              <Link href="/signup">
+              <Link href={getSignupPath()}>
                 <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">Open Portal</Button>
               </Link>
             </div>
@@ -687,16 +683,15 @@ export function LandingPage() {
                 </p>
 
                 <div className="mt-8 rounded-[1.9rem] border border-slate-200 bg-white/90 p-5">
-                  <OrbMascot
-                    size="sm"
-                    eyebrow="Orbs Concierge"
-                    title="Need direction before you write?"
-                    description="Orbs marks the sections where ElevenOrbits explains pricing, AI options, support routes, and common pre-sales questions."
-                  />
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Routing Standard</p>
+                  <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950">Start with the right team.</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Sales, servers, AI and automation, and support requests route through dedicated inboxes so each conversation starts with the right context.
+                  </p>
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href="/signup">
+                  <Link href={getSignupPath()}>
                     <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">Start Account</Button>
                   </Link>
                   <a href={`mailto:${siteConfig.salesEmail}`}>

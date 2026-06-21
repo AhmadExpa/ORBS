@@ -82,6 +82,14 @@ select {
   animation: loader-progress 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
+.eo-scrollbar-none {
+  scrollbar-width: none;
+}
+
+.eo-scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes skeleton-shimmer {
   100% {
     transform: translateX(100%);

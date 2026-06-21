@@ -12,7 +12,7 @@ import {
   ImageIcon,
   PlusCircle,
   Server,
-  Sparkles,
+  Settings2,
 } from "lucide-react";
 import {
   Button,
@@ -363,7 +363,7 @@ export function OrderConfigurator({ slug }) {
         title={`Configure ${plan.name}`}
         subtitle="Treat the homepage as the storefront, then use this flow to choose managed server options, deployment details, and optional add-ons before checkout."
       />
-      <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>
             <CardTitle>Order Flow</CardTitle>
@@ -615,7 +615,7 @@ export function OrderConfigurator({ slug }) {
                       return (
                         <OptionCard
                           key={addon._id}
-                          icon={Sparkles}
+                          icon={Settings2}
                           title={addon.name}
                           description={addon.description}
                           priceLabel={formatAddonCharge(getAddonPrice(addon, billingCycle), billingCycle)}
@@ -636,7 +636,7 @@ export function OrderConfigurator({ slug }) {
             <div className="rounded-3xl border border-slate-200 bg-white p-5">
               <div className="flex items-start gap-3">
                 <span className="rounded-2xl bg-slate-100 p-2.5 text-slate-700">
-                  <Sparkles className="h-5 w-5" />
+                  <Settings2 className="h-5 w-5" />
                 </span>
                 <div>
                   <p className="text-lg font-semibold text-slate-950">Final Deployment Note</p>

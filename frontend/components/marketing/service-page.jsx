@@ -1,21 +1,90 @@
 import Link from "next/link";
-import { productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
-import { getDepartmentContactByServiceSlug } from "@/lib/constants/site";
+import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
+import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
-import { OrbMascot } from "@/components/shared/orb-mascot";
+
+function JsonLd({ data }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, "\\u003c"),
+      }}
+    />
+  );
+}
+
+function absoluteUrl(path) {
+  return `${siteConfig.publicUrl}${path}`;
+}
 
 export function ServicePage({ slug }) {
   const category = serviceCategories.find((item) => item.slug === slug);
   const plans = productPlanSeeds.filter((plan) => plan.categorySlug === slug);
   const marketing = serviceMarketingContent[slug];
   const departmentContact = getDepartmentContactByServiceSlug(slug);
+  const primaryPurchasePlan = plans.find((plan) => !plan.contactSalesOnly);
 
   if (!category) {
     return null;
   }
 
+  const pageUrl = absoluteUrl(`/services/${slug}`);
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: category.name,
+    description: marketing?.body || category.description,
+    url: pageUrl,
+    areaServed: "Worldwide",
+    provider: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: siteConfig.publicUrl,
+      email: departmentContact.email,
+    },
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: `${category.name} plans`,
+      itemListElement: plans.map((plan) => ({
+        "@type": "Offer",
+        name: plan.name,
+        description: plan.description,
+        url: pageUrl,
+        price: plan.contactSalesOnly ? undefined : String(plan.monthlyPrice),
+        priceCurrency: "USD",
+      })),
+    },
+  };
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteConfig.publicUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Services",
+        item: absoluteUrl("/services"),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: category.name,
+        item: pageUrl,
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-16">
+      <JsonLd data={serviceSchema} />
+      <JsonLd data={breadcrumbSchema} />
       <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-panel">
         <SectionHeading
           eyebrow="Service Detail"
@@ -23,8 +92,8 @@ export function ServicePage({ slug }) {
           description={marketing?.body || category.description}
         />
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/signup">
-            <Button>Start Subscription</Button>
+          <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/#contact"}>
+            <Button>{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
           </Link>
           <a href={`mailto:${departmentContact.email}`}>
             <Button variant="ghost">Email {departmentContact.title}</Button>
@@ -63,7 +132,7 @@ export function ServicePage({ slug }) {
                         {plan.contactSalesOnly ? "Custom pricing" : "monthly billing available"}
                       </p>
                     </div>
-                    <Link href={plan.contactSalesOnly ? "/#contact" : `/portal/order/${plan.slug}`}>
+                    <Link href={getPurchasePath(plan)}>
                       <Button>{plan.contactSalesOnly ? "Contact Sales" : "Configure"}</Button>
                     </Link>
                   </div>
@@ -108,15 +177,9 @@ export function ServicePage({ slug }) {
               <CardDescription>Support and operations stay with our team across all managed services.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
-              <OrbMascot
-                size="sm"
-                eyebrow="Orbs Guide"
-                title="Need AI, support, or onboarding direction?"
-                description="Orbs is the ElevenOrbits character used across service guidance, FAQs, and support explanations."
-                align="stack"
-              />
               <p>Customers do not self-manage infra from this portal. We handle monitoring, maintenance, and day-to-day operations.</p>
-              <p>Fixed-price plans move through checkout, manual payment verification, and wallet-based renewals. Contact-sales plans route through the department contact flow first.</p>
+              <p>Fixed-price plans now start with account access, then configuration, card payment, and a confirmation page before the portal opens.</p>
+              <p>Contact-sales plans route through the department contact flow first.</p>
             </CardContent>
           </Card>
         </div>

@@ -27,7 +27,7 @@ export function PortalDataPage({
   return (
     <div>
       <Topbar title={title} subtitle={subtitle} />
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         {children ? <div className="flex flex-wrap items-center gap-3">{children}</div> : null}
         {rows.length ? (
           <Card>

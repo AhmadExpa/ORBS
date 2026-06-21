@@ -414,7 +414,7 @@ export function WalletPaymentsPage() {
         subtitle="Manage wallet funding, saved cards, renewal billing, and payment activity from one portal surface."
       />
 
-      <div className="space-y-6 p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_28px_80px_-60px_rgba(15,23,42,0.22)]">
           <CardContent className="space-y-8 p-6 md:p-7">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
