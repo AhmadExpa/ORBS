@@ -29,9 +29,11 @@ function endApiActivity() {
   emitApiActivity();
 }
 
-export async function apiFetch(path, { method = "GET", body, token, isMultipart = false, authMode = "none" } = {}) {
+export async function apiFetch(path, { method = "GET", body, token, isMultipart = false, authMode = "none", trackActivity } = {}) {
   const headers = {};
   const resolvedToken = token || (authMode === "staff" ? getStaffSessionToken() : "");
+  const resolvedMethod = method.toUpperCase();
+  const shouldTrackActivity = trackActivity ?? resolvedMethod !== "GET";
 
   if (resolvedToken) {
     headers.Authorization = `Bearer ${resolvedToken}`;
@@ -41,11 +43,13 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
     headers["Content-Type"] = "application/json";
   }
 
-  beginApiActivity();
+  if (shouldTrackActivity) {
+    beginApiActivity();
+  }
 
   try {
     const response = await fetch(`${siteConfig.apiUrl}${path}`, {
-      method,
+      method: resolvedMethod,
       headers,
       body: isMultipart ? body : body ? JSON.stringify(body) : undefined,
       credentials: "include",
@@ -74,6 +78,8 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
 
     return data;
   } finally {
-    endApiActivity();
+    if (shouldTrackActivity) {
+      endApiActivity();
+    }
   }
 }

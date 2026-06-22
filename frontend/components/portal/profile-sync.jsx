@@ -21,6 +21,7 @@ export function ProfileSync() {
       await apiFetch("/profile/sync", {
         method: "POST",
         token,
+        trackActivity: false,
         body: {
           email: user.primaryEmailAddress?.emailAddress,
           name: user.fullName || user.firstName || "ElevenOrbits Customer",
@@ -33,4 +34,3 @@ export function ProfileSync() {
 
   return null;
 }
-
