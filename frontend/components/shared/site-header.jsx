@@ -9,11 +9,12 @@ import { getLoginPath, getSignupPath } from "@/lib/shared";
 import { BrandLogo } from "./brand-logo";
 
 const landingNavItems = [
-  { href: "/#overview", label: "Overview" },
   { href: "/services", label: "Services" },
-  { href: "/#managed", label: "Managed" },
-  { href: "/#pricing", label: "Pricing" },
-  { href: "/#contact", label: "Contact Us" },
+  { href: "/industries", label: "Industries" },
+  { href: "/process", label: "Process" },
+  { href: "/resources", label: "Resources" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function SiteHeader() {

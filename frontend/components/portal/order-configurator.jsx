@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,6 @@ import {
   CheckCircle2,
   Globe2,
   HardDrive,
-  ImageIcon,
   PlusCircle,
   Server,
   Settings2,
@@ -46,6 +46,73 @@ function formatAddonCharge(amount, billingCycle) {
   return amount > 0 ? `${formatCurrency(amount)}${getBillingSuffix(billingCycle)}` : "Included";
 }
 
+const defaultImageArtwork = {
+  src: "https://cdn.simpleicons.org/linux/FCC624",
+  alt: "Linux logo",
+  shellClassName: "bg-amber-50 ring-amber-200",
+};
+
+const imageAddonArtwork = {
+  "image-ubuntu": {
+    src: "https://cdn.simpleicons.org/ubuntu/E95420",
+    alt: "Ubuntu logo",
+    shellClassName: "bg-orange-50 ring-orange-200",
+  },
+  "image-custom": {
+    src: "https://cdn.simpleicons.org/linux/FCC624",
+    alt: "Linux logo",
+    shellClassName: "bg-amber-50 ring-amber-200",
+  },
+  "image-windows-server": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg",
+    alt: "Windows logo",
+    shellClassName: "bg-sky-50 ring-sky-200",
+  },
+  "image-cpanel": {
+    src: "https://cdn.simpleicons.org/cpanel/FF6C2C",
+    alt: "cPanel logo",
+    shellClassName: "bg-orange-50 ring-orange-200",
+  },
+  "image-rhel": {
+    src: "https://cdn.simpleicons.org/redhat/EE0000",
+    alt: "Red Hat logo",
+    shellClassName: "bg-rose-50 ring-rose-200",
+  },
+  "image-plesk-linux": {
+    src: "https://cdn.simpleicons.org/plesk/52BBE6",
+    alt: "Plesk logo",
+    shellClassName: "bg-cyan-50 ring-cyan-200",
+  },
+};
+
+function getImageArtwork(addon) {
+  return imageAddonArtwork[addon?.optionCode] || defaultImageArtwork;
+}
+
+function ImageOptionMark({ artwork, selected = false, compact = false }) {
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-2xl ring-1 transition",
+        compact ? "h-10 w-10 p-2" : "mt-0.5 h-14 w-14 p-3",
+        artwork.shellClassName,
+        selected && "ring-sky-300",
+      )}
+    >
+      <Image
+        src={artwork.src}
+        alt={artwork.alt}
+        width={compact ? 24 : 32}
+        height={compact ? 24 : 32}
+        unoptimized
+        loading="lazy"
+        draggable={false}
+        className="h-full w-full object-contain"
+      />
+    </span>
+  );
+}
+
 function normalizeStorageQuantity(value, storageAddon) {
   if (!storageAddon) {
     return "";
@@ -70,7 +137,7 @@ function normalizeStorageQuantity(value, storageAddon) {
   return String(normalizedQuantity);
 }
 
-function OptionCard({ icon: Icon, title, description, priceLabel, selected, onClick, children }) {
+function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selected, onClick, children }) {
   return (
     <button
       type="button"
@@ -84,14 +151,18 @@ function OptionCard({ icon: Icon, title, description, priceLabel, selected, onCl
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "mt-0.5 rounded-2xl p-2.5",
-              selected ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600",
-            )}
-          >
-            <Icon className="h-5 w-5" />
-          </span>
+          {artwork ? (
+            <ImageOptionMark artwork={artwork} selected={selected} />
+          ) : (
+            <span
+              className={cn(
+                "mt-0.5 rounded-2xl p-2.5",
+                selected ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+          )}
           <div>
             <p className="font-semibold text-slate-950">{title}</p>
             <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
@@ -238,6 +309,7 @@ export function OrderConfigurator({ slug }) {
   const selectedImage = imageOptions.find((addon) => addon._id === activeImageId) || null;
   const selectedStorage = storageOptions.find((addon) => addon._id === activeStorageId) || null;
   const selectedFeatures = featureAddons.filter((addon) => activeFeatureIds.includes(addon._id));
+  const selectedImageArtwork = getImageArtwork(selectedImage || imageOptions[0]);
 
   const minimumStorageQuantity = selectedStorage ? getStorageMinimumQuantity(selectedStorage) : 0;
   const storageQuantityInput = selectedStorage
@@ -526,9 +598,7 @@ export function OrderConfigurator({ slug }) {
             {imageOptions.length ? (
               <div className="rounded-3xl border border-slate-200 bg-white p-5">
                 <div className="flex items-start gap-3">
-                  <span className="rounded-2xl bg-slate-100 p-2.5 text-slate-700">
-                    <ImageIcon className="h-5 w-5" />
-                  </span>
+                  <ImageOptionMark artwork={selectedImageArtwork} selected compact />
                   <div>
                     <p className="text-lg font-semibold text-slate-950">Image</p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -540,7 +610,7 @@ export function OrderConfigurator({ slug }) {
                   {imageOptions.map((addon) => (
                     <OptionCard
                       key={addon._id}
-                      icon={ImageIcon}
+                      artwork={getImageArtwork(addon)}
                       title={addon.name}
                       description={addon.description}
                       priceLabel={formatAddonCharge(getAddonPrice(addon, billingCycle), billingCycle)}
