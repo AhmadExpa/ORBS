@@ -195,7 +195,7 @@ export function AppShell({
                   width={logoWidth}
                   height={logoHeight}
                 />
-                <p className="mt-4 text-sm font-medium text-slate-500">Managed by ElevenOrbits Team</p>
+                <p className="mt-4 text-sm font-medium text-slate-500">Customer operations portal</p>
               </div>
             </Link>
             <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">

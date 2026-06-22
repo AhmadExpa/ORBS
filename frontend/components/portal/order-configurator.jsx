@@ -744,7 +744,7 @@ export function OrderConfigurator({ slug }) {
         <Card className="h-fit">
           <CardHeader>
             <CardTitle>Pricing Summary</CardTitle>
-            <CardDescription>Managed by ElevenOrbits Team</CardDescription>
+            <CardDescription>Provisioning and support coverage included</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <SummaryRow label="Plan" value={plan.name} />

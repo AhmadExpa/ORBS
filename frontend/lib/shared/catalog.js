@@ -1,5 +1,5 @@
 const managedOps = [
-  "Managed by ElevenOrbits Team",
+  "Managed operations coverage",
   "24/7 operational oversight",
   "Ticketed support and change handling",
 ];

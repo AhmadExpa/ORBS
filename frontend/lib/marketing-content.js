@@ -465,12 +465,12 @@ export const techStackGroups = [
     subtitle: "Threat defense, monitoring, identity safeguards, and endpoint protection.",
     icon: "shield",
     partners: [
-      { name: "Rocket Cyber", logo: "https://cdn.simpleicons.org/rocket/D33847", initials: "RC" },
-      { name: "Datto EDR", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
-      { name: "Datto MDR", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
-      { name: "Kaseya SaaS Protection", initials: "KS", tone: "blue" },
-      { name: "Managed SOC", initials: "SOC", tone: "slate" },
-      { name: "Kaseya Dark Web Monitoring", initials: "DW", tone: "blue" },
+      { name: "RocketCyber", descriptor: "Security operations platform" },
+      { name: "Datto EDR", logo: "https://cdn.simpleicons.org/datto/199ED9", descriptor: "Endpoint detection" },
+      { name: "Datto MDR", logo: "https://cdn.simpleicons.org/datto/199ED9", descriptor: "Managed detection" },
+      { name: "Kaseya SaaS Protection", wordmark: "Kaseya", descriptor: "SaaS protection" },
+      { name: "Managed SOC", descriptor: "Security operations" },
+      { name: "Kaseya Dark Web Monitoring", wordmark: "Kaseya", descriptor: "Dark web monitoring" },
     ],
   },
   {
@@ -479,11 +479,11 @@ export const techStackGroups = [
     subtitle: "Cloud infrastructure, backup, continuity planning, and resilient workload delivery.",
     icon: "cloud",
     partners: [
-      { name: "Microsoft Azure", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg", initials: "AZ" },
-      { name: "Veeam", logo: "https://cdn.simpleicons.org/veeam/00B336", initials: "VM" },
-      { name: "Kaseya", initials: "KS", tone: "blue" },
-      { name: "HP", logo: "https://cdn.simpleicons.org/hp/0096D6", initials: "HP" },
-      { name: "Velocity", initials: "V", tone: "teal" },
+      { name: "Microsoft Azure", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg", descriptor: "Cloud infrastructure" },
+      { name: "Veeam", logo: "https://cdn.simpleicons.org/veeam/00B336", descriptor: "Backup and recovery" },
+      { name: "Kaseya", descriptor: "Business continuity tooling" },
+      { name: "HP", logo: "https://cdn.simpleicons.org/hp/0096D6", descriptor: "Hardware ecosystem" },
+      { name: "Velocity", descriptor: "Continuity services" },
     ],
   },
   {
@@ -492,10 +492,10 @@ export const techStackGroups = [
     subtitle: "Device lifecycle, patching, inventory, backup, and operational endpoint baselines.",
     icon: "monitor",
     partners: [
-      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
-      { name: "Kaseya", initials: "KS", tone: "blue" },
-      { name: "Microsoft Intune", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "MI" },
-      { name: "Autotask", initials: "AT", tone: "slate" },
+      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", descriptor: "Endpoint management" },
+      { name: "Kaseya", descriptor: "RMM operations" },
+      { name: "Microsoft Intune", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Device management" },
+      { name: "Autotask", descriptor: "Service operations" },
     ],
   },
   {
@@ -504,9 +504,9 @@ export const techStackGroups = [
     subtitle: "Ticketing, documentation, service desk workflows, and support escalation.",
     icon: "headset",
     partners: [
-      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
-      { name: "IT Glue", initials: "IT", tone: "slate" },
-      { name: "Autotask", initials: "AT", tone: "slate" },
+      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", descriptor: "Service desk tooling" },
+      { name: "IT Glue", descriptor: "Documentation" },
+      { name: "Autotask", descriptor: "Ticketing and PSA" },
     ],
   },
   {
@@ -515,11 +515,11 @@ export const techStackGroups = [
     subtitle: "AI-assisted workflows, private deployment planning, model services, and productivity layers.",
     icon: "brain",
     partners: [
-      { name: "OpenAI", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", initials: "OA", invert: true },
-      { name: "Claude", logo: "https://cdn.simpleicons.org/claude/D97757", initials: "CL" },
-      { name: "Gamma", initials: "GA", tone: "violet" },
-      { name: "Microsoft Copilot", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "CP" },
-      { name: "ChatGPT", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", initials: "CG", invert: true },
+      { name: "OpenAI", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", descriptor: "Model platform" },
+      { name: "Claude", logo: "https://cdn.simpleicons.org/claude/D97757", descriptor: "AI assistant platform" },
+      { name: "Gamma", descriptor: "AI presentation workflows" },
+      { name: "Microsoft Copilot", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Productivity AI" },
+      { name: "ChatGPT", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", descriptor: "AI assistant workflows" },
     ],
   },
   {
@@ -528,8 +528,8 @@ export const techStackGroups = [
     subtitle: "Business calling, collaboration, meetings, and communications continuity.",
     icon: "phone",
     partners: [
-      { name: "Nextiva", initials: "NX", tone: "slate" },
-      { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "MT" },
+      { name: "Nextiva", descriptor: "Business communications" },
+      { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Collaboration and meetings" },
     ],
   },
 ];
@@ -549,6 +549,17 @@ export const featuredTechPartners = [
   "Claude",
   "Nextiva",
   "Microsoft Teams",
+];
+
+export const featuredPartnerLogos = [
+  { name: "Microsoft Azure", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg" },
+  { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9" },
+  { name: "Veeam", logo: "https://cdn.simpleicons.org/veeam/00B336" },
+  { name: "HP", logo: "https://cdn.simpleicons.org/hp/0096D6" },
+  { name: "OpenAI", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" },
+  { name: "Claude", logo: "https://cdn.simpleicons.org/claude/D97757" },
+  { name: "Nextiva" },
+  { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" },
 ];
 
 export function getCompanyPage(slug) {

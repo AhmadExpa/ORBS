@@ -41,7 +41,7 @@ export function SiteHeader() {
               <LogIn className="h-4 w-4" />
               Log In
             </Link>
-            <Link href={getSignupPath()}>
+            <Link href={getSignupPath()} className="hidden sm:block">
               <Button className="min-h-10 rounded-md bg-slate-950 px-4 py-2 hover:bg-black">Get Started</Button>
             </Link>
           </SignedOut>
@@ -83,6 +83,13 @@ export function SiteHeader() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Log In
+              </Link>
+              <Link
+                href={getSignupPath()}
+                className="rounded-md bg-slate-950 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black sm:hidden"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Get Started
               </Link>
             </SignedOut>
           </nav>

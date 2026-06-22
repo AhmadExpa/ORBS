@@ -148,7 +148,7 @@ export default function ServicesPage() {
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">
-                <p className="text-sm font-medium text-sky-700">Managed by ElevenOrbits Team</p>
+                <p className="text-sm font-medium text-slate-600">Plans, pricing, and configuration</p>
                 <Link href={`/services/${category.slug}`}>
                   <Button variant="ghost">Open</Button>
                 </Link>
