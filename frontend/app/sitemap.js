@@ -19,6 +19,7 @@ export default function sitemap() {
     page("/pricing", 0.75, "weekly"),
     page("/contact", 0.7, "monthly"),
     ...Object.values(companyPages).map((item) => page(item.href, 0.78, "monthly")),
+    page("/tech-stack", 0.8, "monthly"),
     page("/industries", 0.72, "monthly"),
     page("/resources", 0.72, "monthly"),
     page("/legal", 0.5, "monthly"),

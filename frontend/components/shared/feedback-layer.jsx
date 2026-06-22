@@ -127,20 +127,25 @@ export function FeedbackProvider({ children }) {
 
       <div
         className={cn(
-          "pointer-events-none fixed inset-0 z-[70] flex items-start justify-center p-6 pt-24 transition duration-300",
+          "pointer-events-none fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/[0.03] p-6 transition duration-300",
           loaderVisible ? "opacity-100" : "opacity-0",
         )}
         aria-live="polite"
         aria-label="Loading"
       >
-        <div className="overflow-hidden rounded-full border border-white/80 bg-white/90 px-3 py-3 shadow-[0_28px_90px_-45px_rgba(15,23,42,0.58)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white">
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-            </span>
-            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
-              <div className="loader-progress h-full rounded-full bg-slate-950" />
-            </div>
+        <div
+          className={cn(
+            "w-full max-w-sm rounded-[28px] border border-white/80 bg-white/92 px-6 py-6 text-center shadow-[0_34px_120px_-52px_rgba(15,23,42,0.72)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl transition duration-300",
+            loaderVisible ? "translate-y-0 scale-100" : "translate-y-3 scale-95",
+          )}
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-[0_22px_44px_-26px_rgba(15,23,42,0.9)]">
+            <LoaderCircle className="h-6 w-6 animate-spin" />
+          </div>
+          <p className="mt-4 text-base font-semibold tracking-tight text-slate-950">Loading workspace data</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">Fetching the latest account details.</p>
+          <div className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200">
+            <div className="loader-progress h-full rounded-full bg-slate-950" />
           </div>
         </div>
       </div>

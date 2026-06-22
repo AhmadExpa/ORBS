@@ -3,6 +3,7 @@ import { siteConfig } from "@/lib/constants/site";
 export const companyLinks = [
   { href: "/about", label: "About" },
   { href: "/process", label: "Process" },
+  { href: "/tech-stack", label: "Tech Stack" },
   { href: "/industries", label: "Industries" },
   { href: "/resources", label: "Resources" },
   { href: "/contact", label: "Contact" },
@@ -455,6 +456,99 @@ export const resourcePages = [
       },
     ],
   },
+];
+
+export const techStackGroups = [
+  {
+    slug: "cybersecurity",
+    title: "Cybersecurity",
+    subtitle: "Threat defense, monitoring, identity safeguards, and endpoint protection.",
+    icon: "shield",
+    partners: [
+      { name: "Rocket Cyber", logo: "https://cdn.simpleicons.org/rocket/D33847", initials: "RC" },
+      { name: "Datto EDR", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
+      { name: "Datto MDR", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
+      { name: "Kaseya SaaS Protection", initials: "KS", tone: "blue" },
+      { name: "Managed SOC", initials: "SOC", tone: "slate" },
+      { name: "Kaseya Dark Web Monitoring", initials: "DW", tone: "blue" },
+    ],
+  },
+  {
+    slug: "cloud-continuity",
+    title: "Cloud & Continuity",
+    subtitle: "Cloud infrastructure, backup, continuity planning, and resilient workload delivery.",
+    icon: "cloud",
+    partners: [
+      { name: "Microsoft Azure", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg", initials: "AZ" },
+      { name: "Veeam", logo: "https://cdn.simpleicons.org/veeam/00B336", initials: "VM" },
+      { name: "Kaseya", initials: "KS", tone: "blue" },
+      { name: "HP", logo: "https://cdn.simpleicons.org/hp/0096D6", initials: "HP" },
+      { name: "Velocity", initials: "V", tone: "teal" },
+    ],
+  },
+  {
+    slug: "endpoint-management",
+    title: "Endpoint Management",
+    subtitle: "Device lifecycle, patching, inventory, backup, and operational endpoint baselines.",
+    icon: "monitor",
+    partners: [
+      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
+      { name: "Kaseya", initials: "KS", tone: "blue" },
+      { name: "Microsoft Intune", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "MI" },
+      { name: "Autotask", initials: "AT", tone: "slate" },
+    ],
+  },
+  {
+    slug: "managed-it",
+    title: "Managed IT & Helpdesk",
+    subtitle: "Ticketing, documentation, service desk workflows, and support escalation.",
+    icon: "headset",
+    partners: [
+      { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9", initials: "DT" },
+      { name: "IT Glue", initials: "IT", tone: "slate" },
+      { name: "Autotask", initials: "AT", tone: "slate" },
+    ],
+  },
+  {
+    slug: "ai-enablement",
+    title: "AI Enablement",
+    subtitle: "AI-assisted workflows, private deployment planning, model services, and productivity layers.",
+    icon: "brain",
+    partners: [
+      { name: "OpenAI", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", initials: "OA", invert: true },
+      { name: "Claude", logo: "https://cdn.simpleicons.org/claude/D97757", initials: "CL" },
+      { name: "Gamma", initials: "GA", tone: "violet" },
+      { name: "Microsoft Copilot", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "CP" },
+      { name: "ChatGPT", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", initials: "CG", invert: true },
+    ],
+  },
+  {
+    slug: "ucaas",
+    title: "UCaaS",
+    subtitle: "Business calling, collaboration, meetings, and communications continuity.",
+    icon: "phone",
+    partners: [
+      { name: "Nextiva", initials: "NX", tone: "slate" },
+      { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", initials: "MT" },
+    ],
+  },
+];
+
+export const techStackHighlights = [
+  { label: "Best of breed", value: "Category leaders vetted for business operations." },
+  { label: "Integrated delivery", value: "Selected to work together across security, cloud, support, AI, and communications." },
+  { label: "Future-proof", value: "Reviewed continuously as vendors, APIs, and service quality evolve." },
+];
+
+export const featuredTechPartners = [
+  "Microsoft Azure",
+  "Datto",
+  "Veeam",
+  "HP",
+  "OpenAI",
+  "Claude",
+  "Nextiva",
+  "Microsoft Teams",
 ];
 
 export function getCompanyPage(slug) {

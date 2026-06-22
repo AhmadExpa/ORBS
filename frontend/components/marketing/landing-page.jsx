@@ -14,6 +14,7 @@ import {
 import { getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
+import { TechStackShowcase } from "./tech-stack-showcase";
 
 const highlightSlugs = [
   "basic-managed-vps",
@@ -539,6 +540,8 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      <TechStackShowcase compact />
 
       <section id="faq" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
