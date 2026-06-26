@@ -51,7 +51,9 @@ export function SiteFooter() {
                       alt={`${partner.name} logo`}
                       loading="eager"
                       decoding="async"
-                      className={`max-h-6 max-w-[82px] object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.18)] ${footerInvertedLogoNames.has(partner.name) ? "brightness-0 invert" : ""}`}
+                      width={96}
+                      height={24}
+                      className={`h-6 w-auto max-w-[96px] object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.18)] ${footerInvertedLogoNames.has(partner.name) ? "brightness-0 invert" : ""}`}
                     />
                   ) : (
                     <span className="text-center text-sm font-semibold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.18)]">{partner.name}</span>
