@@ -11,7 +11,6 @@ import { BrandLogo } from "./brand-logo";
 const landingNavItems = [
   { href: "/services", label: "Services" },
   { href: "/industries", label: "Industries" },
-  { href: "/tech-stack", label: "Tech Stack" },
   { href: "/resources", label: "Resources" },
   { href: "/pricing", label: "Pricing" },
   { href: "/contact", label: "Contact" },
