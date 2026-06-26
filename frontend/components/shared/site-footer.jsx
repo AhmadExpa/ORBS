@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { legalPages } from "@/lib/legal-content";
-import { companyLinks, featuredTechPartners } from "@/lib/marketing-content";
+import { companyLinks, featuredPartnerLogos } from "@/lib/marketing-content";
 import { serviceVerticals } from "@/lib/shared";
 import { BrandLogo } from "./brand-logo";
 
+const footerInvertedLogoNames = new Set(["OpenAI", "Kimi"]);
+
 export function SiteFooter() {
   return (
-    <footer className="relative overflow-hidden border-t border-slate-800 bg-[#020817] text-slate-300">
+    <footer id="site-footer" className="relative overflow-hidden border-t border-slate-800 bg-[#020817] text-slate-300">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(14,165,233,0.16),transparent_34%),radial-gradient(circle_at_90%_12%,rgba(249,115,22,0.12),transparent_30%)]" />
       <div className="relative mx-auto w-full max-w-[1520px] px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:items-end">
@@ -38,13 +40,23 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 border-y border-slate-800 py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Partner ecosystem</p>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {featuredTechPartners.map((partner) => (
-                <span key={partner} className="text-sm font-semibold text-slate-300">
-                  {partner}
-                </span>
+            <div className="eo-scrollbar-none flex flex-nowrap items-center gap-4 overflow-x-auto lg:justify-start">
+              {featuredPartnerLogos.map((partner) => (
+                <div key={partner.name} className="flex h-9 min-w-fit shrink-0 items-center justify-center">
+                  {partner.logo ? (
+                    <img
+                      src={partner.logo}
+                      alt={`${partner.name} logo`}
+                      loading="eager"
+                      decoding="async"
+                      className={`max-h-6 max-w-[82px] object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.18)] ${footerInvertedLogoNames.has(partner.name) ? "brightness-0 invert" : ""}`}
+                    />
+                  ) : (
+                    <span className="text-center text-sm font-semibold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.18)]">{partner.name}</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>

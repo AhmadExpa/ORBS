@@ -9,7 +9,7 @@ import {
   PhoneCall,
   ShieldCheck,
 } from "lucide-react";
-import { featuredPartnerLogos, techStackGroups, techStackHighlights } from "@/lib/marketing-content";
+import { techStackGroups, techStackHighlights } from "@/lib/marketing-content";
 import { cn } from "@/lib/ui";
 
 const iconMap = {
@@ -21,73 +21,108 @@ const iconMap = {
   shield: ShieldCheck,
 };
 
+const compactGroupSlugs = new Set(["cybersecurity", "cloud-continuity", "ai-enablement", "ucaas"]);
+
 const stackMetrics = [
   { label: "Operating lanes", value: "6" },
-  { label: "Core partners", value: "20+" },
+  { label: "Core partners", value: "30+" },
   { label: "Service model", value: "Owned" },
 ];
 
 const operatingModel = [
-  "Select reliable tools for each service lane.",
-  "Connect vendors into provisioning, tickets, billing, and renewals.",
-  "Review the stack as platforms, risks, and customer needs change.",
+  "Select proven platforms for each service lane.",
+  "Connect tools into provisioning, tickets, billing, renewals, and custom workflows.",
+  "Keep accountability with ElevenOrbits while the partner mix evolves.",
 ];
 
-function LogoMark({ partner, featured = false }) {
+function LogoMark({ partner }) {
   const label = partner.wordmark || partner.name;
 
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.8)]",
-        featured ? "h-16 w-full" : "h-14 w-28",
-      )}
-    >
+    <div className="flex h-full w-full shrink-0 items-center justify-center px-3">
       {partner.logo ? (
-        <img
-          src={partner.logo}
-          alt={`${partner.name} logo`}
-          loading="lazy"
-          decoding="async"
-          className={cn("max-h-8 max-w-full object-contain", featured && "max-h-9")}
-        />
+        <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="max-h-8 max-w-full object-contain" />
       ) : (
-        <span className={cn("text-center font-semibold tracking-tight text-slate-950", featured ? "text-base" : "text-sm")}>{label}</span>
+        <span className="text-center text-sm font-semibold leading-4 tracking-tight text-slate-950">{label}</span>
       )}
     </div>
   );
 }
 
-function PartnerTile({ partner }) {
+function CarouselPartnerCard({ partner }) {
   return (
-    <div className="flex min-h-24 items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_48px_-42px_rgba(15,23,42,0.45)]">
+    <article
+      aria-label={partner.name}
+      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white/94 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
+    >
       <LogoMark partner={partner} />
-      <div className="min-w-0">
-        <p className="text-sm font-semibold leading-5 text-slate-950">{partner.name}</p>
-        {partner.descriptor ? <p className="mt-1 text-xs font-medium leading-5 text-slate-500">{partner.descriptor}</p> : null}
+    </article>
+  );
+}
+
+function CarouselLane({ group, index, compact = false }) {
+  const Icon = iconMap[group.icon] || CheckCircle2;
+  const lanePartners = group.partners.length < 4 ? [...group.partners, ...group.partners] : group.partners;
+  const duration = compact ? 24 + index * 3 : 30 + group.partners.length * 2 + index * 2;
+
+  return (
+    <div id={group.slug} className="min-w-0 scroll-mt-28 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.75)]">
+            <Icon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">{group.title}</p>
+            <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{group.subtitle}</p>
+          </div>
+        </div>
+        <span className="hidden shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 sm:inline-flex">
+          {group.partners.length} integrations
+        </span>
+      </div>
+
+      <div className="tech-stack-marquee max-w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5 shadow-[0_22px_60px_-54px_rgba(15,23,42,0.55)]">
+        <div
+          className="tech-stack-marquee-track"
+          style={{
+            "--marquee-duration": `${duration}s`,
+            "--marquee-direction": index % 2 === 0 ? "normal" : "reverse",
+          }}
+        >
+          {[0, 1].map((setIndex) => (
+            <div className="tech-stack-marquee-set" aria-hidden={setIndex === 1 ? "true" : undefined} key={`${group.slug}-${setIndex}`}>
+              {lanePartners.map((partner, partnerIndex) => (
+                <CarouselPartnerCard key={`${group.slug}-${setIndex}-${partner.name}-${partnerIndex}`} partner={partner} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 export function TechStackShowcase({ compact = false }) {
+  const visibleGroups = compact ? techStackGroups.filter((group) => compactGroupSlugs.has(group.slug)) : techStackGroups;
+
   return (
     <section id="tech-stack" className="relative overflow-hidden bg-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(14,165,233,0.1),transparent_28%),radial-gradient(circle_at_90%_16%,rgba(255,122,26,0.1),transparent_28%)]" />
-      <div className={cn("relative mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8", compact ? "py-16 lg:py-18" : "py-18 lg:py-20")}>
-        <div className="grid gap-10 xl:grid-cols-[480px_minmax(0,1fr)] xl:items-start">
-          <div className="space-y-5 xl:sticky xl:top-28">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(14,165,233,0.11),transparent_28%),radial-gradient(circle_at_94%_20%,rgba(255,122,26,0.1),transparent_30%)]" />
+      <div className={cn("relative mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8", compact ? "py-14 lg:py-16" : "py-16 lg:py-20")}>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-stretch">
+          <div className="flex h-full min-w-0 flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">Technology Partners</p>
-              <h2 className="mt-5 max-w-xl text-4xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
+              <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
                 The stack behind managed delivery.
               </h2>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600">
-                ElevenOrbits uses a practical partner ecosystem for security, cloud continuity, endpoint management, service desk operations, AI enablement, and communications.
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">
+                ElevenOrbits uses a practical partner ecosystem for security, cloud continuity, endpoint management, service desk operations, custom AI enablement, and communications.
               </p>
             </div>
 
-            <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
+            <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
               {stackMetrics.map((metric) => (
                 <div key={metric.label} className="border-r border-slate-200 px-4 py-5 last:border-r-0">
                   <p className="text-2xl font-semibold tracking-tight text-slate-950">{metric.value}</p>
@@ -96,16 +131,16 @@ export function TechStackShowcase({ compact = false }) {
               ))}
             </div>
 
-            <div className="grid gap-3">
+            <div className={cn("mt-7 grid gap-4", compact ? "md:grid-cols-3 lg:grid-cols-1" : "")}>
               {techStackHighlights.map((item) => (
-                <div key={item.label} className="rounded-xl border border-slate-200 bg-white/82 p-4 shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
+                <div key={item.label} className="border-t border-slate-200 pt-4">
                   <p className="text-sm font-semibold text-slate-950">{item.label}</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-2xl bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]">
+            <div className={cn("mt-7 rounded-2xl bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]", compact && "lg:hidden xl:block")}>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Operating model</p>
               <p className="mt-3 text-xl font-semibold tracking-tight">Partners are selected for delivery, not decoration.</p>
               <div className="mt-5 grid gap-3">
@@ -118,69 +153,46 @@ export function TechStackShowcase({ compact = false }) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white/88 p-5 shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Coverage map</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {techStackGroups.map((group) => (
-                  <span key={group.slug} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                    {group.title}
-                  </span>
-                ))}
+            <div className="mt-auto pt-8">
+              <div className="border-t border-slate-200 pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Coverage map</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {techStackGroups.map((group) => (
+                    <span key={group.slug} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                      {group.title}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {!compact ? null : (
-              <Link href="/tech-stack" className="mt-8 inline-flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                View full partner stack
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href="/services" className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                  Explore services
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/contact" className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-slate-400">
+                  Talk to us
+                </Link>
+              </div>
+
+              {compact ? (
+                <Link href="/tech-stack" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 transition hover:text-sky-900">
+                  View full partner stack
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <p className="mt-5 max-w-xl text-sm leading-7 text-slate-500">
+                  Partner availability may evolve over time. The operating standard stays consistent: choose reliable tools, integrate them carefully, and keep accountability with the ElevenOrbits service process.
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-[0_24px_70px_-56px_rgba(15,23,42,0.5)]">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {featuredPartnerLogos.map((partner) => (
-                  <div key={partner.name} className="rounded-xl bg-white p-3 ring-1 ring-slate-200/80">
-                    <LogoMark partner={partner} featured />
-                    <p className="mt-2 truncate text-center text-xs font-semibold text-slate-500">{partner.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              {techStackGroups.map((group) => {
-                const Icon = iconMap[group.icon] || CheckCircle2;
-
-                return (
-                  <div key={group.slug} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_22px_62px_-54px_rgba(15,23,42,0.55)]">
-                    <div className="flex items-start gap-4">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.75)]">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">{group.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">{group.subtitle}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-3">
-                      {group.partners.map((partner) => (
-                        <PartnerTile key={`${group.slug}-${partner.name}`} partner={partner} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="grid min-w-0 content-start gap-7">
+            {visibleGroups.map((group, index) => (
+              <CarouselLane key={group.slug} group={group} index={index} compact={compact} />
+            ))}
           </div>
-        </div>
-
-        <div className="mt-10 border-t border-slate-200 pt-5">
-          <p className="max-w-3xl text-sm leading-7 text-slate-500">
-            Partner availability may evolve over time. The operating standard stays consistent: choose reliable tools, integrate them carefully, and keep accountability with the ElevenOrbits service process.
-          </p>
         </div>
       </div>
     </section>

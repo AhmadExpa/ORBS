@@ -198,34 +198,34 @@ export function AppShell({
                 <p className="mt-4 text-sm font-medium text-slate-500">Customer operations portal</p>
               </div>
             </Link>
-            <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
-              <SidebarNav items={items} />
-            </div>
             {authMode === "clerk" ? (
-              <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Billing Snapshot</p>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
-                        <Wallet className="h-4 w-4" />
+              <div className="mt-3 rounded-lg border border-slate-200/80 bg-white/92 px-3 py-2.5 shadow-[0_14px_34px_-32px_rgba(15,23,42,0.5)] ring-1 ring-white/70">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Billing Snapshot</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="rounded-md bg-slate-50 px-2 py-2 ring-1 ring-slate-950/[0.05]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
+                        <Wallet className="h-3.5 w-3.5" />
                       </span>
-                      <span className="text-sm font-semibold text-slate-600">Wallet</span>
+                      <span className="truncate text-[11px] font-semibold text-slate-500">Wallet</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-950">{formatCurrency(walletBalance)}</span>
+                    <p className="mt-1 truncate text-sm font-semibold text-slate-950">{formatCurrency(walletBalance)}</p>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-950/[0.06]">
-                        <CreditCard className="h-4 w-4" />
+                  <div className="rounded-md bg-slate-50 px-2 py-2 ring-1 ring-slate-950/[0.05]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-slate-700 ring-1 ring-slate-950/[0.07]">
+                        <CreditCard className="h-3.5 w-3.5" />
                       </span>
-                      <span className="text-sm font-semibold text-slate-600">This Month</span>
+                      <span className="truncate text-[11px] font-semibold text-slate-500">Month</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-950">{formatCurrency(monthlyAmount)}</span>
+                    <p className="mt-1 truncate text-sm font-semibold text-slate-950">{formatCurrency(monthlyAmount)}</p>
                   </div>
                 </div>
               </div>
             ) : null}
+            <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
+              <SidebarNav items={items} />
+            </div>
             <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (
