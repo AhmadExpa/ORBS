@@ -562,18 +562,18 @@ export const featuredTechPartners = [
 ];
 
 export const featuredPartnerLogos = [
-  { name: "Microsoft Azure", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg" },
-  { name: "Datto", logo: "https://cdn.simpleicons.org/datto/199ED9" },
-  { name: "Veeam", logo: "https://cdn.simpleicons.org/veeam/00B336" },
-  { name: "HP", logo: "https://cdn.simpleicons.org/hp/0096D6" },
-  { name: "n8n", logo: "https://cdn.simpleicons.org/n8n/EA4B71" },
-  { name: "Zapier", logo: "https://cdn.simpleicons.org/zapier/FF4F00" },
-  { name: "OpenAI", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" },
-  { name: "Claude", logo: "https://cdn.simpleicons.org/claude/D97757" },
-  { name: "DeepSeek", logo: "https://cdn.simpleicons.org/deepseek/4D6BFE" },
-  { name: "Kimi", logo: "https://cdn.simpleicons.org/moonshotai/000000" },
+  { name: "Microsoft Azure", logo: "/partners/azure.svg" },
+  { name: "Datto", logo: "/partners/datto.svg" },
+  { name: "Veeam", logo: "/partners/veeam.svg" },
+  { name: "HP", logo: "/partners/hp.svg" },
+  { name: "n8n", logo: "/partners/n8n.svg" },
+  { name: "Zapier", logo: "/partners/zapier.svg" },
+  { name: "OpenAI", logo: "/partners/openai.svg" },
+  { name: "Claude", logo: "/partners/claude.svg" },
+  { name: "DeepSeek", logo: "/partners/deepseek.svg" },
+  { name: "Kimi", logo: "/partners/kimi.svg" },
   { name: "Nextiva" },
-  { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" },
+  { name: "Microsoft Teams", logo: "/partners/microsoft.svg" },
 ];
 
 export function getCompanyPage(slug) {
