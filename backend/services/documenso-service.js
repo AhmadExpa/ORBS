@@ -11,6 +11,18 @@ function joinApiPath(path) {
   return `${env.documensoApiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function getDocumensoWebBaseUrl() {
+  try {
+    const url = new URL(env.documensoApiUrl);
+    url.pathname = url.pathname.replace(/\/api\/v\d+\/?$/iu, "");
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(/\/+$/u, "");
+  } catch (error) {
+    return "https://app.documenso.com";
+  }
+}
+
 function toNumberIfNumeric(value) {
   const stringValue = String(value || "").trim();
   return /^\d+$/u.test(stringValue) ? Number(stringValue) : stringValue;
@@ -130,6 +142,10 @@ function extractDocumentId(payload) {
 }
 
 function extractRecipients(payload) {
+  if (payload?.role && (payload?.email || payload?.token)) {
+    return [payload];
+  }
+
   const document = extractDocument(payload);
   return flattenItems(
     document?.recipients ||
@@ -171,7 +187,24 @@ function extractSigningUrl(payload, recipientId) {
     recipient?.url,
   );
 
-  return candidates.map((value) => String(value || "").trim()).find((value) => /^https?:\/\//iu.test(value)) || "";
+  const directUrl = candidates.map((value) => String(value || "").trim()).find((value) => /^https?:\/\//iu.test(value));
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const signingToken = String(
+    recipient?.token ||
+      recipient?.signingToken ||
+      recipient?.signing_token ||
+      payload?.token ||
+      payload?.signingToken ||
+      payload?.signing_token ||
+      payload?.data?.token ||
+      payload?.data?.signingToken ||
+      "",
+  ).trim();
+
+  return signingToken ? `${getDocumensoWebBaseUrl()}/sign/${encodeURIComponent(signingToken)}` : "";
 }
 
 function normalizeStatus(document) {
@@ -201,10 +234,17 @@ function getFieldLabel(field) {
   ).toLowerCase();
 }
 
+function getPrefillFieldType(field) {
+  const fieldType = String(field?.fieldMeta?.type || field?.type || "").toLowerCase();
+  const normalizedTypes = new Set(["text", "number", "radio", "checkbox", "dropdown", "date"]);
+  return normalizedTypes.has(fieldType) ? fieldType : "";
+}
+
 function buildTemplateFieldValues({ template, customerName, customerEmail, businessName, country, phone }) {
   return getTemplateFields(template)
     .map((field) => {
       const label = getFieldLabel(field);
+      const type = getPrefillFieldType(field);
       const value = label.includes("legal") || label.includes("full name")
         ? customerName
         : label.includes("email")
@@ -217,12 +257,15 @@ function buildTemplateFieldValues({ template, customerName, customerEmail, busin
                 ? phone
                 : "";
 
-      if (!field?.id || !value) {
+      if (!field?.id || !type || !value) {
         return null;
       }
 
       return {
-        id: field.id,
+        id: toNumberIfNumeric(field.id),
+        type,
+        ...(field?.fieldMeta?.label ? { label: field.fieldMeta.label } : {}),
+        ...(field?.fieldMeta?.placeholder ? { placeholder: field.fieldMeta.placeholder } : {}),
         value,
       };
     })
@@ -232,7 +275,6 @@ function buildTemplateFieldValues({ template, customerName, customerEmail, busin
 function buildRecipientPayload({ templateRecipientId, customerName, customerEmail }) {
   return {
     id: toNumberIfNumeric(templateRecipientId),
-    templateRecipientId: toNumberIfNumeric(templateRecipientId),
     name: customerName,
     email: customerEmail,
   };
@@ -264,18 +306,33 @@ function buildTemplateUsePayload({
 
   return {
     templateId: toNumberIfNumeric(templateId),
-    title,
     externalId: contractNumber || contractId,
     recipients: [recipient],
-    fields: fieldValues,
-    values: fieldValues,
+    prefillFields: fieldValues,
     distributeDocument: false,
-    meta: {
+    override: {
+      title,
       redirectUrl,
       subject: "ElevenOrbits Master Services Agreement",
       message: "Please review and sign the ElevenOrbits Master Services Agreement.",
+      distributionMethod: "NONE",
     },
   };
+}
+
+async function distributeDocumentForSigning(documentId, redirectUrl) {
+  return documensoFetch("/document/distribute", {
+    method: "POST",
+    body: {
+      documentId: toNumberIfNumeric(documentId),
+      meta: {
+        redirectUrl,
+        distributionMethod: "NONE",
+        subject: "ElevenOrbits Master Services Agreement",
+        message: "Please review and sign the ElevenOrbits Master Services Agreement.",
+      },
+    },
+  });
 }
 
 export function getDocumensoWebhookSignature(headers = {}) {
@@ -313,17 +370,15 @@ export async function createDocumentFromTemplate(payload) {
 
   if (documentId && !signingUrl) {
     try {
-      distributedResponse = await firstSuccessful(
-        [
-          `/documents/${encodeURIComponent(String(documentId))}/distribute`,
-          `/document/${encodeURIComponent(String(documentId))}/distribute`,
-          `/envelopes/${encodeURIComponent(String(documentId))}/distribute`,
-          `/envelope/${encodeURIComponent(String(documentId))}/distribute`,
-        ],
-        (path) => documensoFetch(path, { method: "POST", body: { redirectUrl: payload.redirectUrl } }),
-      );
+      distributedResponse = await distributeDocumentForSigning(documentId, payload.redirectUrl);
       recipientId = recipientId || extractRecipientId(distributedResponse, payload.templateRecipientId);
       signingUrl = extractSigningUrl(distributedResponse, recipientId);
+
+      if (!signingUrl) {
+        const document = await getDocument(documentId);
+        recipientId = recipientId || extractRecipientId(document, payload.templateRecipientId);
+        signingUrl = extractSigningUrl(document, recipientId);
+      }
     } catch (error) {
       if (![400, 404, 405].includes(error.statusCode)) {
         throw error;
@@ -368,11 +423,10 @@ export async function getRecipientSigningUrl(documentId, recipientId) {
   const rid = encodeURIComponent(String(recipientId));
   const response = await firstSuccessful(
     [
+      `/document/recipient/${rid}`,
+      `/envelope/recipient/${rid}`,
       `/documents/${id}/recipients/${rid}/signing-url`,
       `/document/${id}/recipients/${rid}/signing-url`,
-      `/envelopes/${id}/recipients/${rid}/signing-url`,
-      `/envelope/${id}/recipients/${rid}/signing-url`,
-      `/recipients/${rid}/signing-url`,
     ],
     (path) => documensoFetch(path),
   );
