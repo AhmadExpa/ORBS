@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { SignUp } from "@clerk/nextjs";
-import { ArrowRight, CreditCard, ServerCog, SlidersHorizontal } from "lucide-react";
+import { SignedIn, SignedOut, SignUp } from "@clerk/nextjs";
+import { ArrowRight, CreditCard, LoaderCircle, ServerCog, SlidersHorizontal } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
 
 function resolveRedirect(searchParams) {
@@ -42,26 +42,37 @@ export default async function SignupPage({ searchParams }) {
             <Link href="/" className="mb-8 inline-flex lg:hidden" aria-label="ElevenOrbits home">
               <BrandLogo className="h-11 w-[210px]" priority />
             </Link>
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Start Securely</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Create your account first.</h2>
-            </div>
-            <SignUp
-              routing="path"
-              path="/signup"
-              signInUrl={loginUrl}
-              forceRedirectUrl={redirectTo}
-              fallbackRedirectUrl={redirectTo}
-              signInForceRedirectUrl={redirectTo}
-              signInFallbackRedirectUrl={redirectTo}
-              appearance={authAppearance}
-            />
-            <p className="mt-5 text-center text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link href={loginUrl} className="inline-flex items-center gap-1 font-semibold text-slate-950 transition hover:text-slate-700">
-                Sign in <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </p>
+            <SignedOut>
+              <div className="mb-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Start Securely</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Create your account first.</h2>
+              </div>
+              <SignUp
+                routing="path"
+                path="/signup"
+                signInUrl={loginUrl}
+                forceRedirectUrl={redirectTo}
+                fallbackRedirectUrl={redirectTo}
+                signInForceRedirectUrl={redirectTo}
+                signInFallbackRedirectUrl={redirectTo}
+                appearance={authAppearance}
+              />
+              <p className="mt-5 text-center text-sm text-slate-600">
+                Already have an account?{" "}
+                <Link href={loginUrl} className="inline-flex items-center gap-1 font-semibold text-slate-950 transition hover:text-slate-700">
+                  Sign in <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </p>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                  <LoaderCircle className="h-6 w-6 animate-spin" />
+                </span>
+                <p className="mt-5 text-lg font-semibold tracking-tight text-slate-900">Setting up your account…</p>
+                <p className="mt-2 text-sm text-slate-500">Taking you to your ElevenOrbits portal.</p>
+              </div>
+            </SignedIn>
           </div>
         </section>
 
