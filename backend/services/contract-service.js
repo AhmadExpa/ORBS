@@ -8,8 +8,9 @@ import {
   createDocumentFromTemplate,
   downloadAuditCertificate,
   downloadCompletedDocument,
+  ensureDocumentDistributedForSigning,
   getDocumentStatus,
-  getRecipientSigningToken,
+  getRecipientSigningUrl,
 } from "./documenso-service.js";
 import {
   createPresignedContractDownloadUrl,
@@ -101,10 +102,6 @@ function getRequiredTemplateId() {
 
 function redirectUrlForContract(contractId) {
   return `${env.appUrl}/portal/contracts/${encodeURIComponent(String(contractId))}/complete`;
-}
-
-function signingUrlForContract(contractId) {
-  return `${env.appUrl}/portal/contracts/${encodeURIComponent(String(contractId))}/sign`;
 }
 
 function getContractNumberParts(date = new Date()) {
@@ -284,7 +281,9 @@ async function issueSigningUrl(contract) {
     return "";
   }
 
-  await getRecipientSigningToken(contract.documensoDocumentId, contract.documensoRecipientId);
+  await ensureDocumentDistributedForSigning(contract.documensoDocumentId, redirectUrlForContract(contract._id));
+  const signingUrl = await getRecipientSigningUrl(contract.documensoDocumentId, contract.documensoRecipientId);
+
   await recordActivity({
     actorId: contract.clerkUserId,
     actorRole: "customer",
@@ -295,7 +294,7 @@ async function issueSigningUrl(contract) {
       contractNumber: contract.contractNumber,
     },
   });
-  return signingUrlForContract(contract._id);
+  return signingUrl;
 }
 
 export async function startCustomerContract({ auth, payload, turnstile = null }) {
@@ -424,39 +423,6 @@ export async function getCustomerContract({ contractId, auth }) {
   const contract = await CustomerContract.findById(contractId);
   ensureCanViewContract(contract, auth);
   return normalizeContractForResponse(contract);
-}
-
-export async function createContractSigningToken({ contractId, auth }) {
-  const contract = await CustomerContract.findById(contractId);
-  ensureCanViewContract(contract, auth);
-
-  if (contract.status !== "PENDING_SIGNATURE") {
-    throw new HttpError(409, "This contract is not currently waiting for signature.");
-  }
-
-  if (!contract.documensoDocumentId || !contract.documensoRecipientId) {
-    throw new HttpError(409, "This contract does not have a Documenso recipient yet.");
-  }
-
-  const signing = await getRecipientSigningToken(contract.documensoDocumentId, contract.documensoRecipientId);
-
-  await recordActivity({
-    actorId: auth.user?._id || auth.clerkId,
-    actorRole: "customer",
-    action: "contract.signing_token_issued",
-    targetType: "customer_contract",
-    targetId: String(contract._id),
-    metadata: {
-      contractNumber: contract.contractNumber,
-      documensoDocumentId: String(contract.documensoDocumentId),
-    },
-  });
-
-  return {
-    token: signing.token,
-    host: signing.host,
-    contract: normalizeContractForResponse(contract),
-  };
 }
 
 function statusFromDocumensoEvent(eventType, status) {

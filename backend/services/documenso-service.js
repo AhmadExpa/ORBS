@@ -192,7 +192,8 @@ function extractSigningUrl(payload, recipientId) {
     return directUrl;
   }
 
-  return "";
+  const signingToken = extractSigningToken(payload, recipientId);
+  return signingToken ? `${getDocumensoWebBaseUrl()}/sign/${encodeURIComponent(signingToken)}` : "";
 }
 
 function extractSigningToken(payload, recipientId) {
@@ -325,7 +326,7 @@ function buildTemplateUsePayload({
   };
 }
 
-async function distributeDocumentForSigning(documentId, redirectUrl) {
+export async function distributeDocumentForSigning(documentId, redirectUrl) {
   return documensoFetch("/document/distribute", {
     method: "POST",
     body: {
@@ -338,6 +339,17 @@ async function distributeDocumentForSigning(documentId, redirectUrl) {
       },
     },
   });
+}
+
+export async function ensureDocumentDistributedForSigning(documentId, redirectUrl) {
+  const document = await getDocument(documentId);
+  const status = normalizeStatus(extractDocument(document));
+
+  if (status === "DRAFT") {
+    return distributeDocumentForSigning(documentId, redirectUrl);
+  }
+
+  return document;
 }
 
 export function getDocumensoWebhookSignature(headers = {}) {

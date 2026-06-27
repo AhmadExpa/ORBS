@@ -6,7 +6,6 @@ import { rateLimit } from "../../middleware/rate-limit.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import {
   createContractDownloadUrl,
-  createContractSigningToken,
   getCurrentContractSummary,
   getCustomerContract,
   startCustomerContract,
@@ -77,18 +76,6 @@ contractsRouter.post(
       auth: req.auth,
     });
     res.json({ contract });
-  }),
-);
-
-contractsRouter.get(
-  "/:id/signing-token",
-  requireCustomer,
-  asyncHandler(async (req, res) => {
-    const result = await createContractSigningToken({
-      contractId: req.params.id,
-      auth: req.auth,
-    });
-    res.json(result);
   }),
 );
 
