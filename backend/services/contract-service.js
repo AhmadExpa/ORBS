@@ -143,6 +143,51 @@ async function insertContract(data) {
   return CustomerContract.findById(id);
 }
 
+function normalizeContractDetail(value) {
+  return String(value || "").trim();
+}
+
+function buildCustomerContractDetails(payload = {}) {
+  const customerType = payload.customerType === "BUSINESS" ? "BUSINESS" : "INDIVIDUAL";
+
+  return {
+    customerType,
+    businessName: customerType === "BUSINESS" ? normalizeContractDetail(payload.businessName) : "",
+    signingCapacity: normalizeContractDetail(payload.signingCapacity),
+    businessRole: customerType === "BUSINESS" ? normalizeContractDetail(payload.businessRole) : "",
+    businessRegistrationType: customerType === "BUSINESS" ? normalizeContractDetail(payload.businessRegistrationType) : "",
+    businessRegistrationNumber: customerType === "BUSINESS" ? normalizeContractDetail(payload.businessRegistrationNumber) : "",
+    incorporationCountry: customerType === "BUSINESS" ? normalizeContractDetail(payload.incorporationCountry || payload.country) : "",
+    country: normalizeContractDetail(payload.country),
+    phone: normalizeContractDetail(payload.phone),
+  };
+}
+
+function customerContractDetailsChanged(contract, details) {
+  return Object.entries(details).some(([key, value]) => String(contract?.[key] || "") !== String(value || ""));
+}
+
+async function updatePendingCustomerContractDetails(contract, details) {
+  if (!["READY_TO_SIGN", "PENDING_SIGNATURE"].includes(contract.status) || !customerContractDetailsChanged(contract, details)) {
+    return { contract, changed: false };
+  }
+
+  const updated = await CustomerContract.findOneAndUpdate(
+    { _id: contract._id, status: contract.status },
+    { $set: details },
+    { new: true },
+  );
+
+  if (!updated) {
+    throw new HttpError(409, "Contract details were updated by another process. Please retry.");
+  }
+
+  return {
+    contract: updated,
+    changed: true,
+  };
+}
+
 async function supersedeOutdatedApprovedContracts(clerkUserId) {
   const currentVersion = env.documensoAgreementVersion;
   const result = await query(
@@ -216,9 +261,14 @@ async function findReusableActiveContract(clerkUserId) {
 async function createReadyContract({ identity, payload, turnstile = null, templateConfig }) {
   try {
     return await withTransaction(async () => {
+      const customerDetails = buildCustomerContractDetails(payload);
       const activeContract = await findReusableActiveContract(identity.clerkUserId);
       if (activeContract) {
-        return activeContract;
+        const updated = await updatePendingCustomerContractDetails(activeContract, customerDetails);
+        return {
+          contract: updated.contract,
+          customerDetailsChanged: updated.changed,
+        };
       }
 
       const contractNumber = await nextContractNumber();
@@ -227,10 +277,7 @@ async function createReadyContract({ identity, payload, turnstile = null, templa
         clerkUserId: identity.clerkUserId,
         customerEmail: identity.customerEmail,
         customerName: identity.customerName,
-        customerType: payload.customerType,
-        businessName: payload.customerType === "BUSINESS" ? payload.businessName : "",
-        country: payload.country || "",
-        phone: payload.phone || "",
+        ...customerDetails,
         templateVersion: templateConfig.templateVersion,
         status: "READY_TO_SIGN",
         documensoTemplateId: templateConfig.templateId,
@@ -243,13 +290,19 @@ async function createReadyContract({ identity, payload, turnstile = null, templa
           : {}),
       });
 
-      return contract;
+      return {
+        contract,
+        customerDetailsChanged: false,
+      };
     });
   } catch (error) {
     if (String(error.message || "").includes("duplicate key")) {
       const existing = await findReusableActiveContract(identity.clerkUserId);
       if (existing) {
-        return existing;
+        return {
+          contract: existing,
+          customerDetailsChanged: false,
+        };
       }
     }
     throw error;
@@ -325,6 +378,11 @@ async function createDocumensoDocumentForContract({
       customerName: identity.customerName,
       customerEmail: identity.customerEmail,
       businessName: contract.businessName || "",
+      signingCapacity: contract.signingCapacity || "",
+      businessRole: contract.businessRole || "",
+      businessRegistrationType: contract.businessRegistrationType || "",
+      businessRegistrationNumber: contract.businessRegistrationNumber || "",
+      incorporationCountry: contract.incorporationCountry || "",
       country: contract.country || "",
       phone: contract.phone || "",
       redirectUrl: redirectUrlForContract(contract._id),
@@ -378,12 +436,13 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
     payload: auth.payload,
   });
 
-  const readyOrActiveContract = await createReadyContract({
+  const readyOrActiveResult = await createReadyContract({
     identity,
     payload,
     turnstile,
     templateConfig,
   });
+  const readyOrActiveContract = readyOrActiveResult.contract;
 
   if (turnstile) {
     await recordActivity({
@@ -406,6 +465,21 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
   }
 
   if (readyOrActiveContract.status === "PENDING_SIGNATURE") {
+    if (readyOrActiveResult.customerDetailsChanged) {
+      const recreatedContract = await createDocumensoDocumentForContract({
+        contract: readyOrActiveContract,
+        identity,
+        templateConfig,
+        auth,
+        activityAction: "contract.documenso_document_recreated",
+      });
+
+      return {
+        contract: normalizeContractForResponse(recreatedContract),
+        signingUrl: await issueSigningUrl(recreatedContract),
+      };
+    }
+
     try {
       return {
         contract: normalizeContractForResponse(readyOrActiveContract),

@@ -165,11 +165,16 @@ export function AdminContractDetailPage({ contractId }) {
               <DetailFact label="Customer Email" value={fieldValue(contract.customerEmail)} />
               <DetailFact label="Clerk User ID" value={fieldValue(contract.clerkUserId)} />
               <DetailFact label="Type" value={contract.customerType === "BUSINESS" ? "Business" : "Individual"} />
+              <DetailFact label="Signing Capacity" value={fieldValue(contract.signingCapacity)} />
               <DetailFact label="Business Name" value={fieldValue(contract.businessName)} />
+              <DetailFact label="Business Role" value={fieldValue(contract.businessRole)} />
+              <DetailFact label="Business Registration" value={fieldValue(contract.businessRegistrationNumber)} />
+              <DetailFact label="Registration Type" value={fieldValue(contract.businessRegistrationType)} />
+              <DetailFact label="Incorporation Country" value={fieldValue(contract.incorporationCountry)} />
               <DetailFact label="Country" value={fieldValue(contract.country)} />
               <DetailFact label="Phone" value={fieldValue(contract.phone)} />
               <DetailFact label="Documenso Document ID" value={fieldValue(contract.documensoDocumentId)} />
-              <DetailFact label="Turnstile Verified" value={formatDate(contract.turnstileVerifiedAt)} />
+              <DetailFact label="Signing Started" value={formatDate(contract.turnstileVerifiedAt || contract.createdAt)} />
               <DetailFact label="Signed At" value={formatDate(contract.signedAt)} />
               <DetailFact label="Admin Reviewed At" value={formatDate(contract.adminReviewedAt)} />
               <DetailFact label="Admin Reviewed By" value={fieldValue(contract.adminReviewedBy)} />

@@ -19,16 +19,16 @@ export function requireSameOrigin(req, res, next) {
     return;
   }
 
-  const expectedOrigin = getOrigin(env.appUrl);
+  const allowedOrigins = new Set([env.appUrl, ...env.corsOrigins].map(getOrigin).filter(Boolean));
   const requestOrigin = getOrigin(req.headers.origin);
   const refererOrigin = getOrigin(req.headers.referer);
 
-  if (requestOrigin && requestOrigin === expectedOrigin) {
+  if (requestOrigin && allowedOrigins.has(requestOrigin)) {
     next();
     return;
   }
 
-  if (!requestOrigin && refererOrigin && refererOrigin === expectedOrigin) {
+  if (!requestOrigin && refererOrigin && allowedOrigins.has(refererOrigin)) {
     next();
     return;
   }

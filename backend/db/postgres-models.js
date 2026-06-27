@@ -224,6 +224,11 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
   defaults: {
     customerType: "INDIVIDUAL",
     businessName: "",
+    signingCapacity: "",
+    businessRole: "",
+    businessRegistrationType: "",
+    businessRegistrationNumber: "",
+    incorporationCountry: "",
     country: "",
     phone: "",
     status: "NOT_STARTED",

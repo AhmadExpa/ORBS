@@ -246,22 +246,69 @@ function getPrefillFieldType(field) {
   return normalizedTypes.has(fieldType) ? fieldType : "";
 }
 
-function buildTemplateFieldValues({ template, customerName, customerEmail, businessName, country, phone }) {
+function resolveTemplateFieldValue(label, values) {
+  if (label.includes("legal") || label.includes("full name")) {
+    return values.customerName;
+  }
+  if (label.includes("email")) {
+    return values.customerEmail;
+  }
+  if (label.includes("ein") || label.includes("tax id") || label.includes("registration number") || label.includes("company number")) {
+    return values.businessRegistrationNumber;
+  }
+  if (label.includes("registration type") || label.includes("tax type")) {
+    return values.businessRegistrationType;
+  }
+  if (label.includes("incorporation") || label.includes("formation")) {
+    return values.incorporationCountry;
+  }
+  if (label.includes("role") || label.includes("title")) {
+    return values.businessRole;
+  }
+  if (label.includes("capacity") || label.includes("authority")) {
+    return values.signingCapacity;
+  }
+  if (label.includes("business") || label.includes("company")) {
+    return values.businessName;
+  }
+  if (label.includes("country")) {
+    return values.country;
+  }
+  if (label.includes("phone")) {
+    return values.phone;
+  }
+  return "";
+}
+
+function buildTemplateFieldValues({
+  template,
+  customerName,
+  customerEmail,
+  businessName,
+  signingCapacity,
+  businessRole,
+  businessRegistrationType,
+  businessRegistrationNumber,
+  incorporationCountry,
+  country,
+  phone,
+}) {
   return getTemplateFields(template)
     .map((field) => {
       const label = getFieldLabel(field);
       const type = getPrefillFieldType(field);
-      const value = label.includes("legal") || label.includes("full name")
-        ? customerName
-        : label.includes("email")
-          ? customerEmail
-          : label.includes("business") || label.includes("company")
-            ? businessName
-            : label.includes("country")
-              ? country
-              : label.includes("phone")
-                ? phone
-                : "";
+      const value = resolveTemplateFieldValue(label, {
+        customerName,
+        customerEmail,
+        businessName,
+        signingCapacity,
+        businessRole,
+        businessRegistrationType,
+        businessRegistrationNumber,
+        incorporationCountry,
+        country,
+        phone,
+      });
 
       if (!field?.id || !type || !value) {
         return null;
@@ -295,6 +342,11 @@ function buildTemplateUsePayload({
   customerName,
   customerEmail,
   businessName = "",
+  signingCapacity = "",
+  businessRole = "",
+  businessRegistrationType = "",
+  businessRegistrationNumber = "",
+  incorporationCountry = "",
   country = "",
   phone = "",
   redirectUrl,
@@ -304,6 +356,11 @@ function buildTemplateUsePayload({
     customerName,
     customerEmail,
     businessName,
+    signingCapacity,
+    businessRole,
+    businessRegistrationType,
+    businessRegistrationNumber,
+    incorporationCountry,
     country,
     phone,
   });

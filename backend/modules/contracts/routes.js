@@ -18,15 +18,62 @@ const startContractSchema = z
   .object({
     customerType: z.enum(["INDIVIDUAL", "BUSINESS"]),
     businessName: z.string().trim().max(160).optional(),
+    signingCapacity: z.string().trim().max(120).optional(),
+    businessRole: z.string().trim().max(120).optional(),
+    businessRegistrationType: z.string().trim().max(80).optional(),
+    businessRegistrationNumber: z.string().trim().max(120).optional(),
+    incorporationCountry: z.string().trim().max(80).optional(),
     country: z.string().trim().max(80).optional(),
     phone: z.string().trim().max(40).optional(),
   })
   .superRefine((payload, ctx) => {
+    if (!payload.country) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["country"],
+        message: "Country is required before starting the signing document.",
+      });
+    }
+    if (!payload.signingCapacity) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["signingCapacity"],
+        message: "Signing capacity is required before starting the signing document.",
+      });
+    }
     if (payload.customerType === "BUSINESS" && !payload.businessName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["businessName"],
         message: "Business name is required when signing for a business.",
+      });
+    }
+    if (payload.customerType === "BUSINESS" && !payload.businessRole) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["businessRole"],
+        message: "Your business role is required when signing for a business.",
+      });
+    }
+    if (payload.customerType === "BUSINESS" && !payload.businessRegistrationType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["businessRegistrationType"],
+        message: "Business registration type is required when signing for a business.",
+      });
+    }
+    if (payload.customerType === "BUSINESS" && !payload.businessRegistrationNumber) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["businessRegistrationNumber"],
+        message: "A business registration, EIN, or tax ID number is required when signing for a business.",
+      });
+    }
+    if (payload.customerType === "BUSINESS" && !payload.incorporationCountry) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["incorporationCountry"],
+        message: "Incorporation country is required when signing for a business.",
       });
     }
   });
