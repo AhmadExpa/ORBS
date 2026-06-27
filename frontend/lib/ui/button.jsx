@@ -5,22 +5,30 @@ import { cn } from "./utils.js";
 
 const ButtonThemeContext = React.createContext("default");
 
+// Flat enterprise variants. Brand blue drives primary actions; orange accent and
+// destructive/outline cover the remaining intents. No lift/heavy-shadow effects.
+const sharedVariants = {
+  primary:
+    "border border-brand-600 bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:border-brand-700 active:bg-brand-700 focus-visible:ring-brand-600/40",
+  secondary:
+    "border border-slate-900 bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:bg-slate-900 focus-visible:ring-slate-400",
+  accent:
+    "border border-accent-600 bg-accent-600 text-white shadow-sm hover:bg-accent-700 hover:border-accent-700 active:bg-accent-700 focus-visible:ring-accent-600/40",
+  outline:
+    "border border-line bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-slate-300",
+  ghost:
+    "border border-transparent bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 focus-visible:ring-slate-300",
+  destructive:
+    "border border-rose-600 bg-rose-600 text-white shadow-sm hover:bg-rose-700 hover:border-rose-700 active:bg-rose-700 focus-visible:ring-rose-600/40",
+};
+
 const variantThemes = {
-  default: {
-    primary:
-      "border border-sky-600 bg-sky-600 text-white shadow-[0_12px_30px_rgba(2,132,199,0.22)] hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-[0_18px_38px_rgba(2,132,199,0.26)] active:translate-y-0 active:shadow-[0_10px_22px_rgba(2,132,199,0.2)] focus-visible:ring-sky-300",
-    secondary:
-      "border border-slate-900 bg-slate-900 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)] hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_18px_36px_rgba(15,23,42,0.2)] active:translate-y-0 active:shadow-[0_10px_22px_rgba(15,23,42,0.14)] focus-visible:ring-slate-300",
-    ghost:
-      "border border-slate-200 bg-white text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 hover:shadow-[0_14px_28px_rgba(15,23,42,0.08)] active:translate-y-0 active:shadow-[0_8px_18px_rgba(15,23,42,0.05)] focus-visible:ring-slate-300",
-  },
+  default: { ...sharedVariants },
   portal: {
-    primary:
-      "border border-black bg-black text-white shadow-[0_16px_36px_-18px_rgba(15,23,42,0.85)] hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-[0_22px_48px_-22px_rgba(15,23,42,0.9)] active:translate-y-0 active:shadow-[0_10px_24px_-16px_rgba(15,23,42,0.75)] focus-visible:ring-slate-400",
-    secondary:
-      "border border-slate-900 bg-slate-900 text-white shadow-[0_16px_36px_-18px_rgba(15,23,42,0.78)] hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_22px_48px_-22px_rgba(15,23,42,0.86)] active:translate-y-0 active:shadow-[0_10px_24px_-16px_rgba(15,23,42,0.7)] focus-visible:ring-slate-400",
+    ...sharedVariants,
+    // In the portal/admin chrome, the bordered button is the neutral default.
     ghost:
-      "border border-slate-200 bg-white text-slate-950 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.03] hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-black hover:shadow-[0_18px_38px_-26px_rgba(15,23,42,0.62)] active:translate-y-0 active:border-slate-300 active:bg-white active:shadow-[0_10px_24px_-22px_rgba(15,23,42,0.5)] focus-visible:ring-slate-300",
+      "border border-line bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-slate-300",
   },
 };
 
@@ -37,7 +45,7 @@ export function Button({ asChild = false, className, variant = "primary", childr
   return (
     <Component
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold leading-5 tracking-[0.01em] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
+        "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold leading-5 tracking-[0.01em] transition-colors duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
         resolvedVariants[variant] || resolvedVariants.primary,
         className,
       )}

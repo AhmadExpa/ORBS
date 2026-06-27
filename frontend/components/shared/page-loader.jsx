@@ -7,17 +7,17 @@ function LoaderPanel({ title, subtitle, className = "" }) {
   return (
     <div
       className={cn(
-        "w-full max-w-md rounded-[28px] border border-white/80 bg-white/92 px-6 py-6 text-center shadow-[0_34px_120px_-52px_rgba(15,23,42,0.7)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl",
+        "w-full max-w-md rounded-xl border border-line bg-white px-6 py-6 text-center shadow-card",
         className,
       )}
     >
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-[0_22px_44px_-26px_rgba(15,23,42,0.9)]">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
         <LoaderCircle className="h-7 w-7 animate-spin" />
       </div>
-      <p className="mt-5 text-lg font-semibold tracking-tight text-slate-950">{title}</p>
+      <p className="mt-5 text-lg font-semibold tracking-tight text-slate-900">{title}</p>
       {subtitle ? <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{subtitle}</p> : null}
       <div className="mx-auto mt-5 h-1.5 w-44 overflow-hidden rounded-full bg-slate-200">
-        <div className="loader-progress h-full rounded-full bg-slate-950" />
+        <div className="loader-progress h-full rounded-full bg-brand-600" />
       </div>
     </div>
   );

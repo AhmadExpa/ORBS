@@ -59,8 +59,8 @@ export function AdminContractsPage() {
                 <button
                   key={filter.label}
                   type="button"
-                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    status === filter.value ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                  className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                    status === filter.value ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
                   }`}
                   onClick={() => setStatus(filter.value)}
                 >
@@ -75,7 +75,7 @@ export function AdminContractsPage() {
                   key: "contractNumber",
                   label: "Contract",
                   render: (row) => (
-                    <Link className="font-semibold text-sky-700" href={`/eo-admin/contracts/${row._id}`}>
+                    <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/eo-admin/contracts/${row._id}`}>
                       {row.contractNumber}
                     </Link>
                   ),

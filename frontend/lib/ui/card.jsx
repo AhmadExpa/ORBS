@@ -5,7 +5,7 @@ export function Card({ className, children, ...props }) {
   return (
     <div
       className={cn(
-        "rounded-[24px] border border-white/80 bg-white/88 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl",
+        "rounded-xl border border-line bg-white shadow-card transition-shadow duration-200",
         className,
       )}
       {...props}
@@ -16,7 +16,7 @@ export function Card({ className, children, ...props }) {
 }
 
 export function CardHeader({ className, children }) {
-  return <div className={cn("space-y-1 border-b border-slate-950/[0.06] p-6", className)}>{children}</div>;
+  return <div className={cn("space-y-1 border-b border-line p-5", className)}>{children}</div>;
 }
 
 export function CardTitle({ className, children }) {
@@ -28,5 +28,5 @@ export function CardDescription({ className, children }) {
 }
 
 export function CardContent({ className, children }) {
-  return <div className={cn("p-6", className)}>{children}</div>;
+  return <div className={cn("p-5", className)}>{children}</div>;
 }

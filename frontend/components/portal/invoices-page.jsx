@@ -173,25 +173,23 @@ export function InvoicesPage({
       <Topbar title={title} subtitle={subtitle} />
 
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
-        <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
-          <CardContent className="grid gap-4 p-6 md:grid-cols-3">
-            <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Wallet Balance</p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{formatCurrency(walletBalance)}</p>
-              <p className="mt-2 text-sm text-slate-500">Available immediately for any unpaid invoice that is fully covered.</p>
-            </div>
-            <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Outstanding Total</p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{formatCurrency(outstandingTotal)}</p>
-              <p className="mt-2 text-sm text-slate-500">Includes pending and rejected invoices that still need payment.</p>
-            </div>
-            <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Wallet Payable Now</p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{walletPayableCount}</p>
-              <p className="mt-2 text-sm text-slate-500">Invoices that can be settled immediately from your current top-up balance.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Wallet balance</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(walletBalance)}</p>
+            <p className="mt-2 text-sm text-slate-500">Available immediately for any unpaid invoice it fully covers.</p>
+          </Card>
+          <Card className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Outstanding total</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(outstandingTotal)}</p>
+            <p className="mt-2 text-sm text-slate-500">Pending and rejected invoices that still need payment.</p>
+          </Card>
+          <Card className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Payable from wallet now</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{walletPayableCount}</p>
+            <p className="mt-2 text-sm text-slate-500">Invoices your current balance can settle in one click.</p>
+          </Card>
+        </div>
 
         {invoices.length ? (
           <Card>

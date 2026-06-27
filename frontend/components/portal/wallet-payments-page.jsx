@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CreditCard, History, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, FieldLabel, StatusBadge, Tabs, TextInput, cn } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
@@ -376,98 +376,61 @@ export function WalletPaymentsPage() {
   return (
     <div>
       <Topbar
-        title="Wallet & Payments"
-        subtitle="Manage card wallet funding, saved cards, renewal billing, and payment activity from one portal surface."
+        title="Wallet & payments"
+        subtitle="Fund your wallet, manage saved cards, control renewal billing, and review payment activity."
       />
 
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
-        <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_28px_80px_-60px_rgba(15,23,42,0.22)]">
-          <CardContent className="space-y-8 p-6 md:p-7">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-3xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Billing Command Center</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Control wallet funding and renewal billing from one place.</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Keep wallet balance available for renewals, add or remove a fallback card, fund the wallet by card, and review payment activity without leaving
-                  the portal.
-                </p>
-              </div>
-
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                Wallet balance is checked first on every active renewal
-              </div>
+        <Card>
+          <CardContent className="space-y-5 p-5 md:p-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+              <ShieldCheck className="h-4 w-4" />
+              Your wallet balance is always charged first on every renewal
             </div>
 
             <div className="grid gap-4 xl:grid-cols-4">
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Available Balance</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{formatCurrency(user?.accountBalance || 0)}</p>
-                <p className="mt-2 text-sm text-slate-500">Ready to be used for renewals and approved service charges.</p>
+              <div className="rounded-lg border border-line bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Available balance</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(user?.accountBalance || 0)}</p>
+                <p className="mt-2 text-sm text-slate-500">Ready for renewals and approved service charges.</p>
               </div>
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Wallet Top-ups</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{walletTopups}</p>
-                <p className="mt-2 text-sm text-slate-500">Completed card-funded wallet top-ups recorded on this account.</p>
+              <div className="rounded-lg border border-line bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Wallet top-ups</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{walletTopups}</p>
+                <p className="mt-2 text-sm text-slate-500">Card-funded top-ups recorded on this account.</p>
               </div>
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved Cards</p>
-                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950">
-                  {hasSavedCard ? `${savedCards.length} saved card${savedCards.length === 1 ? "" : "s"}` : "Not added yet"}
+              <div className="rounded-lg border border-line bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Saved cards</p>
+                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900">
+                  {hasSavedCard ? `${savedCards.length} saved card${savedCards.length === 1 ? "" : "s"}` : "None yet"}
                 </p>
                 <p className="mt-2 text-sm text-slate-500">{savedCardLabel(primaryCard)}</p>
               </div>
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Renewal Mode</p>
-                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950">{renewalModeLabel}</p>
-                <p className="mt-2 text-sm text-slate-500">Adjust the saved card section any time to control fallback billing.</p>
+              <div className="rounded-lg border border-line bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Renewal mode</p>
+                <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900">{renewalModeLabel}</p>
+                <p className="mt-2 text-sm text-slate-500">Change this in Saved cards any time.</p>
               </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-4">
-              {walletSections.map((section) => {
-                const Icon = section.icon;
-                const isActive = activeSection === section.id;
-
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => setActiveSection(section.id)}
-                    className={cn(
-                      "flex min-h-[92px] flex-col justify-between rounded-[1.5rem] border px-4 py-4 text-left transition duration-200",
-                      isActive
-                        ? "border-slate-950 bg-slate-950 text-white shadow-[0_22px_50px_-34px_rgba(15,23,42,0.42)]"
-                        : "border-slate-200 bg-white text-slate-700 shadow-sm hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <Icon className="h-4 w-4" />
-                      <span className={cn("text-[11px] font-semibold uppercase tracking-[0.18em]", isActive ? "text-white/65" : "text-slate-400")}>
-                        Section
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{section.label}</p>
-                      <p className={cn("mt-1 text-xs leading-5", isActive ? "text-white/72" : "text-slate-500")}>{section.summary}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <Tabs
+              value={activeSection}
+              onChange={setActiveSection}
+              items={walletSections.map((section) => ({ value: section.id, label: section.label, icon: section.icon }))}
+            />
           </CardContent>
         </Card>
 
         {activeSection === "overview" ? (
-          <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
+          <Card>
             <CardHeader>
               <CardTitle>Overview</CardTitle>
               <CardDescription>Choose the funding path that fits the situation and keep renewal billing under control.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 xl:grid-cols-2">
-              <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-sm">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <Zap className="h-5 w-5" />
                   </span>
                   <div>
@@ -480,9 +443,9 @@ export function WalletPaymentsPage() {
                 </p>
               </div>
 
-              <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-sm">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <CreditCard className="h-5 w-5" />
                   </span>
                   <div>
@@ -499,13 +462,13 @@ export function WalletPaymentsPage() {
         ) : null}
 
         {activeSection === "saved-card" ? (
-          <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
+          <Card>
             <CardHeader>
               <CardTitle>Saved Cards</CardTitle>
               <CardDescription>Save multiple cards, choose the primary renewal card, or keep renewals wallet-only.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-6">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="max-w-3xl">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Renewal Billing Mode</p>
@@ -542,10 +505,10 @@ export function WalletPaymentsPage() {
                     const isSavingThisCard = cardManagementState.savingId === card.id;
 
                     return (
-                      <div key={card.id} className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
+                      <div key={card.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                           <div className="flex min-w-0 items-center gap-4">
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                               <CreditCard className="h-5 w-5" />
                             </span>
                             <div className="min-w-0">
@@ -591,13 +554,13 @@ export function WalletPaymentsPage() {
                     );
                   })
                 ) : (
-                  <div className="rounded-[1.6rem] border border-dashed border-slate-200 bg-white p-6 text-sm leading-7 text-slate-600">
+                  <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-sm leading-7 text-slate-600">
                     No cards are saved yet. You can keep using wallet top-ups, or save a card below and decide whether it should be used for renewal fallback.
                   </div>
                 )}
               </div>
 
-              <div className="rounded-[1.8rem] border border-slate-200 bg-white p-6">
+              <div className="rounded-lg border border-slate-200 bg-white p-6">
                 {contractApproved ? (
                   <PortalCardForm
                     submitLabel={hasSavedCard ? "Add Another Card" : "Save Card"}
@@ -616,20 +579,20 @@ export function WalletPaymentsPage() {
         ) : null}
 
         {activeSection === "instant-topup" ? (
-          <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
+          <Card>
             <CardHeader>
               <CardTitle>Instant Card Top-up</CardTitle>
               <CardDescription>Charge a card directly and post the amount to the wallet as soon as the payment is confirmed.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-                <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-5">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Top-up Amount</label>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                  <FieldLabel>Top-up amount</FieldLabel>
                   <TextInput type="number" min="1" value={instantAmount} onChange={(event) => setInstantAmount(event.target.value)} placeholder="100" />
                   <p className="mt-4 text-sm leading-7 text-slate-600">Use a positive amount and complete the card entry below to fund the wallet instantly.</p>
                 </div>
 
-                <div className="rounded-[1.8rem] border border-emerald-200 bg-emerald-50 p-5">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                       Instant funding
@@ -642,7 +605,7 @@ export function WalletPaymentsPage() {
                     After payment confirmation, the wallet balance refreshes automatically and becomes available for orders, invoices, and subscription renewals.
                   </p>
 
-                  <div className="mt-5 rounded-[1.5rem] border border-white/80 bg-white p-5">
+                  <div className="mt-5 rounded-lg border border-line bg-white p-5">
                     {contractApproved ? (
                       <PortalCardForm
                         disabled={!instantAmount || Number(instantAmount) <= 0}
@@ -664,7 +627,7 @@ export function WalletPaymentsPage() {
         ) : null}
 
         {activeSection === "activity" ? (
-          <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
+          <Card>
             <CardHeader>
               <CardTitle>Payment Activity</CardTitle>
               <CardDescription>Track card payments, wallet top-ups, and automatic renewals in one place.</CardDescription>

@@ -73,7 +73,7 @@ function SelectField({ label, value, onChange, options, required = false }) {
         {required ? " *" : ""}
       </span>
       <select
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+        className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
         value={value}
         onChange={onChange}
         required={required}
@@ -386,8 +386,8 @@ export function ContractsPage() {
                       <button
                         key={label}
                         type="button"
-                        className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
-                          wizardStep === index ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-500"
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                          wizardStep === index ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white text-slate-500 hover:border-slate-300"
                         }`}
                         onClick={() => setWizardStep(index)}
                       >

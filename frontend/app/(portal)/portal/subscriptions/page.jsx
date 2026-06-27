@@ -175,7 +175,7 @@ export default function PortalSubscriptionsPage() {
                     key: "plan",
                     label: "Plan",
                     render: (row) => (
-                      <Link className="font-semibold text-sky-700" href={`/portal/services/${row._id}`}>
+                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/services/${row._id}`}>
                         {row.productPlanId?.name || "Managed Service"}
                       </Link>
                     ),

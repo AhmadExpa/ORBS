@@ -106,16 +106,16 @@ export function PortalDashboardPage() {
   return (
     <div>
       <Topbar
-        title="Customer Dashboard"
-        subtitle="Manage subscriptions, wallet funding, invoices, and support from one place."
+        title="Dashboard"
+        subtitle="Your services, wallet balance, invoices, and support activity at a glance."
         actions={topbarActions}
       />
       {showInitialLoader ? (
-        <PageLoader title="Customer Dashboard" subtitle="Loading subscriptions, payments, invoices, and support activity..." />
+        <PageLoader title="Loading your dashboard" subtitle="Gathering your subscriptions, payments, invoices, and support activity…" />
       ) : (
         <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
           {reviewMessage ? (
-            <div className="rounded-[22px] border border-emerald-200 bg-emerald-50/90 px-5 py-4 text-sm font-semibold text-emerald-900 shadow-sm">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
               {reviewMessage}
             </div>
           ) : null}
@@ -125,38 +125,38 @@ export function PortalDashboardPage() {
               <CardContent className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-white shadow-[0_16px_36px_-22px_rgba(15,23,42,0.8)]">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                       <Server className="h-5 w-5" />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-500">Service snapshot</p>
-                      <h2 className="truncate text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                        {latestService?.productPlanId?.name || "No active app yet"}
+                      <p className="text-sm font-semibold text-slate-500">Latest service</p>
+                      <h2 className="truncate text-2xl font-semibold tracking-[-0.02em] text-slate-900">
+                        {latestService?.productPlanId?.name || "No active service yet"}
                       </h2>
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
                     <div>
                       <p className="font-semibold text-slate-400">Status</p>
-                      <p className="mt-1 font-semibold text-slate-950">{latestService?.status ? latestService.status.replaceAll("_", " ") : "Not started"}</p>
+                      <p className="mt-1 font-semibold capitalize text-slate-900">{latestService?.status ? latestService.status.replaceAll("_", " ") : "Not started"}</p>
                     </div>
                     <div>
-                      <p className="font-semibold text-slate-400">Renewal</p>
-                      <p className="mt-1 font-semibold text-slate-950">{formatDate(latestService?.renewalDate)}</p>
+                      <p className="font-semibold text-slate-400">Renews</p>
+                      <p className="mt-1 font-semibold text-slate-900">{formatDate(latestService?.renewalDate)}</p>
                     </div>
                     <div>
                       <p className="font-semibold text-slate-400">Wallet</p>
-                      <p className="mt-1 font-semibold text-slate-950">{formatCurrency(profile?.accountBalance || 0)}</p>
+                      <p className="mt-1 font-semibold text-slate-900">{formatCurrency(profile?.accountBalance || 0)}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-[20px] bg-slate-950 px-5 py-4 text-white shadow-[0_22px_52px_-34px_rgba(15,23,42,0.8)]">
+                <div className="rounded-xl bg-slate-900 px-5 py-4 text-white">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-white/60">Latest payment</p>
                       <p className="mt-1 text-lg font-semibold">{latestPayment?.invoiceCode || "No payment yet"}</p>
                       <p className="mt-1 text-sm font-medium text-white/60">
-                        {latestPayment ? `Submitted ${formatDate(latestPayment.submittedAt)}` : "Payments appear after submission"}
+                        {latestPayment ? `Submitted ${formatDate(latestPayment.submittedAt)}` : "Payments appear here once submitted"}
                       </p>
                     </div>
                     {latestPayment ? <StatusBadge status={latestPayment.status} className="border-white/20 bg-white/10 text-white" /> : null}
@@ -180,10 +180,10 @@ export function PortalDashboardPage() {
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <CardTitle>Active Services</CardTitle>
-                      <CardDescription>Provisioning and support coverage</CardDescription>
+                      <CardTitle>Active services</CardTitle>
+                      <CardDescription>Your running subscriptions and renewal dates</CardDescription>
                     </div>
-                    <Link href="/portal/services" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950">
+                    <Link href="/portal/services" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700">
                       View all
                       <ArrowRight className="h-4 w-4" />
                     </Link>
@@ -192,13 +192,13 @@ export function PortalDashboardPage() {
                 <CardContent>
                   <DataTable
                     columns={[
-                      { key: "plan", label: "Plan", render: (row) => row.productPlanId?.name || "Managed Service" },
+                      { key: "plan", label: "Plan", render: (row) => row.productPlanId?.name || "Managed service" },
                       { key: "billingCycle", label: "Cycle", render: (row) => row.billingCycle?.replaceAll("_", " ") || "monthly" },
-                      { key: "renewalDate", label: "Renewal", render: (row) => formatDate(row.renewalDate) },
+                      { key: "renewalDate", label: "Renews", render: (row) => formatDate(row.renewalDate) },
                       { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                     ]}
                     rows={currentServices.slice(0, 5)}
-                    emptyMessage="No services yet."
+                    emptyMessage="You don't have any active services yet — order one to get started."
                   />
                 </CardContent>
               </Card>
@@ -206,21 +206,21 @@ export function PortalDashboardPage() {
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <CardTitle>Recent Payments</CardTitle>
-                      <CardDescription>Card payment and wallet funding activity</CardDescription>
+                      <CardTitle>Recent payments</CardTitle>
+                      <CardDescription>Card charges and wallet top-ups</CardDescription>
                     </div>
-                    <Link href="/portal/support" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950">
+                    <Link href="/portal/support" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700">
                       <LifeBuoy className="h-4 w-4" />
-                      Support
+                      Get support
                     </Link>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {submissions.slice(0, 4).map((submission) => (
-                    <div key={submission._id} className="rounded-[20px] border border-slate-950/[0.06] bg-white/68 p-4 shadow-sm">
+                    <div key={submission._id} className="rounded-lg border border-line bg-white p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-900">{submission.submissionType === "wallet_topup" ? "Wallet Top-up" : submission.invoiceCode}</p>
+                          <p className="font-semibold text-slate-900">{submission.submissionType === "wallet_topup" ? "Wallet top-up" : submission.invoiceCode}</p>
                           <p className="mt-1 text-sm font-medium text-slate-500">Submitted {formatDate(submission.submittedAt)}</p>
                         </div>
                         <StatusBadge status={submission.status} />
@@ -228,8 +228,8 @@ export function PortalDashboardPage() {
                     </div>
                   ))}
                   {!submissions.length ? (
-                    <div className="rounded-[20px] border border-dashed border-slate-200 bg-slate-50/80 p-5 text-sm font-medium text-slate-500">
-                      No payment activity yet.
+                    <div className="rounded-lg border border-dashed border-line bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                      No payment activity yet — your charges and top-ups will appear here.
                     </div>
                   ) : null}
                 </CardContent>

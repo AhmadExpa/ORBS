@@ -138,7 +138,7 @@ export function SettingsPage() {
               <TextInput type="email" placeholder="Email" value={staffForm.email} onChange={(event) => setStaffForm((current) => ({ ...current, email: event.target.value }))} />
               <TextInput type="password" placeholder="Temporary password" value={staffForm.password} onChange={(event) => setStaffForm((current) => ({ ...current, password: event.target.value }))} />
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                 value={staffForm.role}
                 onChange={(event) => setStaffForm((current) => ({ ...current, role: event.target.value }))}
               >

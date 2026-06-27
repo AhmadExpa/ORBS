@@ -98,14 +98,14 @@ export function AccountForm() {
   return (
     <div>
       <Topbar
-        title="Account Settings"
-        subtitle="Manage the business, support, and billing details used across your customer portal."
+        title="Account"
+        subtitle="Keep your business, contact, and billing details current — they're used on invoices and during support."
       />
       <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
         <Card>
           <CardHeader>
-            <CardTitle>Business Profile</CardTitle>
-            <CardDescription>Keep company and billing details current for invoices, support handoffs, and service delivery.</CardDescription>
+            <CardTitle>Business profile</CardTitle>
+            <CardDescription>These details appear on your invoices and help our team reach the right contact.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -136,10 +136,10 @@ export function AccountForm() {
                 />
               </div>
 
-              <div className="rounded-[20px] border border-slate-200 bg-white p-4">
+              <div className="rounded-lg border border-line bg-slate-50/50 p-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-950">Billing Address</h3>
-                  <p className="mt-1 text-sm text-slate-500">Used on invoices and billing records when available.</p>
+                  <h3 className="text-sm font-semibold text-slate-900">Billing address</h3>
+                  <p className="mt-1 text-sm text-slate-500">Used on invoices and billing records when provided.</p>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div>
@@ -179,7 +179,7 @@ export function AccountForm() {
               {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
               {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
               <Button type="submit" disabled={state.saving}>
-                {state.saving ? "Saving..." : "Save Changes"}
+                {state.saving ? "Saving…" : "Save changes"}
               </Button>
             </form>
           </CardContent>

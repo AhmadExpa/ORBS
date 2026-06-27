@@ -191,7 +191,7 @@ export function ProductsPage() {
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Category</label>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                   value={form.categoryId}
                   onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))}
                   required
@@ -238,7 +238,7 @@ export function ProductsPage() {
           <CardContent>
             <form className="space-y-4" onSubmit={handleAddonCreate}>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                 value={addonForm.categoryId}
                 onChange={(event) => setAddonForm((current) => ({ ...current, categoryId: event.target.value }))}
                 required

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { LifeBuoy } from "lucide-react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextArea, TextInput } from "@/lib/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, FieldLabel, Select, StatusBadge, TextArea, TextInput } from "@/lib/ui";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
@@ -65,40 +65,40 @@ export function SupportCenter() {
   const tickets = data?.tickets || [];
 
   if (isLoading && !data) {
-    return <PageLoader title="Support Tickets" subtitle="Loading ticket history and support form..." cardCount={2} lines={4} />;
+    return <PageLoader title="Loading support" subtitle="Fetching your ticket history…" />;
   }
 
   return (
     <div>
-      <Topbar title="Support Tickets" subtitle="Open tickets, review history, and reply in threaded conversations." />
+      <Topbar title="Support" subtitle="Open a ticket, track its status, and continue the conversation with our team." />
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
-        <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_24px_70px_-56px_rgba(15,23,42,0.2)]">
+        <Card>
           <CardContent className="p-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Support Guidance</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Talk to ElevenOrbits support with the right context from the start.</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">How support works</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">Reach the ElevenOrbits team with the right context.</h2>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-                  Use the support center to open service-linked tickets, describe the issue clearly, and keep the conversation attached to your operational history.
+                  Open a ticket for billing, your managed servers, AI workloads, or automation. Add the details we need up front and we'll reply right here — every message stays on the thread.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {["Ticket History", "Linked Services", "Threaded Replies", "Fast Escalation"].map((item) => (
-                    <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
+                  {["Full ticket history", "Linked to your services", "Threaded replies", "Priority escalation"].map((item) => (
+                    <span key={item} className="rounded-full border border-line bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                       {item}
                     </span>
                   ))}
                 </div>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-5 xl:justify-self-end">
+              <div className="rounded-lg border border-line bg-slate-50/60 p-5 xl:justify-self-end">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <LifeBuoy className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Support Desk</p>
-                    <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950">Clear details help the team act faster.</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">
-                      Link the ticket to the right service and include the operational details the admin team should review.
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Support desk</p>
+                    <p className="mt-2 text-lg font-semibold tracking-[-0.01em] text-slate-900">Clear details get a faster resolution.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Tell us which service is affected and what you expected to happen — it helps us fix things on the first reply.
                     </p>
                   </div>
                 </div>
@@ -110,8 +110,8 @@ export function SupportCenter() {
         <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
           <Card>
             <CardHeader>
-              <CardTitle>Ticket History</CardTitle>
-              <CardDescription>Each ticket can be linked to a subscription or service.</CardDescription>
+              <CardTitle>Your tickets</CardTitle>
+              <CardDescription>Open a ticket to view the full conversation and replies.</CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable
@@ -120,59 +120,72 @@ export function SupportCenter() {
                     key: "subject",
                     label: "Subject",
                     render: (row) => (
-                      <Link className="font-semibold text-sky-700" href={`/portal/support/${row._id}`}>
+                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/support/${row._id}`}>
                         {row.subject}
                       </Link>
                     ),
                   },
-                  { key: "category", label: "Category" },
-                  { key: "priority", label: "Priority" },
+                  { key: "category", label: "Category", render: (row) => <span className="capitalize">{row.category || "general"}</span> },
+                  { key: "priority", label: "Priority", render: (row) => <span className="capitalize">{row.priority || "medium"}</span> },
                   { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                 ]}
                 rows={tickets}
-                emptyMessage={isLoading ? "Loading tickets..." : "No tickets created yet."}
+                emptyMessage={isLoading ? "Loading tickets…" : "No tickets yet — open one on the right whenever you need a hand."}
               />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Create Ticket</CardTitle>
-              <CardDescription>Describe the issue and ElevenOrbits support will reply from the admin panel.</CardDescription>
+              <CardTitle>Open a ticket</CardTitle>
+              <CardDescription>Describe the issue and our team will reply on this thread.</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Subject</label>
-                  <TextInput value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} required />
+                  <FieldLabel>Subject</FieldLabel>
+                  <TextInput
+                    value={form.subject}
+                    onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+                    placeholder="e.g. VPS not reachable after reboot"
+                    required
+                  />
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Category</label>
-                    <TextInput value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} />
+                    <FieldLabel>Category</FieldLabel>
+                    <Select value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}>
+                      <option value="general">General</option>
+                      <option value="billing">Billing &amp; payments</option>
+                      <option value="hosting">Managed hosting / VPS</option>
+                      <option value="ai">AI &amp; automation</option>
+                      <option value="workflow">Workflow automation</option>
+                      <option value="account">Account &amp; access</option>
+                    </Select>
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Priority</label>
-                    <select
-                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                      value={form.priority}
-                      onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value }))}
-                    >
+                    <FieldLabel>Priority</FieldLabel>
+                    <Select value={form.priority} onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value }))}>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
                       <option value="critical">Critical</option>
-                    </select>
+                    </Select>
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Issue Description</label>
-                  <TextArea value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} required />
+                  <FieldLabel>Describe the issue</FieldLabel>
+                  <TextArea
+                    value={form.message}
+                    onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+                    placeholder="What happened, which service is affected, and what you expected instead."
+                    required
+                  />
                 </div>
                 {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
                 {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
                 <Button className="w-full" type="submit" disabled={state.saving}>
-                  {state.saving ? "Creating..." : "Create Ticket"}
+                  {state.saving ? "Creating…" : "Submit ticket"}
                 </Button>
               </form>
             </CardContent>

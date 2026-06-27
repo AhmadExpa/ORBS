@@ -29,13 +29,13 @@ export default function AdminInvoicesPage() {
               render: (row) => (
                 <div className="flex items-center gap-3">
                   {row.pdfUrl ? (
-                    <Link className="font-semibold text-sky-700" href={resolvePublicFileUrl(row.pdfUrl)} target="_blank">
+                    <Link className="font-semibold text-brand-700 hover:text-brand-600" href={resolvePublicFileUrl(row.pdfUrl)} target="_blank">
                       Download
                     </Link>
                   ) : null}
                   <button
                     type="button"
-                    className="text-sm font-semibold text-sky-700"
+                    className="text-sm font-semibold text-brand-700 hover:text-brand-600"
                     onClick={async () => {
                       await apiFetch(`/admin/invoices/${row._id}/regenerate`, { method: "POST", authMode: "staff" });
                       await refetch();

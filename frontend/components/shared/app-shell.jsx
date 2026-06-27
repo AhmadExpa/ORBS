@@ -188,15 +188,15 @@ export function AppShell({
 
   return (
     <ButtonThemeProvider value="portal">
-      <div className="min-h-screen bg-[linear-gradient(180deg,#f9fafb_0%,#f4f6fa_52%,#eef2f6_100%)] text-slate-950">
-        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-slate-200/80 bg-white/88 px-4 py-4 shadow-[18px_0_52px_-46px_rgba(15,23,42,0.42)] backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
+      <div className="min-h-screen bg-canvas text-slate-900">
+        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)]">
+          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-line bg-white px-4 py-4 lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
             <Link
               href={sidebarHref}
-              className="block rounded-lg border border-slate-200/80 bg-white/94 px-3 py-3 shadow-[0_16px_40px_-36px_rgba(15,23,42,0.45)] ring-1 ring-white/70"
+              className="block rounded-lg border border-line bg-white px-3 py-3 transition-colors hover:border-slate-300"
             >
-              <div className="flex min-h-[92px] flex-col items-center justify-center text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">{roleLabel}</p>
+              <div className="flex min-h-[84px] flex-col items-center justify-center text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{roleLabel}</p>
                 <BrandLogo
                   className="mt-3 h-8 w-full justify-center"
                   imageClassName="max-w-[155px]"
@@ -204,42 +204,44 @@ export function AppShell({
                   width={logoWidth}
                   height={logoHeight}
                 />
-                <p className="mt-2 text-xs font-medium text-slate-500">Customer operations portal</p>
+                <p className="mt-2 text-xs font-medium text-slate-500">
+                  {authMode === "staff" ? "Operations workspace" : "Customer workspace"}
+                </p>
               </div>
             </Link>
             {authMode === "clerk" && portalLocked ? (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-3 text-amber-900 shadow-[0_14px_34px_-32px_rgba(146,64,14,0.45)] ring-1 ring-white/70">
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-amber-900">
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                     <Lock className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">Portal locked</p>
-                    <p className="mt-1 text-xs leading-5 text-amber-800">Sign the service agreement to unlock portal features.</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em]">Portal locked</p>
+                    <p className="mt-1 text-xs leading-5 text-amber-800">Sign the service agreement to unlock your workspace.</p>
                   </div>
                 </div>
               </div>
             ) : authMode === "clerk" ? (
-              <div className="mt-3 rounded-lg border border-slate-200/80 bg-white/92 px-3 py-2.5 shadow-[0_14px_34px_-32px_rgba(15,23,42,0.5)] ring-1 ring-white/70">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Billing Snapshot</p>
+              <div className="mt-3 rounded-lg border border-line bg-slate-50/70 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Billing snapshot</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-md bg-slate-50 px-2 py-2 ring-1 ring-slate-950/[0.05]">
+                  <div className="rounded-md border border-line bg-white px-2 py-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
                         <Wallet className="h-3.5 w-3.5" />
                       </span>
                       <span className="truncate text-[11px] font-semibold text-slate-500">Wallet</span>
                     </div>
-                    <p className="mt-1 truncate text-sm font-semibold text-slate-950">{formatCurrency(walletBalance)}</p>
+                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">{formatCurrency(walletBalance)}</p>
                   </div>
-                  <div className="rounded-md bg-slate-50 px-2 py-2 ring-1 ring-slate-950/[0.05]">
+                  <div className="rounded-md border border-line bg-white px-2 py-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-slate-700 ring-1 ring-slate-950/[0.07]">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
                         <CreditCard className="h-3.5 w-3.5" />
                       </span>
-                      <span className="truncate text-[11px] font-semibold text-slate-500">Month</span>
+                      <span className="truncate text-[11px] font-semibold text-slate-500">This month</span>
                     </div>
-                    <p className="mt-1 truncate text-sm font-semibold text-slate-950">{formatCurrency(monthlyAmount)}</p>
+                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">{formatCurrency(monthlyAmount)}</p>
                   </div>
                 </div>
               </div>
@@ -247,17 +249,17 @@ export function AppShell({
             <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
               <SidebarNav items={items} locked={portalLocked} lockHref="/portal/contracts" />
             </div>
-            <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
+            <div className="mt-4 rounded-lg border border-line bg-white p-4">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (
                   <UserButton />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
                     <UserRound className="h-5 w-5" />
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">Signed in</p>
+                  <p className="text-sm font-semibold text-slate-900">Signed in</p>
                   <p className="text-xs font-medium text-slate-500">{authMode === "clerk" ? "Customer account" : "Staff account"}</p>
                 </div>
               </div>
@@ -270,12 +272,12 @@ export function AppShell({
           </aside>
           <main className="min-w-0 overflow-x-hidden">
             {portalLocked ? (
-              <div className="sticky top-0 z-30 border-b border-amber-200 bg-amber-50/95 px-6 py-3 text-sm font-semibold text-amber-900 shadow-sm backdrop-blur-xl">
+              <div className="sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm font-semibold text-amber-900">
                 <div className="mx-auto flex w-full max-w-[1680px] items-center gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                     <AlertTriangle className="h-4 w-4" />
                   </span>
-                  <span>To use any ElevenOrbits portal feature, you must sign the current service agreement with us first.</span>
+                  <span>Sign your current ElevenOrbits service agreement to unlock your workspace.</span>
                 </div>
               </div>
             ) : null}

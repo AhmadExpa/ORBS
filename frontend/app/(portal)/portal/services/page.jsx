@@ -147,7 +147,7 @@ function SummaryCard({ subscriptions }) {
       <CardHeader className="border-b border-slate-200 bg-slate-50">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Current Services</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-600">Current Services</p>
             <CardTitle className="mt-3 text-2xl text-slate-950">What you are actively running</CardTitle>
             <CardDescription className="mt-2 max-w-2xl text-slate-600">
               Your portal now separates current services by how they are used, so servers, automation, support, and security do not all look the same.
@@ -219,13 +219,13 @@ function RecommendationCard({ recommendation, isLoading }) {
       <CardHeader className="bg-sky-50">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Service Recommendation</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Service Recommendation</p>
             <CardTitle className="mt-3 text-slate-950">Suggested next service</CardTitle>
             <CardDescription>
               A catalog suggestion based on your current services, with priority on plans you are not already using.
             </CardDescription>
           </div>
-          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-sky-700 ring-1 ring-sky-100 xl:inline-flex">
+          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-brand-600 ring-1 ring-brand-100 xl:inline-flex">
             <Server className="h-5 w-5" />
           </span>
         </div>
@@ -273,7 +273,7 @@ function ServerUsageSection({ subscriptions }) {
     <Card className="overflow-hidden border-sky-200 bg-white">
       <CardHeader className="border-b border-sky-100 bg-slate-50">
         <div className="flex items-start gap-3">
-          <Server className="mt-1 h-6 w-6 text-sky-700" />
+          <Server className="mt-1 h-6 w-6 text-brand-600" />
           <div>
             <CardTitle className="text-slate-950">Server Usage</CardTitle>
             <CardDescription className="text-slate-600">
@@ -292,7 +292,7 @@ function ServerUsageSection({ subscriptions }) {
             <div key={subscription._id} className="rounded-[1.75rem] border border-sky-100 bg-slate-50 p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-sky-700">Server Usage Type</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-brand-600">Server Usage Type</p>
                   <p className="mt-2 text-xl font-semibold text-slate-950">{getServerUsageType(subscription)}</p>
                   <p className="mt-1 text-sm text-slate-500">{subscription.productPlanId?.name || "Managed Server"}</p>
                 </div>
@@ -347,7 +347,7 @@ function AiAutomationSection({ subscriptions }) {
     <Card className="overflow-hidden border-sky-200">
       <CardHeader className="bg-gradient-to-r from-sky-50 via-white to-emerald-50">
         <div className="flex items-start gap-3">
-          <Cpu className="mt-1 h-6 w-6 text-sky-700" />
+          <Cpu className="mt-1 h-6 w-6 text-brand-600" />
           <div>
             <CardTitle>AI & Automation Workloads</CardTitle>
             <CardDescription>
@@ -365,7 +365,7 @@ function AiAutomationSection({ subscriptions }) {
             <div key={subscription._id} className="rounded-[1.75rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50/60 to-emerald-50/60 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-sky-700">Workload Lane</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-brand-600">Workload Lane</p>
                   <p className="mt-2 text-xl font-semibold text-slate-950">{subscription.productPlanId?.name || "AI Service"}</p>
                   <p className="mt-1 text-sm text-slate-500">{getCategoryName(subscription)}</p>
                 </div>

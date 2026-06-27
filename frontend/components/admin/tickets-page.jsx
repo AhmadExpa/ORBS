@@ -1,7 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextArea, TextInput } from "@/lib/ui";
+import { Columns3, Table2 } from "lucide-react";
+import {
+  Board,
+  BoardCard,
+  BoardColumn,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DataTable,
+  FieldLabel,
+  Select,
+  StatusBadge,
+  TextArea,
+  TextInput,
+  ViewToggle,
+} from "@/lib/ui";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
@@ -11,12 +29,54 @@ import { apiFetch } from "@/lib/api/client";
 const TICKET_STATUSES = ["open", "pending", "resolved", "closed"];
 const SUPPORT_TEAM_VALUE = "__support_team__";
 
+const STATUS_COLUMNS = [
+  { value: "open", label: "Open", accent: "bg-amber-400" },
+  { value: "pending", label: "Waiting on us", accent: "bg-brand-500" },
+  { value: "resolved", label: "Resolved", accent: "bg-emerald-500" },
+  { value: "closed", label: "Closed", accent: "bg-slate-400" },
+];
+
+const PRIORITY_STYLES = {
+  critical: "bg-rose-50 text-rose-700",
+  high: "bg-rose-50 text-rose-700",
+  medium: "bg-amber-50 text-amber-700",
+  low: "bg-emerald-50 text-emerald-700",
+};
+
+function PriorityTag({ priority }) {
+  const value = String(priority || "medium").toLowerCase();
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold capitalize ${PRIORITY_STYLES[value] || PRIORITY_STYLES.medium}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" aria-hidden />
+      {value}
+    </span>
+  );
+}
+
 function formatDateTime(value) {
   if (!value) {
     return "Not available";
   }
 
   return new Date(value).toLocaleString();
+}
+
+function formatTicketAge(value) {
+  if (!value) {
+    return "Just now";
+  }
+
+  const created = new Date(value).getTime();
+  if (Number.isNaN(created)) {
+    return "Just now";
+  }
+
+  const days = Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
+  if (days <= 0) {
+    return "Open today";
+  }
+
+  return `Open for ${days} day${days === 1 ? "" : "s"}`;
 }
 
 function getResponderName(selectedValue, supportAgents, fallbackName = "") {
@@ -38,6 +98,7 @@ export function AdminTicketsPage() {
     path: "/admin/users",
   });
   const [selectedId, setSelectedId] = useState("");
+  const [view, setView] = useState("board");
   const detailQuery = useStaffQuery({
     queryKey: ["admin-ticket-thread", selectedId],
     path: `/tickets/${selectedId}/messages`,
@@ -165,40 +226,94 @@ export function AdminTicketsPage() {
     return <PageLoader title="Tickets Management" subtitle="Loading ticket queue and support routing..." cardCount={3} lines={4} />;
   }
 
+  const openCount = tickets.filter((ticket) => (ticket.status || "open") === "open").length;
+
   return (
     <div>
-      <Topbar title="Tickets Management" subtitle="Review ticket details, assign support staff, and reply without exposing internal admin identities." />
+      <Topbar
+        title="Support tickets"
+        subtitle="Triage the customer support queue, route conversations to an agent, and reply under a customer-facing support name."
+        actions={
+          <ViewToggle
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "board", label: "Board", icon: Columns3 },
+              { value: "table", label: "Table", icon: Table2 },
+            ]}
+          />
+        }
+      />
       <div className="space-y-6 p-6">
         <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
           <Card>
-            <CardHeader>
-              <CardTitle>Ticket Queue</CardTitle>
-              <CardDescription>Select any ticket to inspect the full conversation and update the assignment.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <div>
+                <CardTitle>Ticket queue</CardTitle>
+                <CardDescription>
+                  {tickets.length} total · {openCount} open. Select a ticket to inspect the conversation and update routing.
+                </CardDescription>
+              </div>
             </CardHeader>
             <CardContent>
-              <DataTable
-                columns={[
-                  {
-                    key: "subject",
-                    label: "Subject",
-                    render: (row) => (
-                      <button
-                        type="button"
-                        className={`font-semibold ${row._id === selectedId ? "text-slate-950" : "text-sky-700"}`}
-                        onClick={() => setSelectedId(row._id)}
+              {view === "board" ? (
+                <Board>
+                  {STATUS_COLUMNS.map((column) => {
+                    const columnTickets = tickets.filter((ticket) => (ticket.status || "open") === column.value);
+                    return (
+                      <BoardColumn
+                        key={column.value}
+                        title={column.label}
+                        count={columnTickets.length}
+                        accentClassName={column.accent}
+                        emptyMessage="No tickets"
                       >
-                        {row.subject}
-                      </button>
-                    ),
-                  },
-                  { key: "customer", label: "Customer", render: (row) => row.userId?.name || "Unknown" },
-                  { key: "assignedTo", label: "Assigned", render: (row) => row.assignedTo?.name || "Unassigned" },
-                  { key: "priority", label: "Priority" },
-                  { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
-                ]}
-                rows={tickets}
-                emptyMessage={ticketsQuery.isLoading ? "Loading tickets..." : "No tickets found."}
-              />
+                        {columnTickets.map((ticket) => (
+                          <BoardCard
+                            key={ticket._id}
+                            onClick={() => setSelectedId(ticket._id)}
+                            className={ticket._id === selectedId ? "ring-2 ring-brand-600/40" : ""}
+                          >
+                            <p className="text-sm font-semibold leading-5 text-slate-900">{ticket.subject}</p>
+                            <p className="mt-1 text-xs text-slate-500">{formatTicketAge(ticket.createdAt)}</p>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <span className="truncate text-xs font-medium text-slate-500">{ticket.userId?.name || "Unknown customer"}</span>
+                              <PriorityTag priority={ticket.priority} />
+                            </div>
+                            <p className="mt-2 truncate text-[11px] font-medium text-slate-400">
+                              {ticket.assignedTo?.name ? `Assigned to ${ticket.assignedTo.name}` : "Unassigned"}
+                            </p>
+                          </BoardCard>
+                        ))}
+                      </BoardColumn>
+                    );
+                  })}
+                </Board>
+              ) : (
+                <DataTable
+                  columns={[
+                    {
+                      key: "subject",
+                      label: "Subject",
+                      render: (row) => (
+                        <button
+                          type="button"
+                          className={`font-semibold ${row._id === selectedId ? "text-slate-900" : "text-brand-700 hover:text-brand-600"}`}
+                          onClick={() => setSelectedId(row._id)}
+                        >
+                          {row.subject}
+                        </button>
+                      ),
+                    },
+                    { key: "customer", label: "Customer", render: (row) => row.userId?.name || "Unknown" },
+                    { key: "assignedTo", label: "Assigned", render: (row) => row.assignedTo?.name || "Unassigned" },
+                    { key: "priority", label: "Priority", render: (row) => <PriorityTag priority={row.priority} /> },
+                    { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
+                  ]}
+                  rows={tickets}
+                  emptyMessage={ticketsQuery.isLoading ? "Loading tickets..." : "No tickets in the queue yet."}
+                />
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -207,24 +322,29 @@ export function AdminTicketsPage() {
               <CardDescription>Adjust the workflow state and route the ticket to an active support agent.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <TextInput placeholder="Selected ticket id" value={selectedId} readOnly />
-              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}>
-                {TICKET_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
-                  </option>
-                ))}
-              </select>
-              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm" value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
-                <option value="">Unassigned</option>
-                {supportAgents.map((agent) => (
-                  <option key={agent._id} value={agent._id}>
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <FieldLabel>Workflow status</FieldLabel>
+                <Select value={status} onChange={(event) => setStatus(event.target.value)}>
+                  {TICKET_STATUSES.map((item) => (
+                    <option key={item} value={item}>
+                      {item.charAt(0).toUpperCase() + item.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <FieldLabel>Assigned agent</FieldLabel>
+                <Select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
+                  <option value="">Unassigned</option>
+                  {supportAgents.map((agent) => (
+                    <option key={agent._id} value={agent._id}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
               {selectedTicket ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="rounded-lg border border-line bg-slate-50 p-4 text-sm text-slate-600">
                   <p>
                     <span className="font-semibold text-slate-900">Customer:</span> {selectedTicket.userId?.name || "Unknown"}
                   </p>
@@ -236,7 +356,7 @@ export function AdminTicketsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <div className="rounded-lg border border-dashed border-line bg-slate-50 p-4 text-sm text-slate-500">
                   Select a ticket to manage its workflow.
                 </div>
               )}
@@ -259,7 +379,7 @@ export function AdminTicketsPage() {
               <CardContent className="space-y-4">
                 {detailQuery.isLoading ? <p className="text-sm text-slate-500">Loading conversation...</p> : null}
                 {messages.map((entry) => (
-                  <div key={entry._id} className={`rounded-2xl p-4 ${entry.senderType === "customer" ? "bg-sky-50" : "bg-slate-50"}`}>
+                  <div key={entry._id} className={`rounded-lg border p-4 ${entry.senderType === "customer" ? "border-brand-100 bg-brand-50/60" : "border-line bg-slate-50"}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{entry.senderName || entry.displayName || "Unknown sender"}</p>
@@ -273,24 +393,24 @@ export function AdminTicketsPage() {
                   </div>
                 ))}
                 {!messages.length && !detailQuery.isLoading ? <p className="text-sm text-slate-500">No replies yet.</p> : null}
-                <form className="space-y-4 rounded-2xl border border-slate-200 p-5" onSubmit={handleReply}>
+                <form className="space-y-4 rounded-lg border border-line bg-slate-50/50 p-5" onSubmit={handleReply}>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Respond As</label>
+                    <FieldLabel>Respond as</FieldLabel>
                     {canChooseResponder ? (
-                      <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm" value={respondAs} onChange={(event) => setRespondAs(event.target.value)}>
+                      <Select value={respondAs} onChange={(event) => setRespondAs(event.target.value)}>
                         <option value={SUPPORT_TEAM_VALUE}>Support Team</option>
                         {supportAgents.map((agent) => (
                           <option key={agent._id} value={agent._id}>
                             {agent.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     ) : (
                       <TextInput value={responderName} readOnly />
                     )}
-                    <p className="mt-2 text-xs text-slate-500">Customer will see: {responderName}</p>
+                    <p className="mt-2 text-xs text-slate-500">Customer will see this reply from <span className="font-semibold text-slate-700">{responderName}</span>.</p>
                   </div>
-                  <TextArea value={replyMessage} onChange={(event) => setReplyMessage(event.target.value)} placeholder="Reply to the customer" required />
+                  <TextArea value={replyMessage} onChange={(event) => setReplyMessage(event.target.value)} placeholder="Write a reply to the customer…" required />
                   {replyState.message ? <p className="text-sm font-medium text-emerald-700">{replyState.message}</p> : null}
                   {replyState.error ? <p className="text-sm font-medium text-rose-600">{replyState.error}</p> : null}
                   <Button type="submit" disabled={replyState.sending || !selectedId}>

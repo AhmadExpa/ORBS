@@ -274,7 +274,7 @@ export function CheckoutPaymentView({ orderId }) {
             ) : null}
 
             {customerNote ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-xl border border-line bg-white p-5">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Deployment Note</p>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{customerNote}</p>
               </div>
@@ -284,7 +284,7 @@ export function CheckoutPaymentView({ orderId }) {
               Server login credentials are not chosen during checkout. After the order is approved, the admin team will provision the service and place the login, password, and IP details in your portal.
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_20px_58px_-46px_rgba(15,23,42,0.38)]">
+            <div className="rounded-xl border border-line bg-white p-5">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Card Payment</p>

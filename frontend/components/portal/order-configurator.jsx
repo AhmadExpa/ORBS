@@ -143,9 +143,9 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-3xl border p-5 text-left transition duration-200",
+        "rounded-xl border p-5 text-left transition duration-200",
         selected
-          ? "border-sky-300 bg-sky-50 shadow-[0_20px_60px_-40px_rgba(14,165,233,0.9)]"
+          ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
           : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
       )}
     >
@@ -157,7 +157,7 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
             <span
               className={cn(
                 "mt-0.5 rounded-2xl p-2.5",
-                selected ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600",
+                selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-600",
               )}
             >
               <Icon className="h-5 w-5" />
@@ -456,9 +456,9 @@ export function OrderConfigurator({ slug }) {
                     type="button"
                     onClick={() => setBillingCycle(cycle)}
                     className={cn(
-                      "rounded-3xl border p-5 text-left transition duration-200",
+                      "rounded-xl border p-5 text-left transition duration-200",
                       billingCycle === cycle
-                        ? "border-sky-300 bg-sky-50 shadow-[0_20px_60px_-40px_rgba(14,165,233,0.9)]"
+                        ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
                         : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
@@ -660,7 +660,7 @@ export function OrderConfigurator({ slug }) {
                           "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
                           activeFeatureIds.includes(extraIpAddon._id)
                             ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                            : "border-slate-900 bg-slate-950 text-white shadow-[0_20px_50px_-30px_rgba(15,23,42,0.9)]",
+                            : "border-brand-600 bg-brand-600 text-white",
                         )}
                       >
                         No extra IP
@@ -671,7 +671,7 @@ export function OrderConfigurator({ slug }) {
                         className={cn(
                           "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
                           activeFeatureIds.includes(extraIpAddon._id)
-                            ? "border-slate-900 bg-slate-950 text-white shadow-[0_20px_50px_-30px_rgba(15,23,42,0.9)]"
+                            ? "border-brand-600 bg-brand-600 text-white"
                             : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
                         )}
                       >

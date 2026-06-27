@@ -210,7 +210,7 @@ export function AdminContractDetailPage({ contractId }) {
                   onChange={(event) => setReason(event.target.value)}
                   disabled={!canReview || Boolean(action)}
                 />
-                <Button type="button" variant="ghost" className="w-full" disabled={!canReview || Boolean(action) || !reason.trim()} onClick={handleReject}>
+                <Button type="button" variant="destructive" className="w-full" disabled={!canReview || Boolean(action) || !reason.trim()} onClick={handleReject}>
                   <XCircle className="h-4 w-4" />
                   {action === "reject" ? "Rejecting..." : "Reject contract"}
                 </Button>
