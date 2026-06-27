@@ -9,7 +9,7 @@ import {
   downloadAuditCertificate,
   downloadCompletedDocument,
   getDocumentStatus,
-  getRecipientSigningUrl,
+  getRecipientSigningToken,
 } from "./documenso-service.js";
 import {
   createPresignedContractDownloadUrl,
@@ -101,6 +101,10 @@ function getRequiredTemplateId() {
 
 function redirectUrlForContract(contractId) {
   return `${env.appUrl}/portal/contracts/${encodeURIComponent(String(contractId))}/complete`;
+}
+
+function signingUrlForContract(contractId) {
+  return `${env.appUrl}/portal/contracts/${encodeURIComponent(String(contractId))}/sign`;
 }
 
 function getContractNumberParts(date = new Date()) {
@@ -280,7 +284,7 @@ async function issueSigningUrl(contract) {
     return "";
   }
 
-  const signingUrl = await getRecipientSigningUrl(contract.documensoDocumentId, contract.documensoRecipientId);
+  await getRecipientSigningToken(contract.documensoDocumentId, contract.documensoRecipientId);
   await recordActivity({
     actorId: contract.clerkUserId,
     actorRole: "customer",
@@ -291,7 +295,7 @@ async function issueSigningUrl(contract) {
       contractNumber: contract.contractNumber,
     },
   });
-  return signingUrl;
+  return signingUrlForContract(contract._id);
 }
 
 export async function startCustomerContract({ auth, payload, turnstile = null }) {
@@ -395,21 +399,7 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
     },
   });
 
-  let signingUrl = document.signingUrl;
-  if (signingUrl) {
-    await recordActivity({
-      actorId: auth.user?._id || identity.clerkUserId,
-      actorRole: "customer",
-      action: "contract.signing_url_issued",
-      targetType: "customer_contract",
-      targetId: String(contract._id),
-      metadata: {
-        contractNumber: contract.contractNumber,
-      },
-    });
-  } else {
-    signingUrl = await issueSigningUrl(contract);
-  }
+  const signingUrl = await issueSigningUrl(contract);
   if (!signingUrl) {
     throw new HttpError(502, "The signing URL could not be generated right now. Please try again later.");
   }
@@ -434,6 +424,39 @@ export async function getCustomerContract({ contractId, auth }) {
   const contract = await CustomerContract.findById(contractId);
   ensureCanViewContract(contract, auth);
   return normalizeContractForResponse(contract);
+}
+
+export async function createContractSigningToken({ contractId, auth }) {
+  const contract = await CustomerContract.findById(contractId);
+  ensureCanViewContract(contract, auth);
+
+  if (contract.status !== "PENDING_SIGNATURE") {
+    throw new HttpError(409, "This contract is not currently waiting for signature.");
+  }
+
+  if (!contract.documensoDocumentId || !contract.documensoRecipientId) {
+    throw new HttpError(409, "This contract does not have a Documenso recipient yet.");
+  }
+
+  const signing = await getRecipientSigningToken(contract.documensoDocumentId, contract.documensoRecipientId);
+
+  await recordActivity({
+    actorId: auth.user?._id || auth.clerkId,
+    actorRole: "customer",
+    action: "contract.signing_token_issued",
+    targetType: "customer_contract",
+    targetId: String(contract._id),
+    metadata: {
+      contractNumber: contract.contractNumber,
+      documensoDocumentId: String(contract.documensoDocumentId),
+    },
+  });
+
+  return {
+    token: signing.token,
+    host: signing.host,
+    contract: normalizeContractForResponse(contract),
+  };
 }
 
 function statusFromDocumensoEvent(eventType, status) {

@@ -11,7 +11,7 @@ function joinApiPath(path) {
   return `${env.documensoApiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function getDocumensoWebBaseUrl() {
+export function getDocumensoWebBaseUrl() {
   try {
     const url = new URL(env.documensoApiUrl);
     url.pathname = url.pathname.replace(/\/api\/v\d+\/?$/iu, "");
@@ -192,7 +192,14 @@ function extractSigningUrl(payload, recipientId) {
     return directUrl;
   }
 
-  const signingToken = String(
+  return "";
+}
+
+function extractSigningToken(payload, recipientId) {
+  const recipients = extractRecipients(payload);
+  const recipient = recipients.find((item) => String(item?.id || item?.recipientId || "") === String(recipientId || "")) || recipients[0];
+
+  return String(
     recipient?.token ||
       recipient?.signingToken ||
       recipient?.signing_token ||
@@ -203,8 +210,6 @@ function extractSigningUrl(payload, recipientId) {
       payload?.data?.signingToken ||
       "",
   ).trim();
-
-  return signingToken ? `${getDocumensoWebBaseUrl()}/sign/${encodeURIComponent(signingToken)}` : "";
 }
 
 function normalizeStatus(document) {
@@ -437,6 +442,26 @@ export async function getRecipientSigningUrl(documentId, recipientId) {
   }
 
   return url;
+}
+
+export async function getRecipientSigningToken(documentId, recipientId) {
+  const rid = encodeURIComponent(String(recipientId));
+  const response = await firstSuccessful(
+    [`/document/recipient/${rid}`, `/envelope/recipient/${rid}`],
+    (path) => documensoFetch(path),
+  );
+
+  const token = extractSigningToken(response, recipientId);
+  if (!token) {
+    throw new HttpError(502, "Documenso did not return a signing token.");
+  }
+
+  return {
+    token,
+    host: getDocumensoWebBaseUrl(),
+    documentId: String(documentId),
+    recipientId: String(recipientId),
+  };
 }
 
 async function fetchPossiblyRedirectedPdf(path) {
