@@ -297,6 +297,78 @@ async function issueSigningUrl(contract) {
   return signingUrl;
 }
 
+function isRecoverableDocumensoSigningError(error) {
+  const providerStatus = Number(error?.details?.providerStatus || 0);
+  const statusCode = Number(error?.statusCode || 0);
+  const message = String(error?.message || "");
+
+  return (
+    message.toLowerCase().includes("documenso") &&
+    (providerStatus === 404 || providerStatus === 410 || statusCode === 400 || statusCode === 404 || statusCode === 410)
+  );
+}
+
+async function createDocumensoDocumentForContract({
+  contract,
+  identity,
+  templateConfig,
+  auth,
+  activityAction = "contract.documenso_document_created",
+}) {
+  let document;
+  try {
+    document = await createDocumentFromTemplate({
+      contractId: contract._id,
+      contractNumber: contract.contractNumber,
+      templateId: templateConfig.templateId,
+      templateRecipientId: templateConfig.templateRecipientId,
+      customerName: identity.customerName,
+      customerEmail: identity.customerEmail,
+      businessName: contract.businessName || "",
+      country: contract.country || "",
+      phone: contract.phone || "",
+      redirectUrl: redirectUrlForContract(contract._id),
+    });
+  } catch (error) {
+    throw new HttpError(502, "The signing document could not be created right now. Please try again later.", {
+      provider: "documenso",
+    });
+  }
+
+  const set = {
+    documensoDocumentId: String(document.documentId),
+    documensoRecipientId: String(document.recipientId || ""),
+  };
+
+  const updated =
+    contract.status === "READY_TO_SIGN"
+      ? await updateContractStatus(contract, "PENDING_SIGNATURE", { set })
+      : await CustomerContract.findOneAndUpdate(
+          { _id: contract._id, status: "PENDING_SIGNATURE" },
+          { $set: set },
+          { new: true },
+        );
+
+  if (!updated) {
+    throw new HttpError(409, "Contract was updated by another process. Please retry.");
+  }
+
+  await recordActivity({
+    actorId: auth.user?._id || identity.clerkUserId,
+    actorRole: "customer",
+    action: activityAction,
+    targetType: "customer_contract",
+    targetId: String(updated._id),
+    metadata: {
+      contractNumber: updated.contractNumber,
+      documensoDocumentId: String(document.documentId),
+      previousDocumensoDocumentId: String(contract.documensoDocumentId || ""),
+    },
+  });
+
+  return updated;
+}
+
 export async function startCustomerContract({ auth, payload, turnstile = null }) {
   const templateConfig = getRequiredTemplateId();
   await supersedeOutdatedApprovedContracts(auth.clerkId);
@@ -334,9 +406,28 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
   }
 
   if (readyOrActiveContract.status === "PENDING_SIGNATURE") {
+    try {
+      return {
+        contract: normalizeContractForResponse(readyOrActiveContract),
+        signingUrl: await issueSigningUrl(readyOrActiveContract),
+      };
+    } catch (error) {
+      if (!isRecoverableDocumensoSigningError(error)) {
+        throw error;
+      }
+    }
+
+    const recreatedContract = await createDocumensoDocumentForContract({
+      contract: readyOrActiveContract,
+      identity,
+      templateConfig,
+      auth,
+      activityAction: "contract.documenso_document_recreated",
+    });
+
     return {
-      contract: normalizeContractForResponse(readyOrActiveContract),
-      signingUrl: await issueSigningUrl(readyOrActiveContract),
+      contract: normalizeContractForResponse(recreatedContract),
+      signingUrl: await issueSigningUrl(recreatedContract),
     };
   }
 
@@ -359,43 +450,11 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
     },
   });
 
-  let document;
-  try {
-    document = await createDocumentFromTemplate({
-      contractId: readyOrActiveContract._id,
-      contractNumber: readyOrActiveContract.contractNumber,
-      templateId: templateConfig.templateId,
-      templateRecipientId: templateConfig.templateRecipientId,
-      customerName: identity.customerName,
-      customerEmail: identity.customerEmail,
-      businessName: readyOrActiveContract.businessName || "",
-      country: readyOrActiveContract.country || "",
-      phone: readyOrActiveContract.phone || "",
-      redirectUrl: redirectUrlForContract(readyOrActiveContract._id),
-    });
-  } catch (error) {
-    throw new HttpError(502, "The signing document could not be created right now. Please try again later.", {
-      provider: "documenso",
-    });
-  }
-
-  const contract = await updateContractStatus(readyOrActiveContract, "PENDING_SIGNATURE", {
-    set: {
-      documensoDocumentId: String(document.documentId),
-      documensoRecipientId: String(document.recipientId || ""),
-    },
-  });
-
-  await recordActivity({
-    actorId: auth.user?._id || identity.clerkUserId,
-    actorRole: "customer",
-    action: "contract.documenso_document_created",
-    targetType: "customer_contract",
-    targetId: String(contract._id),
-    metadata: {
-      contractNumber: contract.contractNumber,
-      documensoDocumentId: String(document.documentId),
-    },
+  const contract = await createDocumensoDocumentForContract({
+    contract: readyOrActiveContract,
+    identity,
+    templateConfig,
+    auth,
   });
 
   const signingUrl = await issueSigningUrl(contract);

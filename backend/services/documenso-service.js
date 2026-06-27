@@ -385,7 +385,8 @@ export async function createDocumentFromTemplate(payload) {
   let signingUrl = extractSigningUrl(response, recipientId);
   let distributedResponse = null;
 
-  if (documentId && !signingUrl) {
+  const responseStatus = normalizeStatus(extractDocument(response));
+  if (documentId && (responseStatus === "DRAFT" || !signingUrl)) {
     try {
       distributedResponse = await distributeDocumentForSigning(documentId, payload.redirectUrl);
       recipientId = recipientId || extractRecipientId(distributedResponse, payload.templateRecipientId);
