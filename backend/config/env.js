@@ -50,10 +50,41 @@ function normalizeAppOrigin(value) {
     .replace(/\/+$/u, "");
 }
 
+function expandCorsOrigins(origin) {
+  const origins = new Set();
+  const normalizedOrigin = normalizeAppOrigin(origin);
+
+  if (normalizedOrigin) {
+    origins.add(normalizedOrigin);
+  }
+
+  try {
+    const url = new URL(normalizedOrigin);
+    if (url.hostname === "elevenorbits.com") {
+      origins.add(`${url.protocol}//www.elevenorbits.com`);
+    }
+    if (url.hostname === "www.elevenorbits.com") {
+      origins.add(`${url.protocol}//elevenorbits.com`);
+    }
+  } catch (error) {
+    // Invalid origins are ignored here; the raw configured value is still omitted.
+  }
+
+  for (const item of String(process.env.CORS_ORIGINS || "").split(",")) {
+    const normalized = normalizePossibleUrl(item).replace(/\/+$/u, "");
+    if (normalized) {
+      origins.add(normalized);
+    }
+  }
+
+  return [...origins];
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
   appUrl: normalizeAppOrigin(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL),
+  corsOrigins: expandCorsOrigins(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL),
   backendUrl: normalizePublicApiOrigin(process.env.BACKEND_URL || process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL),
   publicApiUrl: normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL),
   databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || "",
