@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
+import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
 
 function isWalletPayable(invoice) {
   return ["pending", "rejected"].includes(invoice?.status);
@@ -38,13 +39,19 @@ export function InvoicesPage({
     queryKey: ["portal-invoices-profile"],
     path: "/profile/me",
   });
+  const contractQuery = useCustomerQuery({
+    queryKey: ["portal-invoices-contract"],
+    path: "/contracts/current",
+  });
 
   const invoices = invoicesQuery.data?.invoices || [];
   const user = profileQuery.data?.user;
+  const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
+  const contractApproved = isContractApprovedForPayments(contractStatus);
   const walletBalance = Number(user?.accountBalance || 0);
   const outstandingInvoices = invoices.filter((invoice) => isWalletPayable(invoice));
   const outstandingTotal = outstandingInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
-  const walletPayableCount = outstandingInvoices.filter((invoice) => walletBalance >= Number(invoice.amount || 0)).length;
+  const walletPayableCount = contractApproved ? outstandingInvoices.filter((invoice) => walletBalance >= Number(invoice.amount || 0)).length : 0;
 
   async function handleWalletPayment(invoice) {
     if (!invoice?._id || payingInvoiceId) {
@@ -198,6 +205,11 @@ export function InvoicesPage({
               </Button>
             </CardHeader>
             <CardContent>
+              {!contractApproved ? (
+                <div className="mb-4">
+                  <ContractApprovalLock description="Invoices can be reviewed and downloaded now, but wallet payment unlocks only after an ElevenOrbits administrator approves your signed agreement." />
+                </div>
+              ) : null}
               <DataTable
                 columns={[
                   { key: "invoiceNumber", label: "Invoice" },
@@ -210,13 +222,15 @@ export function InvoicesPage({
                     render: (row) => {
                       const rowAmount = Number(row.amount || 0);
                       const shortfall = Math.max(rowAmount - walletBalance, 0);
-                      const canPayFromWallet = isWalletPayable(row) && walletBalance >= rowAmount;
+                      const canPayFromWallet = contractApproved && isWalletPayable(row) && walletBalance >= rowAmount;
                       const isPaying = payingInvoiceId === row._id;
                       const isDownloading = downloadingInvoiceId === row._id;
 
                       let walletLabel = "Unavailable";
                       if (isPaying) {
                         walletLabel = "Paying...";
+                      } else if (!contractApproved && isWalletPayable(row)) {
+                        walletLabel = "Approval required";
                       } else if (canPayFromWallet) {
                         walletLabel = "Pay from Wallet";
                       } else if (isWalletPayable(row)) {

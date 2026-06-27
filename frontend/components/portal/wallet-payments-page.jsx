@@ -12,6 +12,7 @@ import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
+import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
 
 const walletSections = [
   { id: "overview", label: "Overview", icon: Wallet, summary: "Balance, renewals, and funding options" },
@@ -97,6 +98,10 @@ export function WalletPaymentsPage() {
     queryKey: ["portal-wallet-payments"],
     path: "/payments/submissions",
   });
+  const contractQuery = useCustomerQuery({
+    queryKey: ["portal-wallet-payments-contract"],
+    path: "/contracts/current",
+  });
 
   const { data: profileData, refetch: refetchProfile } = profileQuery;
   const { data: paymentsData, refetch: refetchPayments } = paymentsQuery;
@@ -111,6 +116,8 @@ export function WalletPaymentsPage() {
   });
 
   const user = profileData?.user;
+  const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
+  const contractApproved = isContractApprovedForPayments(contractStatus);
   const submissions = paymentsData?.submissions || [];
   const savedCards = getSavedCards(user);
   const primaryCard = getPrimaryCard(user);
@@ -591,14 +598,18 @@ export function WalletPaymentsPage() {
               </div>
 
               <div className="rounded-[1.8rem] border border-slate-200 bg-white p-6">
-                <PortalCardForm
-                  submitLabel={hasSavedCard ? "Add Another Card" : "Save Card"}
-                  pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
-                  onSubmit={handleSaveCard}
-                  successTitle={hasSavedCard ? "Saved card added" : "Saved card added"}
-                  errorTitle="Saved card action failed"
-                  actionLabel="Saved Card"
-                />
+                {contractApproved ? (
+                  <PortalCardForm
+                    submitLabel={hasSavedCard ? "Add Another Card" : "Save Card"}
+                    pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
+                    onSubmit={handleSaveCard}
+                    successTitle={hasSavedCard ? "Saved card added" : "Saved card added"}
+                    errorTitle="Saved card action failed"
+                    actionLabel="Saved Card"
+                  />
+                ) : (
+                  <ContractApprovalLock description="Saved-card setup is available after an ElevenOrbits administrator approves your signed agreement." />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -632,15 +643,19 @@ export function WalletPaymentsPage() {
                   </p>
 
                   <div className="mt-5 rounded-[1.5rem] border border-white/80 bg-white p-5">
-                    <PortalCardForm
-                      disabled={!instantAmount || Number(instantAmount) <= 0}
-                      submitLabel="Top Up Wallet Now"
-                      pendingLabel="Processing payment..."
-                      onSubmit={handleCardTopup}
-                      successTitle="Wallet funded"
-                      errorTitle="Wallet top-up failed"
-                      actionLabel="Wallet Top-up"
-                    />
+                    {contractApproved ? (
+                      <PortalCardForm
+                        disabled={!instantAmount || Number(instantAmount) <= 0}
+                        submitLabel="Top Up Wallet Now"
+                        pendingLabel="Processing payment..."
+                        onSubmit={handleCardTopup}
+                        successTitle="Wallet funded"
+                        errorTitle="Wallet top-up failed"
+                        actionLabel="Wallet Top-up"
+                      />
+                    ) : (
+                      <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />
+                    )}
                   </div>
                 </div>
               </div>

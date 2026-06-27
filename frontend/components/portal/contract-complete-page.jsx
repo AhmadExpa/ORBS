@@ -3,29 +3,63 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function ContractCompletePage({ contractId }) {
   const { getToken, isLoaded } = useAuth();
+  const queryClient = useQueryClient();
   const [state, setState] = useState({
     loading: true,
     error: "",
     contract: null,
   });
 
-  async function syncContract() {
+  async function syncContract({ attempts = 4 } = {}) {
     setState((current) => ({ ...current, loading: true, error: "" }));
     try {
       const token = await getToken();
-      const response = await apiFetch(`/contracts/${contractId}/sync`, {
-        method: "POST",
-        token,
-        authMode: "customer",
-      });
+      let response = null;
+
+      for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        response = await apiFetch(`/contracts/${contractId}/sync`, {
+          method: "POST",
+          token,
+          authMode: "customer",
+          trackActivity: false,
+        });
+
+        if (!["PENDING_SIGNATURE", "SIGNED_PENDING_STORAGE"].includes(response.contract?.status) || attempt === attempts) {
+          break;
+        }
+
+        await wait(2500);
+      }
+
+      const summary = {
+        agreementVersion: response.contract?.templateVersion,
+        status: response.contract?.status || "PENDING_SIGNATURE",
+        contract: response.contract,
+      };
+
+      queryClient.setQueryData(["portal-sidebar-contract-gate"], summary);
+      queryClient.setQueryData(["portal-contract-gate"], summary);
+      queryClient.setQueryData(["portal-contract-current"], summary);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["portal-sidebar-contract-gate"] }),
+        queryClient.invalidateQueries({ queryKey: ["portal-contract-gate"] }),
+        queryClient.invalidateQueries({ queryKey: ["portal-contract-current"] }),
+      ]);
       setState({ loading: false, error: "", contract: response.contract });
     } catch (error) {
       setState({ loading: false, error: error.message || "Contract status could not be synced.", contract: null });

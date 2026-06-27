@@ -13,6 +13,7 @@ import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
+import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
 
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
@@ -72,15 +73,21 @@ export function CheckoutPaymentView({ orderId }) {
     queryKey: ["portal-order-checkout-profile"],
     path: "/profile/me",
   });
+  const contractQuery = useCustomerQuery({
+    queryKey: ["portal-order-checkout-contract"],
+    path: "/contracts/current",
+  });
 
   const order = orderQuery.data?.order;
   const invoice = orderQuery.data?.invoice;
   const subscription = orderQuery.data?.subscription;
   const profile = profileQuery.data?.user;
+  const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
+  const contractApproved = isContractApprovedForPayments(contractStatus);
   const lineItems = order?.lineItems || [];
   const isCancelled = order?.status === "cancelled" || subscription?.status === "cancelled";
   const isPaid = invoice?.status === "paid" || order?.status === "approved";
-  const canTriggerPayments = Boolean(order) && !isPaid && !isCancelled;
+  const canTriggerPayments = Boolean(order) && !isPaid && !isCancelled && contractApproved;
   const canCancelOrder = order?.status === "approved" && invoice?.status === "paid" && !isCancelled;
   const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
@@ -283,7 +290,9 @@ export function CheckoutPaymentView({ orderId }) {
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Card Payment</p>
                   <p className="mt-4 text-2xl font-semibold tracking-[-0.025em] text-slate-950">{formatCurrency(totalDue)}</p>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
-                    Complete this first purchase by card. A successful payment activates the order, saves the card for renewal fallback billing, and opens a confirmation page.
+                    {contractApproved
+                      ? "Complete this first purchase by card. A successful payment activates the order, saves the card for renewal fallback billing, and opens a confirmation page."
+                      : "This order is ready for review, but payment remains locked until an ElevenOrbits administrator approves your signed agreement."}
                   </p>
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
                     Current saved card: <span className="font-semibold text-slate-950">{savedCardLabel(profile)}</span>
@@ -298,6 +307,8 @@ export function CheckoutPaymentView({ orderId }) {
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-700">
                       This order has already been paid.
                     </div>
+                  ) : !contractApproved ? (
+                    <ContractApprovalLock description="Your signed agreement was received. An ElevenOrbits administrator must approve it before card payment is available for this order." />
                   ) : (
                     <PortalCardForm
                       disabled={!canTriggerPayments || state.isSubmitting}
