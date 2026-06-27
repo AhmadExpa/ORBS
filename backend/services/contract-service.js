@@ -872,3 +872,33 @@ export async function requireApprovedContract(clerkUserId) {
     },
   );
 }
+
+export async function requireSubmittedContract(clerkUserId) {
+  if (!clerkUserId) {
+    throw new HttpError(401, "Customer authentication required.");
+  }
+
+  await supersedeOutdatedApprovedContracts(clerkUserId);
+
+  const contract = await CustomerContract.findOne({
+    clerkUserId,
+    templateVersion: env.documensoAgreementVersion,
+    status: { $in: ["SIGNED_PENDING_ADMIN", "APPROVED"] },
+    r2SignedPdfKey: { $ne: "" },
+  });
+
+  if (contract?.r2SignedPdfKey) {
+    return contract;
+  }
+
+  const latest = await findLatestContractForUser(clerkUserId);
+  throw new HttpError(
+    403,
+    "You must sign the current service agreement before creating orders.",
+    {
+      code: "CONTRACT_SIGNATURE_REQUIRED",
+      contractStatus: latest?.status || "NOT_STARTED",
+      redirectUrl: "/portal/contracts",
+    },
+  );
+}

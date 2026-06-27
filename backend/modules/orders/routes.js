@@ -12,7 +12,7 @@ import { recordActivity } from "../../services/activity-log-service.js";
 import { cancelCustomerOrder } from "../../services/customer-cancellation-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification } from "../../services/email-service.js";
-import { requireApprovedContract } from "../../services/contract-service.js";
+import { requireSubmittedContract } from "../../services/contract-service.js";
 
 export const ordersRouter = express.Router();
 
@@ -173,7 +173,7 @@ ordersRouter.post(
   "/",
   requireCustomer,
   asyncHandler(async (req, res) => {
-    await requireApprovedContract(req.auth.clerkId);
+    await requireSubmittedContract(req.auth.clerkId);
 
     const quote = await buildQuote(req.body);
 

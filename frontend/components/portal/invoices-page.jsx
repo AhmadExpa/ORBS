@@ -69,7 +69,7 @@ export function InvoicesPage({
         description: response.message || "The invoice has been paid from your wallet balance.",
       });
     } catch (error) {
-      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+      if (error.redirectUrl) {
         router.push(error.redirectUrl);
       }
       showToast({

@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { portalNavigation } from "@/lib/shared";
 import { AppShell } from "@/components/shared/app-shell";
-import { ProfileSync } from "@/components/portal/profile-sync";
+import { ContractGate } from "@/components/portal/contract-gate";
 
 export default async function PortalLayout({ children }) {
   const { userId } = await auth();
@@ -12,8 +12,7 @@ export default async function PortalLayout({ children }) {
 
   return (
     <AppShell items={portalNavigation} roleLabel="Customer Portal" sidebarHref="/portal">
-      <ProfileSync />
-      {children}
+      <ContractGate>{children}</ContractGate>
     </AppShell>
   );
 }

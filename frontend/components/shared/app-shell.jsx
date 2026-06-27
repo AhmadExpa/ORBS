@@ -10,6 +10,7 @@ import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { formatCurrency } from "@/lib/shared";
 import { Button, ButtonThemeProvider, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui";
+import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
 import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
@@ -57,15 +58,22 @@ export function AppShell({
   const { showToast } = useActionToast();
   const [logoutState, setLogoutState] = useState({ loading: false, error: "" });
   const [staffSessionState, setStaffSessionState] = useState({ checking: authMode === "staff", error: "" });
+  const contractQuery = useCustomerQuery({
+    queryKey: ["portal-sidebar-contract-gate"],
+    path: "/contracts/current",
+    enabled: authMode === "clerk",
+  });
+  const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
+  const canLoadPortalSnapshot = authMode === "clerk" && isContractSubmittedForPortal(contractStatus);
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-sidebar-profile"],
     path: "/profile/me",
-    enabled: authMode === "clerk",
+    enabled: canLoadPortalSnapshot,
   });
   const subscriptionsQuery = useCustomerQuery({
     queryKey: ["portal-sidebar-subscriptions"],
     path: "/subscriptions",
-    enabled: authMode === "clerk",
+    enabled: canLoadPortalSnapshot,
   });
   const walletBalance = Number(profileQuery.data?.user?.accountBalance || 0);
   const monthlyAmount = getSidebarMonthlyAmount(subscriptionsQuery.data?.subscriptions || []);

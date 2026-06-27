@@ -108,7 +108,7 @@ export function CheckoutPaymentView({ orderId }) {
         },
       });
     } catch (error) {
-      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+      if (error.redirectUrl) {
         router.push(error.redirectUrl);
       }
       throw error;
@@ -142,7 +142,7 @@ export function CheckoutPaymentView({ orderId }) {
         },
       });
     } catch (error) {
-      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+      if (error.redirectUrl) {
         router.push(error.redirectUrl);
       }
       throw error;

@@ -405,7 +405,7 @@ export function OrderConfigurator({ slug }) {
       });
       router.push(`/portal/checkout/${data.order._id}`);
     } catch (requestError) {
-      if (requestError.code === "CONTRACT_APPROVAL_REQUIRED" && requestError.redirectUrl) {
+      if (requestError.redirectUrl) {
         router.push(requestError.redirectUrl);
       }
       setError(requestError.message);
