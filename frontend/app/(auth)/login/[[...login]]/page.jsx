@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { SignedIn, SignedOut, SignIn } from "@clerk/nextjs";
-import { ArrowRight, LoaderCircle, LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
+import { ArrowRight, LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { LogoSpinner } from "@/components/shared/logo-spinner";
 
 function resolveRedirect(searchParams) {
   const value = searchParams?.redirect_url || searchParams?.redirectUrl || "/portal";
@@ -106,9 +107,7 @@ export default async function LoginPage({ searchParams }) {
             </SignedOut>
             <SignedIn>
               <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                  <LoaderCircle className="h-6 w-6 animate-spin" />
-                </span>
+                <LogoSpinner size={60} />
                 <p className="mt-5 text-lg font-semibold tracking-tight text-slate-900">Signing you in…</p>
                 <p className="mt-2 text-sm text-slate-500">Taking you to your ElevenOrbits portal.</p>
               </div>

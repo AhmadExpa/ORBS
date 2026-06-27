@@ -1,6 +1,6 @@
-import { AccountForm } from "@/components/portal/account-form";
+import { AccountSettingsPage } from "@/components/portal/account-settings-page";
 
 export default function PortalAccountPage() {
-  return <AccountForm />;
+  return <AccountSettingsPage />;
 }
 

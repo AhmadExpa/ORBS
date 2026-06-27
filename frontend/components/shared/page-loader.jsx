@@ -1,7 +1,7 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/ui";
+import { LogoSpinner } from "./logo-spinner";
 
 function LoaderPanel({ title, subtitle, className = "" }) {
   return (
@@ -11,9 +11,7 @@ function LoaderPanel({ title, subtitle, className = "" }) {
         className,
       )}
     >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-        <LoaderCircle className="h-7 w-7 animate-spin" />
-      </div>
+      <LogoSpinner size={64} className="mx-auto" />
       <p className="mt-5 text-lg font-semibold tracking-tight text-slate-900">{title}</p>
       {subtitle ? <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{subtitle}</p> : null}
       <div className="mx-auto mt-5 h-1.5 w-44 overflow-hidden rounded-full bg-slate-200">

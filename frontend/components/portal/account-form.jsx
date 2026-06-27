@@ -8,6 +8,7 @@ import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
+import { LogoSpinner } from "@/components/shared/logo-spinner";
 
 const emptyBillingAddress = {
   line1: "",
@@ -18,7 +19,7 @@ const emptyBillingAddress = {
   country: "",
 };
 
-export function AccountForm() {
+export function AccountForm({ embedded = false }) {
   const { getToken } = useAuth();
   const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-profile"],
@@ -92,17 +93,18 @@ export function AccountForm() {
   }
 
   if (isLoading && !data) {
-    return <PageLoader title="Account Settings" subtitle="Loading your profile..." cardCount={1} lines={5} />;
+    if (embedded) {
+      return (
+        <div className="flex justify-center py-16">
+          <LogoSpinner size={56} />
+        </div>
+      );
+    }
+    return <PageLoader title="Loading account" subtitle="Fetching your profile…" />;
   }
 
-  return (
-    <div>
-      <Topbar
-        title="Account"
-        subtitle="Keep your business, contact, and billing details current — they're used on invoices and during support."
-      />
-      <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
-        <Card>
+  const content = (
+    <Card>
           <CardHeader>
             <CardTitle>Business profile</CardTitle>
             <CardDescription>These details appear on your invoices and help our team reach the right contact.</CardDescription>
@@ -183,8 +185,20 @@ export function AccountForm() {
               </Button>
             </form>
           </CardContent>
-        </Card>
-      </div>
+    </Card>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div>
+      <Topbar
+        title="Account"
+        subtitle="Keep your business, contact, and billing details current — they're used on invoices and during support."
+      />
+      <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">{content}</div>
     </div>
   );
 }
