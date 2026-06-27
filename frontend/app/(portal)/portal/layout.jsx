@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { portalNavigation } from "@/lib/shared";
-import { AppShell } from "@/components/shared/app-shell";
+import { PortalShell } from "@/components/portal/portal-shell";
 import { ContractGate } from "@/components/portal/contract-gate";
 
 export default async function PortalLayout({ children }) {
@@ -10,9 +9,12 @@ export default async function PortalLayout({ children }) {
     redirect("/login");
   }
 
+  // Offset the per-page sticky Topbar so it sticks just below the 56px top nav.
   return (
-    <AppShell items={portalNavigation} roleLabel="Customer Portal" sidebarHref="/portal">
-      <ContractGate>{children}</ContractGate>
-    </AppShell>
+    <div style={{ "--eo-topbar-top": "3.5rem" }}>
+      <PortalShell>
+        <ContractGate>{children}</ContractGate>
+      </PortalShell>
+    </div>
   );
 }

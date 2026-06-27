@@ -9,6 +9,30 @@ export const portalNavigation = [
   { href: "/portal/account", label: "Account", icon: "user-round" },
 ];
 
+// Grouped, HubSpot-style top navigation for the customer portal.
+// Single links use `href`; groups expose a dropdown via `items`.
+export const portalNavGroups = [
+  { label: "Dashboard", href: "/portal", icon: "layout-dashboard" },
+  {
+    label: "Services",
+    icon: "server",
+    items: [
+      { href: "/portal/services", label: "Apps", icon: "server", description: "Your managed apps and servers" },
+      { href: "/portal/subscriptions", label: "Subscriptions", icon: "package", description: "Plans, billing cycles, and renewals" },
+    ],
+  },
+  {
+    label: "Billing",
+    icon: "receipt",
+    items: [
+      { href: "/portal/invoices", label: "Invoices", icon: "receipt", description: "Review, download, and pay invoices" },
+      { href: "/portal/payments", label: "Wallet & Payments", icon: "wallet", description: "Top up balance and manage cards" },
+      { href: "/portal/contracts", label: "Contracts", icon: "file-signature", description: "Your signed service agreement" },
+    ],
+  },
+  { label: "Support", href: "/portal/support", icon: "life-buoy" },
+];
+
 export const adminNavigation = [
   { href: "/eo-admin", label: "Overview", icon: "layout-dashboard" },
   { href: "/eo-admin/users", label: "Users", icon: "users" },

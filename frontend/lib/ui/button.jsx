@@ -22,13 +22,21 @@ const sharedVariants = {
     "border border-rose-600 bg-rose-600 text-white shadow-sm hover:bg-rose-700 hover:border-rose-700 active:bg-rose-700 focus-visible:ring-rose-600/40",
 };
 
+const portalGhost =
+  "border border-line bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-slate-300";
+
 const variantThemes = {
   default: { ...sharedVariants },
+  // Admin chrome: brand-blue primary, bordered neutral default.
   portal: {
     ...sharedVariants,
-    // In the portal/admin chrome, the bordered button is the neutral default.
-    ghost:
-      "border border-line bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-slate-300",
+    ghost: portalGhost,
+  },
+  // Customer portal (HubSpot-style): orange primary CTA.
+  hubspot: {
+    ...sharedVariants,
+    primary: sharedVariants.accent,
+    ghost: portalGhost,
   },
 };
 
