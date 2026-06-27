@@ -193,18 +193,18 @@ export function AppShell({
           <aside className="z-40 flex h-full min-w-0 flex-col border-r border-slate-200/80 bg-white/88 px-4 py-4 shadow-[18px_0_52px_-46px_rgba(15,23,42,0.42)] backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
             <Link
               href={sidebarHref}
-              className="block rounded-lg border border-slate-200/80 bg-white/94 px-4 py-4 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.5)] ring-1 ring-white/70"
+              className="block rounded-lg border border-slate-200/80 bg-white/94 px-3 py-3 shadow-[0_16px_40px_-36px_rgba(15,23,42,0.45)] ring-1 ring-white/70"
             >
-              <div className="flex min-h-[130px] flex-col items-center justify-center text-center">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">{roleLabel}</p>
+              <div className="flex min-h-[92px] flex-col items-center justify-center text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">{roleLabel}</p>
                 <BrandLogo
-                  className="mt-5 h-12 w-full justify-center"
-                  imageClassName="max-w-[220px]"
+                  className="mt-3 h-8 w-full justify-center"
+                  imageClassName="max-w-[155px]"
                   src={logoSrc}
                   width={logoWidth}
                   height={logoHeight}
                 />
-                <p className="mt-4 text-sm font-medium text-slate-500">Customer operations portal</p>
+                <p className="mt-2 text-xs font-medium text-slate-500">Customer operations portal</p>
               </div>
             </Link>
             {authMode === "clerk" && portalLocked ? (
