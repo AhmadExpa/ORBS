@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard, LogOut, UserRound, Wallet } from "lucide-react";
+import { AlertTriangle, CreditCard, Lock, LogOut, UserRound, Wallet } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -64,6 +64,7 @@ export function AppShell({
     enabled: authMode === "clerk",
   });
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
+  const portalLocked = authMode === "clerk" && !isContractSubmittedForPortal(contractStatus);
   const canLoadPortalSnapshot = authMode === "clerk" && isContractSubmittedForPortal(contractStatus);
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-sidebar-profile"],
@@ -206,7 +207,19 @@ export function AppShell({
                 <p className="mt-4 text-sm font-medium text-slate-500">Customer operations portal</p>
               </div>
             </Link>
-            {authMode === "clerk" ? (
+            {authMode === "clerk" && portalLocked ? (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-3 text-amber-900 shadow-[0_14px_34px_-32px_rgba(146,64,14,0.45)] ring-1 ring-white/70">
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+                    <Lock className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">Portal locked</p>
+                    <p className="mt-1 text-xs leading-5 text-amber-800">Sign the service agreement to unlock portal features.</p>
+                  </div>
+                </div>
+              </div>
+            ) : authMode === "clerk" ? (
               <div className="mt-3 rounded-lg border border-slate-200/80 bg-white/92 px-3 py-2.5 shadow-[0_14px_34px_-32px_rgba(15,23,42,0.5)] ring-1 ring-white/70">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Billing Snapshot</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
@@ -232,7 +245,7 @@ export function AppShell({
               </div>
             ) : null}
             <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
-              <SidebarNav items={items} />
+              <SidebarNav items={items} locked={portalLocked} lockHref="/portal/contracts" />
             </div>
             <div className="mt-4 rounded-lg border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.48)] ring-1 ring-white/70">
               <div className="flex items-center gap-3">
@@ -255,7 +268,19 @@ export function AppShell({
               </Button>
             </div>
           </aside>
-          <main className="min-w-0 overflow-x-hidden">{children}</main>
+          <main className="min-w-0 overflow-x-hidden">
+            {portalLocked ? (
+              <div className="sticky top-0 z-30 border-b border-amber-200 bg-amber-50/95 px-6 py-3 text-sm font-semibold text-amber-900 shadow-sm backdrop-blur-xl">
+                <div className="mx-auto flex w-full max-w-[1680px] items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+                    <AlertTriangle className="h-4 w-4" />
+                  </span>
+                  <span>To use any ElevenOrbits portal feature, you must sign the current service agreement with us first.</span>
+                </div>
+              </div>
+            ) : null}
+            {children}
+          </main>
         </div>
       </div>
     </ButtonThemeProvider>
