@@ -39,24 +39,39 @@ export const portalSections = [
   {
     id: "services",
     label: "Services",
+    description: "Apps, subscriptions, and renewals",
     links: [
-      { href: "/portal/services", label: "Apps" },
-      { href: "/portal/subscriptions", label: "Subscriptions" },
+      { href: "/portal/services", label: "Apps", icon: "server" },
+      { href: "/portal/subscriptions", label: "Subscriptions", icon: "package" },
+    ],
+    quickActions: [
+      { href: "/portal/services", label: "Browse apps", icon: "server" },
+      { href: "/portal/payments", label: "Top up wallet", icon: "wallet" },
     ],
   },
   {
     id: "billing",
     label: "Billing",
+    description: "Invoices, wallet, and agreements",
     links: [
-      { href: "/portal/invoices", label: "Invoices" },
-      { href: "/portal/payments", label: "Wallet & Payments" },
-      { href: "/portal/contracts", label: "Contracts" },
+      { href: "/portal/invoices", label: "Invoices", icon: "receipt" },
+      { href: "/portal/payments", label: "Wallet & Payments", icon: "wallet" },
+      { href: "/portal/contracts", label: "Contracts", icon: "file-signature" },
+    ],
+    quickActions: [
+      { href: "/portal/payments", label: "Top up wallet", icon: "wallet" },
+      { href: "/portal/invoices", label: "View invoices", icon: "receipt" },
     ],
   },
   {
     id: "support",
     label: "Support",
-    links: [{ href: "/portal/support", label: "Tickets" }],
+    description: "Tickets and help",
+    links: [{ href: "/portal/support", label: "Tickets", icon: "life-buoy" }],
+    quickActions: [
+      { href: "/portal/support", label: "New ticket", icon: "life-buoy" },
+      { href: "/portal/contracts", label: "View agreement", icon: "file-signature" },
+    ],
   },
 ];
 

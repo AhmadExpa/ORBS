@@ -306,7 +306,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
 
         <main className="min-w-0 flex-1">
           {activeSection && !portalLocked ? (
-            <div className="grid grid-cols-1 lg:grid-cols-[232px_minmax(0,1fr)]">
+            <div className="grid grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)]">
               <PortalSectionNav section={activeSection} />
               <div className="min-w-0">{children}</div>
             </div>
