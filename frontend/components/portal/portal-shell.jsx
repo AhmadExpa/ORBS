@@ -27,6 +27,7 @@ import { ButtonThemeProvider, cn } from "@/lib/ui";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
+import { PortalSectionNav, getActiveSection } from "@/components/portal/portal-section-nav";
 
 const iconMap = {
   "layout-dashboard": LayoutDashboard,
@@ -76,6 +77,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
     path: "/profile/me",
     enabled: !portalLocked,
   });
+  const activeSection = getActiveSection(pathname);
   const user = profileQuery.data?.user;
   const walletBalance = Number(user?.accountBalance || 0);
   const displayName = user?.name || user?.company || user?.email || "Your account";
@@ -302,7 +304,16 @@ export function PortalShell({ children, groups = portalNavGroups }) {
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {activeSection && !portalLocked ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[232px_minmax(0,1fr)]">
+              <PortalSectionNav section={activeSection} />
+              <div className="min-w-0">{children}</div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </ButtonThemeProvider>
   );

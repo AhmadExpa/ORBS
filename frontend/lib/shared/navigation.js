@@ -33,6 +33,67 @@ export const portalNavGroups = [
   { label: "Support", href: "/portal/support", icon: "life-buoy" },
 ];
 
+// Contextual left-rail config per section. The top nav routes between
+// sections; this drives the in-section sidebar (sub-views + filters).
+export const portalSections = [
+  {
+    id: "services",
+    label: "Services",
+    links: [
+      { href: "/portal/services", label: "Apps" },
+      { href: "/portal/subscriptions", label: "Subscriptions" },
+    ],
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    links: [
+      { href: "/portal/invoices", label: "Invoices" },
+      { href: "/portal/payments", label: "Wallet & Payments" },
+      { href: "/portal/contracts", label: "Contracts" },
+    ],
+  },
+  {
+    id: "support",
+    label: "Support",
+    links: [{ href: "/portal/support", label: "Tickets" }],
+  },
+];
+
+// Per-page filters surfaced in the left rail (URL query driven).
+export const portalFilters = {
+  "/portal/support": {
+    param: "status",
+    label: "Filter tickets",
+    options: [
+      { value: "", label: "All tickets" },
+      { value: "open", label: "Open" },
+      { value: "pending", label: "Waiting on us" },
+      { value: "resolved", label: "Resolved" },
+      { value: "closed", label: "Closed" },
+    ],
+  },
+  "/portal/invoices": {
+    param: "status",
+    label: "Filter invoices",
+    options: [
+      { value: "", label: "All invoices" },
+      { value: "outstanding", label: "Outstanding" },
+      { value: "paid", label: "Paid" },
+    ],
+  },
+  "/portal/subscriptions": {
+    param: "status",
+    label: "Filter subscriptions",
+    options: [
+      { value: "", label: "All" },
+      { value: "active", label: "Active" },
+      { value: "cancelled", label: "Cancelled" },
+      { value: "expired", label: "Expired" },
+    ],
+  },
+};
+
 export const adminNavigation = [
   { href: "/eo-admin", label: "Overview", icon: "layout-dashboard" },
   { href: "/eo-admin/users", label: "Users", icon: "users" },

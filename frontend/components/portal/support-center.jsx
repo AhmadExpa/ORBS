@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { LifeBuoy } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, FieldLabel, Select, StatusBadge, TextArea, TextInput } from "@/lib/ui";
@@ -14,6 +15,8 @@ import { PageLoader } from "@/components/shared/page-loader";
 export function SupportCenter() {
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status") || "";
   const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-support"],
     path: "/tickets",
@@ -63,6 +66,7 @@ export function SupportCenter() {
   }
 
   const tickets = data?.tickets || [];
+  const visibleTickets = statusFilter ? tickets.filter((ticket) => (ticket.status || "open") === statusFilter) : tickets;
 
   if (isLoading && !data) {
     return <PageLoader title="Loading support" subtitle="Fetching your ticket history…" />;
@@ -129,8 +133,14 @@ export function SupportCenter() {
                   { key: "priority", label: "Priority", render: (row) => <span className="capitalize">{row.priority || "medium"}</span> },
                   { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                 ]}
-                rows={tickets}
-                emptyMessage={isLoading ? "Loading tickets…" : "No tickets yet — open one on the right whenever you need a hand."}
+                rows={visibleTickets}
+                emptyMessage={
+                  isLoading
+                    ? "Loading tickets…"
+                    : statusFilter
+                      ? "No tickets match this filter."
+                      : "No tickets yet — open one on the right whenever you need a hand."
+                }
               />
             </CardContent>
           </Card>

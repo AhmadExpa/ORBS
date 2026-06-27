@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { siteConfig } from "@/lib/constants/site";
@@ -27,6 +27,8 @@ export function InvoicesPage({
   const { getToken } = useAuth();
   const router = useRouter();
   const { showToast } = useActionToast();
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status") || "";
   const [payingInvoiceId, setPayingInvoiceId] = useState("");
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState("");
   const [regeneratingInvoices, setRegeneratingInvoices] = useState(false);
@@ -52,6 +54,11 @@ export function InvoicesPage({
   const outstandingInvoices = invoices.filter((invoice) => isWalletPayable(invoice));
   const outstandingTotal = outstandingInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
   const walletPayableCount = contractApproved ? outstandingInvoices.filter((invoice) => walletBalance >= Number(invoice.amount || 0)).length : 0;
+  const visibleInvoices = invoices.filter((invoice) => {
+    if (statusFilter === "paid") return invoice.status === "paid";
+    if (statusFilter === "outstanding") return invoice.status !== "paid";
+    return true;
+  });
 
   async function handleWalletPayment(invoice) {
     if (!invoice?._id || payingInvoiceId) {
@@ -255,8 +262,8 @@ export function InvoicesPage({
                     },
                   },
                 ]}
-                rows={invoices}
-                emptyMessage="No invoices found."
+                rows={visibleInvoices}
+                emptyMessage={statusFilter ? "No invoices match this filter." : "No invoices found."}
               />
             </CardContent>
           </Card>

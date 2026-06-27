@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -69,7 +70,10 @@ export default function PortalSubscriptionsPage() {
   });
   const [actionState, setActionState] = useState({ loadingId: "", type: "", error: "" });
   const [pendingAction, setPendingAction] = useState(null);
-  const subscriptions = data?.subscriptions || [];
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status") || "";
+  const allSubscriptions = data?.subscriptions || [];
+  const subscriptions = statusFilter ? allSubscriptions.filter((item) => (item.status || "") === statusFilter) : allSubscriptions;
 
   function openActionDialog(type, subscription) {
     if (type === "unsubscribe" && !canUnsubscribe(subscription)) {
@@ -160,7 +164,7 @@ export default function PortalSubscriptionsPage() {
 
         {actionState.error ? <p className="text-sm font-medium text-rose-600">{actionState.error}</p> : null}
 
-        {subscriptions.length ? (
+        {allSubscriptions.length ? (
           <Card>
             <CardHeader>
               <CardTitle>Subscriptions</CardTitle>
@@ -217,7 +221,7 @@ export default function PortalSubscriptionsPage() {
                   },
                 ]}
                 rows={subscriptions}
-                emptyMessage="No subscriptions found."
+                emptyMessage={statusFilter ? "No subscriptions match this filter." : "No subscriptions found."}
               />
             </CardContent>
           </Card>
