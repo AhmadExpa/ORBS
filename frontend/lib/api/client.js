@@ -73,7 +73,12 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
         throw new Error("Your admin session expired. Please sign in again.");
       }
 
-      throw new Error(data.message || "Request failed");
+      const error = new Error(data.message || "Request failed");
+      error.code = data.code;
+      error.contractStatus = data.contractStatus;
+      error.redirectUrl = data.redirectUrl;
+      error.details = data.details;
+      throw error;
     }
 
     return data;

@@ -2,7 +2,7 @@ import express from "express";
 import { orderQuoteSchema } from "../../lib/shared/index.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
-import { Invoice, Order, PaymentSetting, ProductPlan, Subscription, Addon } from "../../db/models/index.js";
+import { Invoice, Order, ProductPlan, Subscription, Addon } from "../../db/models/index.js";
 import { buildOrderLineItems, calculateOrderTotal } from "../../services/pricing-service.js";
 import { getStorageMinimumQuantity } from "../../lib/shared/pricing.js";
 import { nextInvoiceNumber, generateInvoicePdf } from "../../services/invoice-service.js";
@@ -11,6 +11,8 @@ import { requireCustomer } from "../../middleware/require-customer.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { cancelCustomerOrder } from "../../services/customer-cancellation-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
+import { sendInvoiceNotification } from "../../services/email-service.js";
+import { requireApprovedContract } from "../../services/contract-service.js";
 
 export const ordersRouter = express.Router();
 
@@ -171,6 +173,8 @@ ordersRouter.post(
   "/",
   requireCustomer,
   asyncHandler(async (req, res) => {
+    await requireApprovedContract(req.auth.clerkId);
+
     const quote = await buildQuote(req.body);
 
     if (quote.contactSalesOnly) {
@@ -259,14 +263,17 @@ ordersRouter.post(
     invoice.pdfStorageKey = pdfData.pdfStorageKey;
     invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
-
-    const paymentSetting = await PaymentSetting.findOne({ isActive: true }).sort({ updatedAt: -1 });
+    await sendInvoiceNotification({
+      customer: req.auth.user,
+      invoice,
+      planName: quote.plan.name,
+      eventType: "invoice_created",
+    });
 
     res.status(201).json({
       order,
       subscription,
       invoice,
-      paymentSetting,
     });
   }),
 );
@@ -285,9 +292,8 @@ ordersRouter.get(
 
     const subscription = await Subscription.findOne({ orderId: order._id });
     const invoice = await Invoice.findOne({ orderId: order._id });
-    const paymentSetting = await PaymentSetting.findOne({ isActive: true }).sort({ updatedAt: -1 });
 
-    res.json({ order, subscription, invoice, paymentSetting });
+    res.json({ order, subscription, invoice });
   }),
 );
 

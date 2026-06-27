@@ -31,33 +31,6 @@ export const orderQuoteSchema = z.object({
   billingCycle: z.enum(["monthly", "yearly"]),
 });
 
-export const paymentSubmissionSchema = z
-  .object({
-    submissionType: z.enum(["order_payment", "wallet_topup"]).default("order_payment"),
-    orderId: z.string().optional(),
-    subscriptionId: z.string().optional(),
-    invoiceCode: z.string().min(3),
-    paymentMethodType: z.enum(["manual_qr", "manual_link"]).default("manual_qr"),
-    amount: z.coerce.number().min(1).optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.submissionType === "order_payment" && !value.orderId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Order ID is required for order payment submissions.",
-        path: ["orderId"],
-      });
-    }
-
-    if (value.submissionType === "wallet_topup" && !value.amount) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Amount is required for wallet top-up submissions.",
-        path: ["amount"],
-      });
-    }
-  });
-
 export const supportTicketSchema = z.object({
   subject: z.string().min(3),
   category: z.string().min(2),

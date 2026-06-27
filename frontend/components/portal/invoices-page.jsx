@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { siteConfig } from "@/lib/constants/site";
@@ -23,6 +24,7 @@ export function InvoicesPage({
   emptyDescription = "Invoice PDFs are generated when orders are created and updated after review.",
 }) {
   const { getToken } = useAuth();
+  const router = useRouter();
   const { showToast } = useActionToast();
   const [payingInvoiceId, setPayingInvoiceId] = useState("");
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState("");
@@ -67,6 +69,9 @@ export function InvoicesPage({
         description: response.message || "The invoice has been paid from your wallet balance.",
       });
     } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
       showToast({
         type: "error",
         action: "Invoice",

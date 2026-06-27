@@ -25,6 +25,8 @@ import { recordActivity } from "../../services/activity-log-service.js";
 import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
+import { sendInvoiceNotification, sendWalletTopupNotification } from "../../services/email-service.js";
+import { requireApprovedContract } from "../../services/contract-service.js";
 
 export const stripeRouter = express.Router();
 export const stripeWebhookRouter = express.Router();
@@ -69,7 +71,7 @@ function assertGatewayResourceBelongsToUser({ metadata, user }) {
   }
 }
 
-async function rejectPendingManualOrderSubmissions(orderId, reason) {
+async function rejectPendingOrderSubmissions(orderId, reason) {
   if (!orderId) {
     return;
   }
@@ -105,8 +107,9 @@ async function findOrderPaymentContext({ orderId, userId }) {
 }
 
 async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
-  return withTransaction(async () => {
+  const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
+    await requireApprovedContract(user.clerkId);
 
     const { order, subscription, invoice } = await findOrderPaymentContext({
       orderId: metadata?.orderId,
@@ -118,7 +121,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       checkoutSessionId,
     });
     if (existingSubmission) {
-      return existingSubmission;
+      return { submission: existingSubmission, shouldNotify: false };
     }
 
     if (order.status === "cancelled") {
@@ -137,7 +140,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       });
     }
 
-    await rejectPendingManualOrderSubmissions(
+    await rejectPendingOrderSubmissions(
       order._id,
       "Superseded by a completed Stripe card payment.",
     );
@@ -205,20 +208,38 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       },
     });
 
-    return submission;
+    return {
+      submission,
+      order,
+      subscription,
+      invoice,
+      shouldNotify: true,
+    };
   });
+
+  if (result.shouldNotify && result.invoice) {
+    await sendInvoiceNotification({
+      customer: user,
+      invoice: result.invoice,
+      planName: result.subscription?.productPlanId?.name || result.order?.productPlanId?.name || "Managed Service",
+      eventType: "invoice_paid",
+    });
+  }
+
+  return result.submission;
 }
 
 async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
-  return withTransaction(async () => {
+  const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
+    await requireApprovedContract(user.clerkId);
 
     const existingSubmission = await findExistingGatewaySubmission({
       paymentIntentId,
       checkoutSessionId,
     });
     if (existingSubmission) {
-      return existingSubmission;
+      return { submission: existingSubmission, amount: existingSubmission.amount, shouldNotify: false };
     }
 
     if (paymentMethodId && customerId) {
@@ -264,8 +285,23 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       },
     });
 
-    return submission;
+    return {
+      submission,
+      amount,
+      reference: paymentIntentId || checkoutSessionId,
+      shouldNotify: true,
+    };
   });
+
+  if (result.shouldNotify) {
+    await sendWalletTopupNotification({
+      customer: user,
+      amount: result.amount,
+      reference: result.reference,
+    });
+  }
+
+  return result.submission;
 }
 
 async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, customerId }) {
@@ -425,6 +461,8 @@ stripeRouter.post(
       throw new HttpError(404, "User not found.");
     }
 
+    await requireApprovedContract(req.auth.clerkId);
+
     if (req.body.type === "card_setup") {
       const intent = await createSetupIntent({
         user,
@@ -497,6 +535,8 @@ stripeRouter.post(
     if (!user) {
       throw new HttpError(404, "User not found.");
     }
+
+    await requireApprovedContract(req.auth.clerkId);
 
     if (req.body.type === "card_setup") {
       const session = await createSetupCheckoutSession({
@@ -582,6 +622,8 @@ stripeRouter.post(
     if (!user) {
       throw new HttpError(404, "User not found.");
     }
+
+    await requireApprovedContract(req.auth.clerkId);
 
     const checkoutSessionId = String(req.body.checkoutSessionId || "").trim();
     const paymentIntentId = String(req.body.paymentIntentId || "").trim();

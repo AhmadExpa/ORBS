@@ -17,6 +17,9 @@ import { stripeRouter, stripeWebhookRouter } from "./modules/stripe/routes.js";
 import { ticketsRouter } from "./modules/tickets/routes.js";
 import { staffAuthRouter } from "./modules/staffAuth/routes.js";
 import { adminRouter } from "./modules/admin/routes.js";
+import { contractsRouter } from "./modules/contracts/routes.js";
+import { documensoWebhookRouter } from "./modules/webhooks/documenso-routes.js";
+import { internalRouter } from "./modules/internal/routes.js";
 import {
   isObjectStorageEnabled,
   storageObjectExists,
@@ -35,6 +38,7 @@ app.use(helmet());
 app.use(morgan("dev"));
 app.use(cookieParser());
 app.use("/api/v1/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhookRouter);
+app.use("/api/v1/webhooks/documenso", express.raw({ type: "*/*" }), documensoWebhookRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(attachCustomer);
@@ -108,7 +112,9 @@ app.use("/api/v1/invoices", invoicesRouter);
 app.use("/api/v1/payments", paymentsRouter);
 app.use("/api/v1/stripe", stripeRouter);
 app.use("/api/v1/tickets", ticketsRouter);
+app.use("/api/v1/contracts", contractsRouter);
 app.use("/api/v1/staff/auth", staffAuthRouter);
+app.use("/api/v1/internal", internalRouter);
 app.use("/api/v1/admin", adminRouter);
 
 app.use(notFoundHandler);

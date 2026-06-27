@@ -17,12 +17,12 @@ export function AdminOverviewPage() {
   const recentTickets = data?.recentTickets || [];
 
   if (isLoading && !data) {
-    return <PageLoader title="Admin Dashboard" subtitle="Loading analytics, payments, and ticket activity..." cardCount={3} lines={4} />;
+    return <PageLoader title="Admin Dashboard" subtitle="Loading analytics, billing activity, and tickets..." cardCount={3} lines={4} />;
   }
 
   return (
     <div>
-      <Topbar title="Admin Dashboard" subtitle="Monitor subscriptions, revenue, payments, tickets, and customer growth." />
+      <Topbar title="Admin Dashboard" subtitle="Monitor subscriptions, revenue, card billing, tickets, and customer growth." />
       <div className="space-y-6 p-6">
         <MetricGrid
           items={[
@@ -35,8 +35,8 @@ export function AdminOverviewPage() {
         <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Payment Submissions</CardTitle>
-              <CardDescription>Pending verification queue and latest review activity.</CardDescription>
+              <CardTitle>Recent Payment Activity</CardTitle>
+              <CardDescription>Latest card payments, wallet top-ups, and renewal charges.</CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable
@@ -46,7 +46,7 @@ export function AdminOverviewPage() {
                   { key: "submittedAt", label: "Submitted", render: (row) => new Date(row.submittedAt).toLocaleDateString() },
                 ]}
                 rows={recentPayments}
-                emptyMessage="No payment submissions yet."
+                emptyMessage="No payment activity yet."
               />
             </CardContent>
           </Card>

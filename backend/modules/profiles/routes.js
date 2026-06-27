@@ -52,7 +52,7 @@ profilesRouter.patch(
   "/me",
   requireCustomer,
   asyncHandler(async (req, res) => {
-    const allowedFields = ["phone", "secondaryEmail", "address", "billingAddress"];
+    const allowedFields = ["phone", "company", "address", "billingAddress"];
     const updates = Object.fromEntries(
       Object.entries(req.body).filter(([key]) => allowedFields.includes(key)),
     );

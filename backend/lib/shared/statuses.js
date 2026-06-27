@@ -22,6 +22,20 @@ export const PAYMENT_STATUSES = [
   "rejected",
 ];
 
+export const CONTRACT_STATUSES = [
+  "NOT_STARTED",
+  "TURNSTILE_REQUIRED",
+  "READY_TO_SIGN",
+  "PENDING_SIGNATURE",
+  "SIGNED_PENDING_STORAGE",
+  "SIGNED_PENDING_ADMIN",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+  "EXPIRED",
+  "SUPERSEDED",
+];
+
 export const TICKET_STATUSES = ["open", "pending", "resolved", "closed"];
 
 export const TICKET_PRIORITIES = ["low", "medium", "high", "critical"];

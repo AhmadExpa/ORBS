@@ -17,27 +17,26 @@ function normalizePossibleUrl(value) {
 }
 
 function normalizeApiUrl(value) {
-  const fallbackApiUrl = "https://api.account.elevenorbits.com/api/v1";
+  const fallbackApiUrl = "https://api.elevenorbits.com/api/v1";
   const normalizedValue = normalizePossibleUrl(value || fallbackApiUrl)
-    .replace(/:\/\/api\.accounts\.elevenorbits\.com/iu, "://api.account.elevenorbits.com")
+    .replace(/:\/\/api\.accounts?\.elevenorbits\.com/iu, "://api.elevenorbits.com")
     .replace(/\/+$/u, "");
 
   return /\/api\/v1$/iu.test(normalizedValue) ? normalizedValue : `${normalizedValue}/api/v1`;
 }
 
 function normalizeSiteUrl(value) {
-  return normalizePossibleUrl(value || "https://elevenorbits.com").replace(/\/+$/u, "");
+  return normalizePossibleUrl(value || "https://elevenorbits.com")
+    .replace(/:\/\/account\.elevenorbits\.com/iu, "://elevenorbits.com")
+    .replace(/\/+$/u, "");
 }
+
+const fallbackAppUrl = process.env.NODE_ENV === "production" ? "https://elevenorbits.com" : "http://localhost:3000";
 
 const generalEmail = process.env.NEXT_PUBLIC_GENERAL_EMAIL || "hello@elevenorbits.com";
 const salesEmail = process.env.NEXT_PUBLIC_SALES_EMAIL || "sales@elevenorbits.com";
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com";
 const billingEmail = process.env.NEXT_PUBLIC_BILLING_EMAIL || "billing@elevenorbits.com";
-const serversEmail = process.env.NEXT_PUBLIC_SERVERS_EMAIL || "servers@elevenorbits.com";
-const aiEmail = process.env.NEXT_PUBLIC_AI_EMAIL || "ai@elevenorbits.com";
-const automationEmail = process.env.NEXT_PUBLIC_AUTOMATION_EMAIL || "automation@elevenorbits.com";
-const vicidialEmail = process.env.NEXT_PUBLIC_VICIDIAL_EMAIL || "vicidial@elevenorbits.com";
-const devSupportEmail = process.env.NEXT_PUBLIC_DEV_SUPPORT_EMAIL || "devsupport@elevenorbits.com";
 const securityEmail = process.env.NEXT_PUBLIC_SECURITY_EMAIL || "security@elevenorbits.com";
 
 const departmentContacts = [
@@ -66,36 +65,6 @@ const departmentContacts = [
     description: "Use for invoices, payment confirmations, wallet funding, and account charges.",
   },
   {
-    key: "servers",
-    title: "Managed Servers",
-    email: serversEmail,
-    description: "Use for managed VPS, managed VDS, provisioning, and infrastructure requests.",
-  },
-  {
-    key: "ai",
-    title: "AI Services",
-    email: aiEmail,
-    description: "Use for AI servers, AI products, DeepSeek deployments, and model service discussions.",
-  },
-  {
-    key: "automation",
-    title: "Workflow Automation",
-    email: automationEmail,
-    description: "Use for workflow automation design, integrations, and process rollout requests.",
-  },
-  {
-    key: "vicidial",
-    title: "Vicidial and Call Centers",
-    email: vicidialEmail,
-    description: "Use for Vicidial management, dialer operations, and call-center workflow coordination.",
-  },
-  {
-    key: "development-support",
-    title: "Development Support",
-    email: devSupportEmail,
-    description: "Use for implementation support, technical changes, and recurring engineering help.",
-  },
-  {
     key: "security",
     title: "Cybersecurity",
     email: securityEmail,
@@ -104,13 +73,13 @@ const departmentContacts = [
 ];
 
 const serviceDepartmentMap = {
-  vps: "servers",
-  vds: "servers",
-  "ai-servers": "ai",
-  vicidial: "vicidial",
-  workflows: "automation",
-  "ai-solutions": "ai",
-  "development-support": "development-support",
+  vps: "sales",
+  vds: "sales",
+  "ai-servers": "sales",
+  vicidial: "sales",
+  workflows: "sales",
+  "ai-solutions": "sales",
+  "development-support": "support",
   cybersecurity: "security",
 };
 
@@ -120,16 +89,11 @@ export const siteConfig = {
   salesEmail,
   supportEmail,
   billingEmail,
-  serversEmail,
-  aiEmail,
-  automationEmail,
-  vicidialEmail,
-  devSupportEmail,
   securityEmail,
   departmentContacts,
   serviceDepartmentMap,
   publicUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_MARKETING_URL),
-  appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  appUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || fallbackAppUrl),
   apiUrl: normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL),
 };
 

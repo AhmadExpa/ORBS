@@ -32,7 +32,7 @@ const heroSignals = [
   },
   {
     label: "Commercial flow",
-    value: "Orders, wallet funding, payment verification, and recurring billing stay inside the portal.",
+    value: "Orders, wallet funding, card payment activity, and recurring billing stay inside the portal.",
   },
   {
     label: "Access delivery",
@@ -62,7 +62,7 @@ const operatingHighlights = [
   },
   {
     title: "Billing stays structured",
-    description: "Wallet balance, saved-card fallback, manual verification, and renewal rules are all part of the same customer journey.",
+    description: "Wallet balance, saved-card fallback, card payments, and renewal rules are all part of the same customer journey.",
     icon: Wallet,
   },
 ];
@@ -95,13 +95,13 @@ const contactCards = [
   {
     key: "servers",
     title: "Managed Servers",
-    email: siteConfig.serversEmail,
+    email: siteConfig.salesEmail,
     description: "Managed VPS, VDS, provisioning requests, migration planning, and infrastructure rollout.",
   },
   {
     key: "ai",
     title: "AI & Automation",
-    email: siteConfig.aiEmail,
+    email: siteConfig.salesEmail,
     description: "AI servers, agents, workflow automation, and model-backed application delivery.",
   },
   {
@@ -284,7 +284,7 @@ export function LandingPage() {
                     The product is not just compute. It is the operating control around it.
                   </p>
                   <p className="mt-5 text-sm leading-7 text-slate-600">
-                    ElevenOrbits keeps provisioning, payment verification, support, credential assignment, and service continuity inside one accountable delivery model.
+                    ElevenOrbits keeps provisioning, card payment activity, support, credential assignment, and service continuity inside one accountable delivery model.
                   </p>
                   <p className="mt-6 text-sm font-semibold text-slate-950">ElevenOrbits Team</p>
                 </div>
@@ -588,7 +588,7 @@ export function LandingPage() {
                 <span className="block">for managed delivery.</span>
               </h2>
               <p className="text-sm leading-7 text-slate-600">
-                These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, payment settings, and renewals.
+                These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, saved-card billing, and renewals.
               </p>
               <Link href={getSignupPath()}>
                 <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">Open Portal</Button>

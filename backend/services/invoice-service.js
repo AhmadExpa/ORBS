@@ -82,12 +82,10 @@ function formatPaymentMethodLabel(paymentMethodType, paymentReferenceCode) {
   }
 
   const labels = {
-    manual_qr: "Manual QR Transfer",
-    manual_link: "Manual Payment Link",
     wallet_balance: "Wallet Balance",
     stripe_card: "Stripe Card",
     "wallet_balance + stripe_card": "Wallet Balance + Stripe Card",
-    "wallet_balance + manual_followup": "Wallet Balance + Manual Follow-up",
+    "wallet_balance + pending_card_payment": "Wallet Balance + Pending Card Payment",
     pending_confirmation: "Pending Customer Confirmation",
   };
 

@@ -151,7 +151,7 @@ export function PortalCardForm({
   if (!stripePromise) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-        Card checkout is not available right now. Please use the manual payment option until it is configured.
+        Card checkout is not available right now. Please contact support so we can finish payment configuration.
       </div>
     );
   }

@@ -4,6 +4,7 @@ export const portalNavigation = [
   { href: "/portal/subscriptions", label: "Subscriptions" },
   { href: "/portal/invoices", label: "Invoices" },
   { href: "/portal/payments", label: "Wallet & Payments" },
+  { href: "/portal/contracts", label: "Contracts" },
   { href: "/portal/support", label: "Support" },
   { href: "/portal/account", label: "Account" },
 ];
@@ -15,8 +16,7 @@ export const adminNavigation = [
   { href: "/eo-admin/pricing", label: "Pricing" },
   { href: "/eo-admin/subscriptions", label: "Subscriptions" },
   { href: "/eo-admin/invoices", label: "Invoices" },
-  { href: "/eo-admin/payments", label: "Payments" },
-  { href: "/eo-admin/payment-settings", label: "Payment Settings" },
+  { href: "/eo-admin/contracts", label: "Contracts" },
   { href: "/eo-admin/tickets", label: "Tickets" },
   { href: "/eo-admin/settings", label: "Settings" },
   { href: "/eo-admin/activity", label: "Activity" },

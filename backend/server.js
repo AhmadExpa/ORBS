@@ -3,11 +3,13 @@ import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { ensureBootstrapData } from "./services/bootstrap-service.js";
 import { startBillingCycleScheduler } from "./services/billing-cycle-service.js";
+import { startContractSyncScheduler } from "./services/contract-service.js";
 
 async function startServer() {
   await connectToDatabase();
   await ensureBootstrapData();
   startBillingCycleScheduler();
+  startContractSyncScheduler();
 
   app.listen(env.port, () => {
     console.log(`ElevenOrbits API running on http://localhost:${env.port}`);

@@ -37,6 +37,7 @@ async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidTo
       return {
         user: null,
         clerkId: payload.sub,
+        payload,
       };
     }
 
@@ -46,6 +47,7 @@ async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidTo
   return {
     user,
     clerkId: payload.sub,
+    payload,
   };
 }
 

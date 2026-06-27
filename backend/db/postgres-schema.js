@@ -66,6 +66,31 @@ const uniqueDocumentIndexes = [
     "(data->>'gatewayCheckoutSessionId')",
     "collection = 'payment_submissions' AND COALESCE(data->>'gatewayCheckoutSessionId', '') <> ''",
   ],
+  [
+    "eo_documents_contract_number_unique_idx",
+    "(data->>'contractNumber')",
+    "collection = 'customer_contracts' AND COALESCE(data->>'contractNumber', '') <> ''",
+  ],
+  [
+    "eo_documents_contract_documenso_document_unique_idx",
+    "(data->>'documensoDocumentId')",
+    "collection = 'customer_contracts' AND COALESCE(data->>'documensoDocumentId', '') <> ''",
+  ],
+  [
+    "eo_documents_contract_active_version_unique_idx",
+    "(data->>'clerkUserId'), (data->>'templateVersion')",
+    "collection = 'customer_contracts' AND COALESCE(data->>'clerkUserId', '') <> '' AND COALESCE(data->>'templateVersion', '') <> '' AND COALESCE(data->>'status', '') NOT IN ('REJECTED', 'CANCELLED', 'EXPIRED', 'SUPERSEDED')",
+  ],
+  [
+    "eo_documents_contract_counter_key_unique_idx",
+    "(data->>'key')",
+    "collection = 'contract_counters' AND COALESCE(data->>'key', '') <> ''",
+  ],
+  [
+    "eo_documents_contract_webhook_event_unique_idx",
+    "(data->>'provider'), (data->>'eventId')",
+    "collection = 'contract_webhook_events' AND COALESCE(data->>'provider', '') <> '' AND COALESCE(data->>'eventId', '') <> ''",
+  ],
 ];
 
 export async function ensurePostgresSchema() {
@@ -120,6 +145,36 @@ export async function ensurePostgresSchema() {
   await query(`
     CREATE INDEX IF NOT EXISTS payment_ledger_entries_user_created_idx
       ON payment_ledger_entries (user_id, created_at DESC)
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS eo_documents_contract_clerk_idx
+      ON eo_documents ((data->>'clerkUserId'))
+      WHERE collection = 'customer_contracts'
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS eo_documents_contract_status_idx
+      ON eo_documents ((data->>'status'))
+      WHERE collection = 'customer_contracts'
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS eo_documents_contract_created_idx
+      ON eo_documents (created_at DESC)
+      WHERE collection = 'customer_contracts'
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS eo_documents_contract_documenso_idx
+      ON eo_documents ((data->>'documensoDocumentId'))
+      WHERE collection = 'customer_contracts'
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS eo_documents_contract_webhook_document_idx
+      ON eo_documents ((data->>'documentId'), created_at DESC)
+      WHERE collection = 'contract_webhook_events'
   `);
 
   await query(`

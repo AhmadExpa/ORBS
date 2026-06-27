@@ -20,7 +20,7 @@ const variantThemes = {
     secondary:
       "border border-slate-900 bg-slate-900 text-white shadow-[0_16px_36px_-18px_rgba(15,23,42,0.78)] hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_22px_48px_-22px_rgba(15,23,42,0.86)] active:translate-y-0 active:shadow-[0_10px_24px_-16px_rgba(15,23,42,0.7)] focus-visible:ring-slate-400",
     ghost:
-      "border border-white/80 bg-white/82 text-slate-950 shadow-[0_14px_34px_-26px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] hover:-translate-y-0.5 hover:bg-white hover:text-black hover:shadow-[0_20px_44px_-28px_rgba(15,23,42,0.62)] active:translate-y-0 active:shadow-[0_10px_24px_-20px_rgba(15,23,42,0.52)] focus-visible:ring-slate-300",
+      "border border-slate-200 bg-white text-slate-950 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.03] hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-black hover:shadow-[0_18px_38px_-26px_rgba(15,23,42,0.62)] active:translate-y-0 active:border-slate-300 active:bg-white active:shadow-[0_10px_24px_-22px_rgba(15,23,42,0.5)] focus-visible:ring-slate-300",
   },
 };
 

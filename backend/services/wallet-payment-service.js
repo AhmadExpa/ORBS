@@ -5,6 +5,7 @@ import { recordActivity } from "./activity-log-service.js";
 import { addBillingPeriod } from "./billing-cycle-service.js";
 import { generateInvoicePdf } from "./invoice-service.js";
 import { withTransaction } from "../db/postgres-model.js";
+import { requireApprovedContract } from "./contract-service.js";
 
 function isRenewalInvoice(invoice) {
   return String(invoice?.paymentReferenceCode || "").startsWith("renewal_");
@@ -85,8 +86,8 @@ async function finalizeOrderInvoicePayment({
     subscription.metadata = {
       ...subscription.metadata,
       billingAmount: order.totalAmount,
-      lastManualPaymentAt: new Date(),
-      lastManualPaymentSource: "wallet_balance",
+      lastWalletPaymentAt: new Date(),
+      lastWalletPaymentSource: "wallet_balance",
     };
     await subscription.save();
   }
@@ -154,9 +155,9 @@ async function finalizeRenewalInvoicePayment({
   subscription.metadata = {
     ...subscription.metadata,
     billingAmount: Number(subscription.metadata?.billingAmount || invoice.amount || 0),
-    lastManualPaymentAt: new Date(),
-    lastManualPaymentAmount: Number(invoice.amount || 0),
-    lastManualPaymentSource: "wallet_balance",
+    lastWalletPaymentAt: new Date(),
+    lastWalletPaymentAmount: Number(invoice.amount || 0),
+    lastWalletPaymentSource: "wallet_balance",
     billingNote: "",
     lastStripeChargeError: "",
   };
@@ -228,6 +229,8 @@ export async function payInvoiceWithWalletBalance({ invoiceId, userId }) {
     if (!customer) {
       throw new HttpError(404, "User not found.");
     }
+
+    await requireApprovedContract(customer.clerkId);
 
     const updatedCustomer = await User.findOneAndUpdate(
       { _id: userId, accountBalance: { $gte: amount } },

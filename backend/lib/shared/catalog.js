@@ -748,25 +748,6 @@ export const addonSeeds = [
   ),
 ];
 
-export const paymentSettingSeed = {
-  title: "Primary Manual Payment",
-  qrCodeImageUrl: "",
-  paymentLink: "",
-  instructions:
-    "Scan the QR code or use the fallback payment link, then submit your payment reference code so our team can verify it.",
-  isActive: true,
-  supportedFor: [
-    "vps",
-    "vds",
-    "ai-servers",
-    "vicidial",
-    "workflows",
-    "ai-solutions",
-    "development-support",
-    "cybersecurity",
-  ],
-};
-
 export const serviceMarketingContent = {
   vps: {
     headline: "Managed VPS for businesses that want hosting without operational overhead.",

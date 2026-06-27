@@ -197,11 +197,11 @@ export const PaymentSubmission = createPostgresModel("PaymentSubmission", {
   defaults: {
     submissionType: "order_payment",
     amount: 0,
-    paymentMethodType: "manual_qr",
+    paymentMethodType: "pending_confirmation",
     screenshotUrl: "",
     status: "pending_verification",
     adminRemarks: "",
-    gateway: "manual",
+    gateway: "stripe",
     gatewayPaymentId: "",
     gatewayCheckoutSessionId: "",
     gatewaySetupIntentId: "",
@@ -217,6 +217,54 @@ export const PaymentSubmission = createPostgresModel("PaymentSubmission", {
   },
   numericFields: ["amount"],
   dateFields: ["submittedAt", "reviewedAt"],
+});
+
+export const CustomerContract = createPostgresModel("CustomerContract", {
+  collection: "customer_contracts",
+  defaults: {
+    customerType: "INDIVIDUAL",
+    businessName: "",
+    country: "",
+    phone: "",
+    status: "NOT_STARTED",
+    adminDecision: "",
+    adminReviewedBy: "",
+    adminRejectionReason: "",
+    documensoDocumentId: "",
+    documensoRecipientId: "",
+    r2SignedPdfKey: "",
+    r2AuditCertificateKey: "",
+    r2EvidenceKey: "",
+    signedPdfSha256: "",
+    turnstileHostname: "",
+  },
+  dateFields: [
+    "signedAt",
+    "turnstileVerifiedAt",
+    "adminReviewedAt",
+    "storageStartedAt",
+    "storedAt",
+    "supersededAt",
+  ],
+});
+
+export const ContractCounter = createPostgresModel("ContractCounter", {
+  collection: "contract_counters",
+  defaults: {
+    sequence: 0,
+  },
+  numericFields: ["sequence"],
+});
+
+export const ContractWebhookEvent = createPostgresModel("ContractWebhookEvent", {
+  collection: "contract_webhook_events",
+  defaults: {
+    provider: "documenso",
+    eventType: "",
+    documentId: "",
+    processedAt: null,
+  },
+  dateFields: ["processedAt"],
 });
 
 export const PaymentSetting = createPostgresModel("PaymentSetting", {

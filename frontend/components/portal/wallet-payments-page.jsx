@@ -1,14 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
-import { CreditCard, History, Landmark, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CreditCard, History, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
-import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { paymentProcessingMessage } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
@@ -20,8 +17,7 @@ const walletSections = [
   { id: "overview", label: "Overview", icon: Wallet, summary: "Balance, renewals, and funding options" },
   { id: "saved-card", label: "Saved Card", icon: CreditCard, summary: "Control renewal fallback billing" },
   { id: "instant-topup", label: "Instant Top-up", icon: Zap, summary: "Fund the wallet by card immediately" },
-  { id: "manual-topup", label: "Manual Payment", icon: Landmark, summary: "Submit transfer details for review" },
-  { id: "activity", label: "Payment Activity", icon: History, summary: "Track submissions and charges" },
+  { id: "activity", label: "Payment Activity", icon: History, summary: "Track card payments and wallet charges" },
 ];
 
 function submissionTypeLabel(type) {
@@ -90,6 +86,7 @@ function wait(ms) {
 
 export function WalletPaymentsPage() {
   const { getToken } = useAuth();
+  const router = useRouter();
   const { showToast } = useActionToast();
 
   const profileQuery = useCustomerQuery({
@@ -100,25 +97,12 @@ export function WalletPaymentsPage() {
     queryKey: ["portal-wallet-payments"],
     path: "/payments/submissions",
   });
-  const paymentSettingQuery = useQuery({
-    queryKey: ["active-payment-setting"],
-    queryFn: () => apiFetch("/payments/settings/active"),
-  });
 
   const { data: profileData, refetch: refetchProfile } = profileQuery;
   const { data: paymentsData, refetch: refetchPayments } = paymentsQuery;
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
-  const [manualAmount, setManualAmount] = useState("");
-  const [invoiceCode, setInvoiceCode] = useState("");
-  const [proof, setProof] = useState(null);
-  const [proofInputKey, setProofInputKey] = useState(0);
-  const [state, setState] = useState({
-    saving: false,
-    message: "",
-    error: "",
-  });
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
     action: "",
@@ -128,16 +112,12 @@ export function WalletPaymentsPage() {
 
   const user = profileData?.user;
   const submissions = paymentsData?.submissions || [];
-  const paymentSetting = paymentSettingQuery.data?.paymentSetting;
   const savedCards = getSavedCards(user);
   const primaryCard = getPrimaryCard(user);
-  const pendingTopups = submissions.filter(
-    (submission) => submission.submissionType === "wallet_topup" && submission.status === "pending_verification",
-  ).length;
-  const isLoading = profileQuery.isLoading || paymentsQuery.isLoading || paymentSettingQuery.isLoading;
+  const walletTopups = submissions.filter((submission) => submission.submissionType === "wallet_topup").length;
+  const isLoading = profileQuery.isLoading || paymentsQuery.isLoading;
   const hasSavedCard = savedCards.length > 0;
   const autoCardBillingEnabled = Boolean(primaryCard) && user?.autoCardBillingEnabled !== false;
-  const qrCodeUrl = resolvePublicFileUrl(paymentSetting?.qrCodeImageUrl);
   const renewalModeLabel = autoCardBillingEnabled ? "Wallet first, primary-card fallback" : "Wallet-only top-up mode";
 
   async function syncPortalPayments() {
@@ -146,64 +126,21 @@ export function WalletPaymentsPage() {
     await Promise.all([refetchPayments(), refetchProfile()]);
   }
 
-  async function handleManualSubmit(event) {
-    event.preventDefault();
-    setState((current) => ({ ...current, saving: true, message: "", error: "" }));
-
-    try {
-      const token = await getToken();
-      const formData = new FormData();
-      formData.append("submissionType", "wallet_topup");
-      formData.append("amount", manualAmount);
-      formData.append("invoiceCode", invoiceCode);
-      formData.append("paymentMethodType", paymentSetting?.paymentLink ? "manual_link" : "manual_qr");
-      if (proof) {
-        formData.append("proof", proof);
-      }
-
-      const response = await apiFetch("/payments/submissions", {
-        method: "POST",
-        token,
-        body: formData,
-        isMultipart: true,
-      });
-
-      setManualAmount("");
-      setInvoiceCode("");
-      setProof(null);
-      setProofInputKey((current) => current + 1);
-      setState((current) => ({
-        ...current,
-        saving: false,
-        message: response.message || paymentProcessingMessage,
-        error: "",
-      }));
-      showToast({
-        type: "info",
-        action: "Wallet Top-up",
-        title: "Top-up submitted",
-        description: response.message || paymentProcessingMessage,
-      });
-      setActiveSection("activity");
-      await Promise.all([refetchPayments(), refetchProfile()]);
-    } catch (error) {
-      setState((current) => ({ ...current, saving: false, message: "", error: error.message }));
-      showToast({
-        type: "error",
-        action: "Wallet Top-up",
-        title: "Top-up failed",
-        description: error.message,
-      });
-    }
-  }
-
   async function handleSaveCard({ stripe, cardElement }) {
     const token = await getToken();
-    const response = await apiFetch("/stripe/intents", {
-      method: "POST",
-      token,
-      body: { type: "card_setup" },
-    });
+    let response;
+    try {
+      response = await apiFetch("/stripe/intents", {
+        method: "POST",
+        token,
+        body: { type: "card_setup" },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     const result = await stripe.confirmCardSetup(response.clientSecret, {
       payment_method: {
@@ -223,13 +160,20 @@ export function WalletPaymentsPage() {
       throw new Error("Stripe confirmed the card setup but did not return a setup intent ID.");
     }
 
-    await apiFetch("/stripe/finalize", {
-      method: "POST",
-      token,
-      body: {
-        setupIntentId: result.setupIntent.id,
-      },
-    });
+    try {
+      await apiFetch("/stripe/finalize", {
+        method: "POST",
+        token,
+        body: {
+          setupIntentId: result.setupIntent.id,
+        },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     await syncPortalPayments();
     return hasSavedCard
@@ -244,14 +188,22 @@ export function WalletPaymentsPage() {
     }
 
     const token = await getToken();
-    const response = await apiFetch("/stripe/intents", {
-      method: "POST",
-      token,
-      body: {
-        type: "wallet_topup",
-        amount: numericAmount,
-      },
-    });
+    let response;
+    try {
+      response = await apiFetch("/stripe/intents", {
+        method: "POST",
+        token,
+        body: {
+          type: "wallet_topup",
+          amount: numericAmount,
+        },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
@@ -271,13 +223,20 @@ export function WalletPaymentsPage() {
       throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
     }
 
-    await apiFetch("/stripe/finalize", {
-      method: "POST",
-      token,
-      body: {
-        paymentIntentId: result.paymentIntent.id,
-      },
-    });
+    try {
+      await apiFetch("/stripe/finalize", {
+        method: "POST",
+        token,
+        body: {
+          paymentIntentId: result.paymentIntent.id,
+        },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     await syncPortalPayments();
     setInstantAmount("");
@@ -404,14 +363,14 @@ export function WalletPaymentsPage() {
   }
 
   if (isLoading && !profileData && !paymentsData) {
-    return <PageLoader title="Wallet & Payments" subtitle="Loading wallet balance, payment methods, and submissions..." cardCount={3} lines={4} />;
+    return <PageLoader title="Wallet & Payments" subtitle="Loading wallet balance, saved cards, and payment activity..." cardCount={3} lines={4} />;
   }
 
   return (
     <div>
       <Topbar
         title="Wallet & Payments"
-        subtitle="Manage wallet funding, saved cards, renewal billing, and payment activity from one portal surface."
+        subtitle="Manage card wallet funding, saved cards, renewal billing, and payment activity from one portal surface."
       />
 
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
@@ -422,8 +381,8 @@ export function WalletPaymentsPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Billing Command Center</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Control wallet funding and renewal billing from one place.</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Keep wallet balance available for renewals, add or remove a fallback card, submit manual transfer proof when needed, and review payment activity
-                  without leaving the portal.
+                  Keep wallet balance available for renewals, add or remove a fallback card, fund the wallet by card, and review payment activity without leaving
+                  the portal.
                 </p>
               </div>
 
@@ -440,9 +399,9 @@ export function WalletPaymentsPage() {
                 <p className="mt-2 text-sm text-slate-500">Ready to be used for renewals and approved service charges.</p>
               </div>
               <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pending Top-ups</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{pendingTopups}</p>
-                <p className="mt-2 text-sm text-slate-500">Manual submissions waiting for verification remain visible here.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Wallet Top-ups</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{walletTopups}</p>
+                <p className="mt-2 text-sm text-slate-500">Completed card-funded wallet top-ups recorded on this account.</p>
               </div>
               <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved Cards</p>
@@ -458,7 +417,7 @@ export function WalletPaymentsPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-5">
+            <div className="grid gap-3 lg:grid-cols-4">
               {walletSections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
@@ -498,7 +457,7 @@ export function WalletPaymentsPage() {
               <CardTitle>Overview</CardTitle>
               <CardDescription>Choose the funding path that fits the situation and keep renewal billing under control.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 xl:grid-cols-3">
+            <CardContent className="grid gap-4 xl:grid-cols-2">
               <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-sm">
@@ -511,21 +470,6 @@ export function WalletPaymentsPage() {
                 </div>
                 <p className="mt-4 text-sm leading-7 text-slate-600">
                   Use the instant top-up section when you want the wallet funded immediately after successful card confirmation.
-                </p>
-              </div>
-
-              <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-sm">
-                    <Landmark className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-base font-semibold text-slate-950">Manual transfer submission</p>
-                    <p className="text-sm text-slate-500">Reviewed by the admin team</p>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-7 text-slate-600">
-                  Use manual submission when you pay by QR or payment link and want the team to verify the transfer before adding the balance.
                 </p>
               </div>
 
@@ -680,7 +624,7 @@ export function WalletPaymentsPage() {
                       Instant funding
                     </span>
                     <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                      No manual review delay
+                      Instant wallet credit
                     </span>
                   </div>
                   <p className="mt-4 text-sm leading-7 text-slate-700">
@@ -704,78 +648,11 @@ export function WalletPaymentsPage() {
           </Card>
         ) : null}
 
-        {activeSection === "manual-topup" ? (
-          <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
-            <CardHeader>
-              <CardTitle>Manual Payment Submission</CardTitle>
-              <CardDescription>Use the configured QR or payment link, then submit the transfer details for manual verification.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
-                <div className="overflow-hidden rounded-[1.8rem] border border-slate-200 bg-slate-50 p-4">
-                  {qrCodeUrl ? (
-                    <Image alt="Payment QR code" src={qrCodeUrl} width={240} height={240} className="h-auto w-full rounded-2xl object-cover" />
-                  ) : (
-                    <div className="flex aspect-square items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 text-center text-sm text-slate-500">
-                      QR code will appear here once payment settings are configured.
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Transfer Instructions</p>
-                  <p className="mt-4 text-sm leading-7 text-slate-600">
-                    {paymentSetting?.instructions || "Scan the QR code, complete the transfer, and submit the payment reference below so the admin team can verify it."}
-                  </p>
-                  {paymentSetting?.paymentLink ? (
-                    <div className="mt-5">
-                      <a href={paymentSetting.paymentLink} target="_blank" rel="noreferrer">
-                        <Button variant="ghost">Open Payment Link</Button>
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <form onSubmit={handleManualSubmit} className="space-y-5 rounded-[1.8rem] border border-slate-200 bg-white p-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Top-up Amount</label>
-                    <TextInput type="number" min="1" value={manualAmount} onChange={(event) => setManualAmount(event.target.value)} placeholder="100" required />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Transaction ID / Reference</label>
-                    <TextInput value={invoiceCode} onChange={(event) => setInvoiceCode(event.target.value)} placeholder="Enter transfer reference" required />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Payment Proof Screenshot (optional)</label>
-                  <input
-                    key={proofInputKey}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(event) => setProof(event.target.files?.[0] || null)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  />
-                </div>
-
-                {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
-                {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-
-                <Button className="w-full sm:w-auto" type="submit" disabled={state.saving}>
-                  {state.saving ? "Submitting top-up..." : "Submit Top-up for Approval"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        ) : null}
-
         {activeSection === "activity" ? (
           <Card className="overflow-hidden shadow-[0_24px_70px_-58px_rgba(15,23,42,0.2)]">
             <CardHeader>
               <CardTitle>Payment Activity</CardTitle>
-              <CardDescription>Track manual submissions, card charges, wallet top-ups, and automatic renewals in one place.</CardDescription>
+              <CardDescription>Track card payments, wallet top-ups, and automatic renewals in one place.</CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable

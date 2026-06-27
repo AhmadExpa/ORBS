@@ -21,7 +21,7 @@ export const legalPages = [
         heading: "Accounts and Portal Access",
         paragraphs: [
           "You are responsible for keeping account information accurate, protecting login credentials, and making sure only authorized users access your account. Notify ElevenOrbits promptly if you believe account access, credentials, payment details, or service information has been compromised.",
-          "ElevenOrbits may rely on the instructions, support messages, payment submissions, and configuration choices submitted through your account unless we have clear reason to believe the request is unauthorized.",
+          "ElevenOrbits may rely on the instructions, support messages, payment activity, and configuration choices submitted through your account unless we have clear reason to believe the request is unauthorized.",
         ],
       },
       {
@@ -41,7 +41,7 @@ export const legalPages = [
       {
         heading: "Billing, Wallet, Renewals, and Taxes",
         paragraphs: [
-          "Prices, billing cycles, wallet balances, add-on charges, invoices, manual payment submissions, saved payment methods, and renewal settings may be displayed in the portal. Unless a written agreement says otherwise, charges are due when presented or when the renewal cycle begins.",
+          "Prices, billing cycles, wallet balances, add-on charges, invoices, card payment activity, saved payment methods, and renewal settings may be displayed in the portal. Unless a written agreement says otherwise, charges are due when presented or when the renewal cycle begins.",
           "Wallet funds may be applied before charging a saved card or requesting another payment method. You are responsible for taxes, bank fees, payment processor fees, currency conversion costs, and other external charges unless ElevenOrbits has expressly included them in writing.",
         ],
       },
@@ -96,14 +96,14 @@ export const legalPages = [
       {
         heading: "Payment and Authentication Providers",
         paragraphs: [
-          "ElevenOrbits may use third-party providers for authentication, card processing, payment verification, infrastructure, email delivery, storage, security, and operational tooling. These providers process information as needed to perform services for ElevenOrbits.",
-          "Card details are handled by payment processors where available. ElevenOrbits should not receive full card numbers through support messages or manual payment forms.",
+          "ElevenOrbits may use third-party providers for authentication, card processing, payment confirmation, infrastructure, email delivery, storage, security, and operational tooling. These providers process information as needed to perform services for ElevenOrbits.",
+          "Card details are handled by payment processors where available. ElevenOrbits should not receive full card numbers through support messages or any other portal form.",
         ],
       },
       {
         heading: "Support, Billing, and Uploaded Files",
         paragraphs: [
-          "Support messages, payment screenshots, invoice references, and operational notes may be reviewed by authorized ElevenOrbits team members to resolve issues, verify payments, activate services, maintain records, and prevent abuse.",
+          "Support messages, invoice references, payment activity, and operational notes may be reviewed by authorized ElevenOrbits team members to resolve issues, confirm payments, activate services, maintain records, and prevent abuse.",
           "Do not upload sensitive personal information, private keys, passwords, full payment card numbers, government identifiers, or regulated data unless ElevenOrbits has specifically requested it through an approved channel.",
         ],
       },
@@ -163,7 +163,7 @@ export const legalPages = [
       {
         heading: "Your Controls",
         paragraphs: [
-          "Most browsers let you block, delete, or limit cookies. Blocking required cookies may prevent login, checkout, payment verification, support, or portal features from working correctly.",
+          "Most browsers let you block, delete, or limit cookies. Blocking required cookies may prevent login, checkout, payment confirmation, support, or portal features from working correctly.",
           `Questions about cookie use can be sent to ${siteConfig.generalEmail}.`,
         ],
       },
@@ -197,9 +197,9 @@ export const legalPages = [
         ],
       },
       {
-        heading: "Wallet Funds and Manual Payments",
+        heading: "Wallet Funds and Card Payments",
         paragraphs: [
-          "Wallet credits are intended for ElevenOrbits service charges. Manual payment submissions must be verified before funds are applied. If a payment cannot be verified, ElevenOrbits may request additional proof or decline the wallet credit.",
+          "Wallet credits are intended for ElevenOrbits service charges. Card-funded wallet top-ups are processed through the configured payment provider and become available after successful confirmation.",
         ],
       },
       {

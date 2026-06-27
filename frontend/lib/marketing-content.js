@@ -27,7 +27,7 @@ export const companyPages = {
           "Managed servers for production websites, business systems, and private applications.",
           "AI infrastructure, private model support, API access, and workflow automation.",
           "Vicidial, VoIP, and development support for operational teams.",
-          "Billing, payment verification, support tickets, and service lifecycle records.",
+          "Billing, payment activity, support tickets, and service lifecycle records.",
         ],
       },
       {
@@ -87,9 +87,9 @@ export const companyPages = {
       },
       {
         heading: "3. Payment and Review",
-        body: "Orders and wallet funding are reviewed through structured billing flows. Card payments and manual payment submissions can be connected to invoices, wallet balances, and subscription status.",
+        body: "Orders and wallet funding run through structured card billing flows. Card payments connect to invoices, wallet balances, and subscription status.",
         points: [
-          "Manual payments are verified before account credit is applied.",
+          "Card payments and wallet top-ups are confirmed through the payment provider.",
           "Wallet balance can support future renewals.",
           "Invoices and payment activity remain visible to the customer.",
         ],
@@ -192,7 +192,7 @@ export const industryPages = [
     challenges: [
       "Website and checkout downtime can stop revenue.",
       "Security updates and access control are easy to delay.",
-      "Manual workflows create delays in support and fulfillment.",
+      "Unstructured workflows create delays in support and fulfillment.",
     ],
     outcomes: [
       "Managed hosting for storefronts, portals, and business systems.",
@@ -426,9 +426,9 @@ export const resourcePages = [
     title: "Billing and Renewal Guide",
     eyebrow: "Guide",
     description:
-      "How ElevenOrbits billing, wallet balance, manual payments, saved card fallback, invoices, renewals, and payment verification fit together.",
+      "How ElevenOrbits billing, wallet balance, card payments, saved card fallback, invoices, renewals, and payment activity fit together.",
     intro:
-      "The customer portal keeps billing and service continuity tied together. Wallet balance, invoices, subscriptions, manual reviews, and renewal status all support ongoing service operations.",
+      "The customer portal keeps billing and service continuity tied together. Wallet balance, invoices, subscriptions, saved cards, and renewal status all support ongoing service operations.",
     sections: [
       {
         heading: "Wallet and Renewals",
@@ -439,11 +439,11 @@ export const resourcePages = [
         ],
       },
       {
-        heading: "Manual Payments",
+        heading: "Card Payments",
         points: [
-          "Manual payment submissions require verification before funds are applied.",
-          "Payment screenshots or references should match the amount, date, invoice, and account.",
-          "Unverified payments may require more information or may be declined.",
+          "Card payments are confirmed through the configured payment provider.",
+          "Wallet top-ups and order payments appear in portal payment activity.",
+          "Customers should keep saved card details current for renewal fallback billing.",
         ],
       },
       {
@@ -536,6 +536,12 @@ export const techStackGroups = [
     partners: [
       { name: "Nextiva", descriptor: "Business communications" },
       { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Collaboration and meetings" },
+      { name: "Twilio", logo: "/partners/twilio.svg", descriptor: "Programmable voice and messaging" },
+      { name: "Telnyx", descriptor: "Carrier voice and SMS APIs" },
+      { name: "VICIdial", descriptor: "Contact center dialer" },
+      { name: "Broadvoice", descriptor: "Cloud business phone" },
+      { name: "Zapier", logo: "/partners/zapier.svg", descriptor: "Communications automation" },
+      { name: "Jira", logo: "/partners/jira.svg", descriptor: "Service desk and ticketing" },
     ],
   },
 ];

@@ -14,6 +14,7 @@ import {
   streamStorageObjectToResponse,
 } from "../../services/storage-service.js";
 import { payInvoiceWithWalletBalance } from "../../services/wallet-payment-service.js";
+import { sendInvoiceNotification } from "../../services/email-service.js";
 
 export const invoicesRouter = express.Router();
 
@@ -194,6 +195,16 @@ invoicesRouter.post(
     const result = await payInvoiceWithWalletBalance({
       invoiceId: req.params.id,
       userId: req.auth.user._id,
+    });
+    await sendInvoiceNotification({
+      customer: result.user || req.auth.user,
+      invoice: result.invoice,
+      planName:
+        result.subscription?.productPlanId?.name ||
+        result.order?.productPlanId?.name ||
+        result.invoice?.lineItems?.[0]?.label ||
+        "Managed Service",
+      eventType: "invoice_paid",
     });
 
     res.json({

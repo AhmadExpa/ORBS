@@ -1,12 +1,11 @@
 import express from "express";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import {
   Addon,
   ActivityLog,
   AdminSetting,
   Invoice,
-  Order,
-  PaymentSetting,
   PaymentSubmission,
   ProductPlan,
   ServiceCategory,
@@ -18,16 +17,29 @@ import {
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { requireAdmin, requireStaff } from "../../middleware/require-staff.js";
-import { uploadQrCode } from "../../middleware/uploads.js";
+import { requireSameOrigin } from "../../middleware/csrf.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { env } from "../../config/env.js";
-import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
-import { persistUploadedFile } from "../../services/storage-service.js";
+import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { sendInvoiceNotification, sendServiceAccessNotification } from "../../services/email-service.js";
+import {
+  approveContract,
+  createContractDownloadUrl,
+  getAdminContract,
+  listAdminContracts,
+  rejectContract,
+  requireApprovedContract,
+  syncContractWithDocumenso,
+} from "../../services/contract-service.js";
 
 export const adminRouter = express.Router();
 
 adminRouter.use(requireStaff);
+
+const rejectContractSchema = z.object({
+  reason: z.string().trim().min(1).max(2000),
+});
 
 function ensureRole(req, roles) {
   if (!roles.includes(req.staff.role)) {
@@ -213,6 +225,8 @@ adminRouter.patch(
       throw new HttpError(404, "Subscription not found.");
     }
 
+    await requireApprovedContract(subscription.userId?.clerkId);
+
     const username = String(req.body.username || "").trim();
     const password = String(req.body.password || "");
     const ipAddress = String(req.body.ipAddress || "").trim();
@@ -252,6 +266,20 @@ adminRouter.patch(
         sharedDetailCount: sharedDetails.length,
       },
     });
+
+    if (hasAssignedAccess || sharedDetails.length) {
+      await sendServiceAccessNotification({
+        customer: subscription.userId,
+        subscription,
+        planName: subscription.productPlanId?.name || "Managed Service",
+        access: {
+          username,
+          password,
+          ipAddress,
+          sharedDetails,
+        },
+      });
+    }
 
     res.json({ subscription });
   }),
@@ -308,6 +336,12 @@ adminRouter.post(
     invoice.pdfStorageKey = pdfData.pdfStorageKey;
     invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
+    await sendInvoiceNotification({
+      customer,
+      invoice,
+      planName: subscription?.productPlanId?.name || "Managed Service",
+      eventType: invoice.status === "paid" ? "invoice_paid" : "invoice_created",
+    });
     res.json({ invoice });
   }),
 );
@@ -337,121 +371,91 @@ adminRouter.patch(
   "/payments/:id/review",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { status, adminRemarks } = req.body;
-    if (!["approved", "rejected"].includes(status)) {
-      throw new HttpError(400, "Review status must be approved or rejected.");
-    }
+    throw new HttpError(410, "Legacy payment review is no longer supported. Card payments are recorded automatically.");
+  }),
+);
 
-    const submission = await PaymentSubmission.findById(req.params.id);
-    if (!submission) {
-      throw new HttpError(404, "Payment submission not found.");
-    }
+adminRouter.get(
+  "/contracts",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const contracts = await listAdminContracts({ status: req.query.status });
+    res.json({ contracts });
+  }),
+);
 
-    if (submission.status !== "pending_verification") {
-      throw new HttpError(400, "This payment has already been completed or reviewed.");
-    }
+adminRouter.get(
+  "/contracts/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const contract = await getAdminContract(req.params.id);
+    res.json({ contract });
+  }),
+);
 
-    const [order, subscription, invoice, customer] = await Promise.all([
-      Order.findById(submission.orderId),
-      Subscription.findById(submission.subscriptionId).populate("productPlanId"),
-      Invoice.findOne({ orderId: submission.orderId }),
-      User.findById(submission.userId),
-    ]);
-
-    if (submission.submissionType === "order_payment" && status === "approved") {
-      if (!order) {
-        throw new HttpError(404, "Linked order not found.");
-      }
-
-      if (order.status === "cancelled") {
-        throw new HttpError(400, "Cancelled orders cannot be approved for payment.");
-      }
-
-      if (order.status === "approved" || invoice?.status === "paid") {
-        throw new HttpError(400, "This order has already been paid.");
-      }
-    }
-
-    submission.status = status;
-    submission.adminRemarks = adminRemarks;
-    submission.reviewedAt = new Date();
-    submission.reviewedBy = req.staff._id;
-    await submission.save();
-
-    if (submission.submissionType === "wallet_topup") {
-      if (!customer) {
-        throw new HttpError(404, "Customer not found.");
-      }
-
-      if (status === "approved") {
-        customer.accountBalance = Number(customer.accountBalance || 0) + Number(submission.amount || 0);
-        await customer.save();
-        await processSubscriptionRenewals({ userIds: [customer._id] });
-      }
-
-      await recordActivity({
-        actorId: req.staff._id,
-        actorRole: req.staff.role,
-        action: `wallet.topup_${status}`,
-        targetType: "payment_submission",
-        targetId: String(submission._id),
-        metadata: {
-          amount: submission.amount,
-          remarks: adminRemarks,
-        },
-      });
-
-      res.json({ submission, user: customer });
-      return;
-    }
-
-    if (order) {
-      order.status = status;
-      await order.save();
-    }
-
-    if (subscription) {
-      subscription.status = status === "approved" ? "active" : "pending_verification";
-      subscription.startDate = status === "approved" ? new Date() : subscription.startDate;
-      subscription.renewalDate =
-        status === "approved" ? addBillingPeriod(new Date(), subscription.billingCycle) : subscription.renewalDate;
-      subscription.metadata = {
-        ...subscription.metadata,
-        billingAmount: order?.totalAmount || 0,
-      };
-      await subscription.save();
-    }
-
-    if (invoice) {
-      invoice.status = status === "approved" ? "paid" : "rejected";
-      invoice.paidAt = status === "approved" ? new Date() : undefined;
-      invoice.paymentMethodType = submission.paymentMethodType;
-      invoice.paymentReferenceCode = submission.invoiceCode;
-      const pdfData = await generateInvoicePdf({
-        invoice,
-        customer,
-        planName: subscription?.productPlanId?.name || "Managed Service",
-        supportEmail: env.supportEmail,
-      });
-      invoice.pdfPath = pdfData.pdfPath;
-      invoice.pdfUrl = pdfData.pdfUrl;
-      invoice.pdfStorageKey = pdfData.pdfStorageKey;
-      invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
-      await invoice.save();
-    }
-
-    await recordActivity({
-      actorId: req.staff._id,
-      actorRole: req.staff.role,
-      action: `payment.${status}`,
-      targetType: "payment_submission",
-      targetId: String(submission._id),
-      metadata: {
-        remarks: adminRemarks,
-      },
+adminRouter.post(
+  "/contracts/:id/sync",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const contract = await syncContractWithDocumenso({
+      contractId: req.params.id,
+      staff: req.staff,
     });
+    res.json({ contract });
+  }),
+);
 
-    res.json({ submission, order, subscription, invoice });
+adminRouter.post(
+  "/contracts/:id/approve",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const contract = await approveContract({
+      contractId: req.params.id,
+      staff: req.staff,
+    });
+    res.json({ contract });
+  }),
+);
+
+adminRouter.post(
+  "/contracts/:id/reject",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const payload = rejectContractSchema.parse(req.body);
+    const contract = await rejectContract({
+      contractId: req.params.id,
+      staff: req.staff,
+      reason: payload.reason,
+    });
+    res.json({ contract });
+  }),
+);
+
+adminRouter.get(
+  "/contracts/:id/download",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const result = await createContractDownloadUrl({
+      contractId: req.params.id,
+      staff: req.staff,
+    });
+    res.json(result);
+  }),
+);
+
+adminRouter.get(
+  "/contracts/:id/audit-download",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const result = await createContractDownloadUrl({
+      contractId: req.params.id,
+      staff: req.staff,
+      audit: true,
+    });
+    res.json(result);
   }),
 );
 
@@ -459,50 +463,15 @@ adminRouter.get(
   "/payment-settings",
   asyncHandler(async (req, res) => {
     ensureRole(req, ["admin"]);
-    const paymentSetting = await PaymentSetting.findOne({}).sort({ updatedAt: -1 });
-    res.json({ paymentSetting });
+    throw new HttpError(410, "Legacy billing configuration is no longer supported.");
   }),
 );
 
 adminRouter.put(
   "/payment-settings",
   requireAdmin,
-  uploadQrCode.single("qrCode"),
   asyncHandler(async (req, res) => {
-    const current = await PaymentSetting.findOne({}).sort({ updatedAt: -1 });
-    const update = {
-      title: req.body.title || current?.title || "Primary Manual Payment",
-      paymentLink: req.body.paymentLink ?? current?.paymentLink,
-      instructions: req.body.instructions ?? current?.instructions,
-      isActive: req.body.isActive ? req.body.isActive === "true" : current?.isActive ?? true,
-      supportedFor: req.body.supportedFor
-        ? Array.isArray(req.body.supportedFor)
-          ? req.body.supportedFor
-          : String(req.body.supportedFor).split(",").map((item) => item.trim())
-        : current?.supportedFor || [],
-    };
-
-    if (req.file) {
-      update.qrCodeImageUrl = await persistUploadedFile({ file: req.file, directory: "qr-codes" });
-    } else if (req.body.removeQrCode === "true") {
-      update.qrCodeImageUrl = "";
-    } else {
-      update.qrCodeImageUrl = current?.qrCodeImageUrl || "";
-    }
-
-    const paymentSetting = current
-      ? await PaymentSetting.findByIdAndUpdate(current._id, update, { new: true })
-      : await PaymentSetting.create(update);
-
-    await recordActivity({
-      actorId: req.staff._id,
-      actorRole: req.staff.role,
-      action: "payment_settings.updated",
-      targetType: "payment_setting",
-      targetId: String(paymentSetting._id),
-    });
-
-    res.json({ paymentSetting });
+    throw new HttpError(410, "Legacy billing configuration is no longer supported.");
   }),
 );
 

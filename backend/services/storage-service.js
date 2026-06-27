@@ -95,15 +95,11 @@ export function toPublicObjectUrl(key) {
 }
 
 export function getUploadPaths() {
-  const qrCodeDir = path.join(env.uploadDir, "qr-codes");
-  const paymentProofDir = path.join(env.uploadDir, "payment-proofs");
   const supportAttachmentDir = path.join(env.uploadDir, "support-attachments");
 
-  [env.uploadDir, env.invoiceDir, qrCodeDir, paymentProofDir, supportAttachmentDir].forEach(ensureDirectory);
+  [env.uploadDir, env.invoiceDir, supportAttachmentDir].forEach(ensureDirectory);
 
   return {
-    qrCodeDir,
-    paymentProofDir,
     supportAttachmentDir,
   };
 }

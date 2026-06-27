@@ -96,15 +96,23 @@ export function CheckoutPaymentView({ orderId }) {
   }
 
   async function handleCardPayment({ stripe, cardElement }) {
-    const token = await getToken();
-    const response = await apiFetch("/stripe/intents", {
-      method: "POST",
-      token,
-      body: {
-        type: "order_payment",
-        orderId,
-      },
-    });
+    let response;
+    try {
+      const token = await getToken();
+      response = await apiFetch("/stripe/intents", {
+        method: "POST",
+        token,
+        body: {
+          type: "order_payment",
+          orderId,
+        },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
@@ -124,13 +132,21 @@ export function CheckoutPaymentView({ orderId }) {
       throw new Error("Stripe confirmed the payment but did not return a payment intent ID.");
     }
 
-    await apiFetch("/stripe/finalize", {
-      method: "POST",
-      token,
-      body: {
-        paymentIntentId: result.paymentIntent.id,
-      },
-    });
+    try {
+      const token = await getToken();
+      await apiFetch("/stripe/finalize", {
+        method: "POST",
+        token,
+        body: {
+          paymentIntentId: result.paymentIntent.id,
+        },
+      });
+    } catch (error) {
+      if (error.code === "CONTRACT_APPROVAL_REQUIRED" && error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      throw error;
+    }
 
     await syncOrderState();
     router.replace(`/portal/checkout/${orderId}/thank-you`);

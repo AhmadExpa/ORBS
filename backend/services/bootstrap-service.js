@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import {
   Addon,
   AdminSetting,
-  PaymentSetting,
   ProductPlan,
   ServiceCategory,
   StaffUser,
@@ -10,7 +9,6 @@ import {
 import { env } from "../config/env.js";
 import {
   addonSeeds,
-  paymentSettingSeed,
   productPlanSeeds,
   serviceCategories,
 } from "../lib/shared/index.js";
@@ -114,11 +112,6 @@ export async function ensureBootstrapData() {
     existingAddon.isActive = addonSeed.isActive ?? true;
     existingAddon.sortOrder = addonSeed.sortOrder || 0;
     await existingAddon.save();
-  }
-
-  const existingPaymentSetting = await PaymentSetting.findOne({ title: paymentSettingSeed.title });
-  if (!existingPaymentSetting) {
-    await PaymentSetting.create(paymentSettingSeed);
   }
 
   const companyProfile = await AdminSetting.findOne({ key: "company-profile" });

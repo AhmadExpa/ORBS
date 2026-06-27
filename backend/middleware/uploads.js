@@ -3,7 +3,7 @@ import path from "path";
 import { getUploadPaths } from "../services/storage-service.js";
 import { HttpError } from "../utils/http-error.js";
 
-const { qrCodeDir, paymentProofDir, supportAttachmentDir } = getUploadPaths();
+const { supportAttachmentDir } = getUploadPaths();
 
 function makeStorage(destination) {
   return multer.diskStorage({
@@ -27,21 +27,8 @@ function makeFileFilter(allowedMimeTypes) {
   };
 }
 
-export const uploadQrCode = multer({
-  storage: makeStorage(qrCodeDir),
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: makeFileFilter(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]),
-});
-
-export const uploadPaymentProof = multer({
-  storage: makeStorage(paymentProofDir),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: makeFileFilter(["image/png", "image/jpeg", "image/webp"]),
-});
-
 export const uploadSupportAttachment = multer({
   storage: makeStorage(supportAttachmentDir),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: makeFileFilter(["image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain"]),
 });
-

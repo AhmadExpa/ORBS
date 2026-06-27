@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "test": "node --test test/*.test.js",
+    "documenso:list-templates": "node scripts/documenso-list-templates.js",
+    "r2:test": "node scripts/r2-test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1070.0",
+    "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@clerk/backend": "1.24.3",
     "bcryptjs": "2.4.3",
     "cookie-parser": "1.4.7",
@@ -20,9 +24,13 @@
     "jsonwebtoken": "9.0.2",
     "morgan": "1.10.0",
     "multer": "1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
     "pdfkit": "0.16.0",
     "pg": "^8.21.0",
     "stripe": "^20.4.1",
     "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
   }
 }

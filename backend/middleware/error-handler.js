@@ -5,12 +5,21 @@ export function notFoundHandler(req, res) {
 }
 
 export function errorHandler(error, req, res, next) {
-  const statusCode = error.statusCode || 500;
+  const isZodError = error?.name === "ZodError" && Array.isArray(error.issues);
+  const statusCode = isZodError ? 400 : error.statusCode || 500;
+  const details = isZodError
+    ? {
+        code: "VALIDATION_ERROR",
+        issues: error.issues,
+      }
+    : error.details || null;
 
   res.status(statusCode).json({
+    code: details?.code || error.code || undefined,
     message: error.message || "Internal server error",
-    details: error.details || null,
+    contractStatus: details?.contractStatus || undefined,
+    redirectUrl: details?.redirectUrl || undefined,
+    details,
     stack: process.env.NODE_ENV === "production" ? undefined : error.stack,
   });
 }
-

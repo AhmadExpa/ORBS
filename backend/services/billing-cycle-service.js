@@ -2,6 +2,8 @@ import { env } from "../config/env.js";
 import { Invoice, PaymentSubmission, Subscription, User } from "../db/models/index.js";
 import { generateInvoicePdf, nextInvoiceNumber } from "./invoice-service.js";
 import { createOffSessionCharge, isStripeConfigured } from "./stripe-service.js";
+import { sendInvoiceNotification } from "./email-service.js";
+import { requireApprovedContract } from "./contract-service.js";
 
 function addBillingPeriod(date, billingCycle) {
   const nextDate = new Date(date);
@@ -30,6 +32,8 @@ async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planN
     subscriptionId: subscription._id,
     paymentReferenceCode,
   });
+  const wasCreated = !existingInvoice;
+  const previousStatus = existingInvoice?.status || "";
 
   const baseInvoice = {
     userId: user._id,
@@ -74,6 +78,15 @@ async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planN
   invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
   await invoice.save();
 
+  if (wasCreated || previousStatus !== status) {
+    await sendInvoiceNotification({
+      customer: user,
+      invoice,
+      planName,
+      eventType: status === "paid" ? "renewal_paid" : "renewal_pending",
+    });
+  }
+
   return invoice;
 }
 
@@ -107,6 +120,33 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
       }
 
       const planName = subscription.productPlanId?.name || "Managed Service";
+      try {
+        await requireApprovedContract(user.clerkId);
+      } catch (error) {
+        if (error?.details?.code !== "CONTRACT_APPROVAL_REQUIRED") {
+          throw error;
+        }
+
+        await ensureRenewalInvoice({
+          subscription,
+          user,
+          amount,
+          dueDate,
+          planName,
+          status: "pending",
+          paymentMethodType: "pending_contract_approval",
+        });
+
+        subscription.status = "suspended";
+        subscription.metadata = {
+          ...subscription.metadata,
+          billingNote: "Current service agreement approval is required before renewal billing can continue.",
+          contractStatus: error.details.contractStatus || "NOT_STARTED",
+        };
+        await subscription.save();
+        continue;
+      }
+
       const walletBalance = Number(user.accountBalance || 0);
       const walletAmount = Math.min(walletBalance, amount);
       const remainingAmount = Number((amount - walletAmount).toFixed(2));
@@ -239,7 +279,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
         dueDate,
         planName,
         status: "pending",
-        paymentMethodType: walletAmount > 0 ? "wallet_balance + manual_followup" : "pending_confirmation",
+        paymentMethodType: walletAmount > 0 ? "wallet_balance + pending_card_payment" : "pending_confirmation",
       });
 
       subscription.status = "suspended";

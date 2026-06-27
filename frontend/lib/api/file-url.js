@@ -19,9 +19,9 @@ function normalizePossibleUrl(value) {
 }
 
 function normalizeApiUrl(value) {
-  const fallbackApiUrl = "https://api.account.elevenorbits.com/api/v1";
+  const fallbackApiUrl = "https://api.elevenorbits.com/api/v1";
   const normalizedValue = normalizePossibleUrl(value || fallbackApiUrl)
-    .replace(/:\/\/api\.accounts\.elevenorbits\.com/iu, "://api.account.elevenorbits.com")
+    .replace(/:\/\/api\.accounts?\.elevenorbits\.com/iu, "://api.elevenorbits.com")
     .replace(/\/+$/u, "");
 
   return /\/api\/v1$/iu.test(normalizedValue) ? normalizedValue : `${normalizedValue}/api/v1`;
