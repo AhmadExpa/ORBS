@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Building2, CheckCircle2, Download, ExternalLink, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
+import { Building2, CheckCircle2, Download, ExternalLink, RefreshCw, UserRound } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput } from "@/lib/ui";
@@ -10,8 +10,6 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
-
-const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 function formatDate(value) {
   if (!value) {
@@ -64,9 +62,6 @@ function TypeButton({ active, icon: Icon, title, description, onClick }) {
 export function ContractsPage() {
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
-  const turnstileRef = useRef(null);
-  const widgetIdRef = useRef(null);
-  const [turnstileToken, setTurnstileToken] = useState("");
   const [form, setForm] = useState({
     customerType: "INDIVIDUAL",
     businessName: "",
@@ -89,7 +84,7 @@ export function ContractsPage() {
   const status = contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const agreementVersion = contract?.templateVersion || contractQuery.data?.agreementVersion || "1.0";
   const isBusiness = form.customerType === "BUSINESS";
-  const startDisabled = state.starting || !turnstileToken || !turnstileSiteKey || (isBusiness && !form.businessName.trim());
+  const startDisabled = state.starting || (isBusiness && !form.businessName.trim());
 
   const actionLabel = useMemo(() => {
     if (status === "PENDING_SIGNATURE") {
@@ -100,54 +95,6 @@ export function ContractsPage() {
     }
     return "Start signing";
   }, [status]);
-
-  function resetTurnstile() {
-    setTurnstileToken("");
-    if (typeof window !== "undefined" && window.turnstile && widgetIdRef.current !== null) {
-      window.turnstile.reset(widgetIdRef.current);
-    }
-  }
-
-  useEffect(() => {
-    if (!turnstileSiteKey || !turnstileRef.current || widgetIdRef.current !== null) {
-      return;
-    }
-
-    function renderWidget() {
-      if (!window.turnstile || !turnstileRef.current || widgetIdRef.current !== null) {
-        return;
-      }
-
-      widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
-        sitekey: turnstileSiteKey,
-        action: "contract_start",
-        callback: (token) => setTurnstileToken(token),
-        "expired-callback": () => setTurnstileToken(""),
-        "error-callback": () => setTurnstileToken(""),
-      });
-    }
-
-    if (window.turnstile) {
-      renderWidget();
-      return;
-    }
-
-    const existingScript = document.querySelector("script[data-turnstile-script='true']");
-    if (existingScript) {
-      existingScript.addEventListener("load", renderWidget, { once: true });
-      return () => existingScript.removeEventListener("load", renderWidget);
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    script.async = true;
-    script.defer = true;
-    script.dataset.turnstileScript = "true";
-    script.addEventListener("load", renderWidget, { once: true });
-    document.head.appendChild(script);
-
-    return () => script.removeEventListener("load", renderWidget);
-  }, []);
 
   async function handleStart(event) {
     event.preventDefault();
@@ -168,7 +115,6 @@ export function ContractsPage() {
           businessName: isBusiness ? form.businessName.trim() : "",
           country: form.country.trim(),
           phone: form.phone.trim(),
-          turnstileToken,
         },
       });
 
@@ -185,7 +131,6 @@ export function ContractsPage() {
         description: "The current contract status has been refreshed.",
       });
     } catch (error) {
-      resetTurnstile();
       setState((current) => ({ ...current, error: error.message || "Contract signing could not be started." }));
       showToast({
         type: "error",
@@ -287,10 +232,10 @@ export function ContractsPage() {
                   <ContractFact label="Created" value={formatDate(contract.createdAt)} />
                   <ContractFact label="Signed" value={formatDate(contract.signedAt)} />
                   <ContractFact label="Stored PDF Hash" value={fieldValue(contract.signedPdfSha256)} />
-                  <ContractFact label="Turnstile Verified" value={formatDate(contract.turnstileVerifiedAt)} />
+                  <ContractFact label="Account Email" value={fieldValue(contract.customerEmail)} />
                 </div>
               ) : (
-                <EmptyState title="No agreement started" description="Complete the protected signing flow before attempting checkout or service activation." />
+                <EmptyState title="No agreement started" description="Start the signing flow with your Clerk account name and verified email." />
               )}
 
               {contract?.adminRejectionReason ? (
@@ -326,7 +271,7 @@ export function ContractsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Signing Access</CardTitle>
-              <CardDescription>Turnstile protects this action from automated abuse. It is not identity verification.</CardDescription>
+              <CardDescription>Your Clerk account name and verified email are assigned to the Documenso signer automatically.</CardDescription>
             </CardHeader>
             <CardContent>
               {status === "APPROVED" ? (
@@ -374,12 +319,8 @@ export function ContractsPage() {
                     onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
                   />
 
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <ShieldCheck className="h-4 w-4" />
-                      Bot protection
-                    </div>
-                    {turnstileSiteKey ? <div ref={turnstileRef} /> : <p className="text-sm text-rose-600">Turnstile site key is not configured.</p>}
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                    Your signed-in ElevenOrbits account is used for the agreement. Do not enter another customer's details.
                   </div>
 
                   {state.error ? <p className="text-sm text-rose-600">{state.error}</p> : null}

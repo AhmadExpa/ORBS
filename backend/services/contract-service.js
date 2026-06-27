@@ -212,7 +212,7 @@ async function findReusableActiveContract(clerkUserId) {
   return contracts[0] || null;
 }
 
-async function createReadyContract({ identity, payload, turnstile, templateConfig }) {
+async function createReadyContract({ identity, payload, turnstile = null, templateConfig }) {
   try {
     return await withTransaction(async () => {
       const activeContract = await findReusableActiveContract(identity.clerkUserId);
@@ -234,8 +234,12 @@ async function createReadyContract({ identity, payload, turnstile, templateConfi
         status: "READY_TO_SIGN",
         documensoTemplateId: templateConfig.templateId,
         documensoTemplateRecipientId: templateConfig.templateRecipientId,
-        turnstileVerifiedAt: turnstile.verifiedAt,
-        turnstileHostname: turnstile.hostname,
+        ...(turnstile
+          ? {
+              turnstileVerifiedAt: turnstile.verifiedAt,
+              turnstileHostname: turnstile.hostname,
+            }
+          : {}),
       });
 
       return contract;
@@ -290,7 +294,7 @@ async function issueSigningUrl(contract) {
   return signingUrl;
 }
 
-export async function startCustomerContract({ auth, payload, turnstile }) {
+export async function startCustomerContract({ auth, payload, turnstile = null }) {
   const templateConfig = getRequiredTemplateId();
   await supersedeOutdatedApprovedContracts(auth.clerkId);
 
@@ -306,16 +310,18 @@ export async function startCustomerContract({ auth, payload, turnstile }) {
     templateConfig,
   });
 
-  await recordActivity({
-    actorId: auth.user?._id || identity.clerkUserId,
-    actorRole: "customer",
-    action: "contract.turnstile_verified",
-    targetType: "customer_contract",
-    targetId: String(readyOrActiveContract._id),
-    metadata: {
-      hostname: turnstile.hostname,
-    },
-  });
+  if (turnstile) {
+    await recordActivity({
+      actorId: auth.user?._id || identity.clerkUserId,
+      actorRole: "customer",
+      action: "contract.turnstile_verified",
+      targetType: "customer_contract",
+      targetId: String(readyOrActiveContract._id),
+      metadata: {
+        hostname: turnstile.hostname,
+      },
+    });
+  }
 
   if (readyOrActiveContract.status === "APPROVED") {
     return {

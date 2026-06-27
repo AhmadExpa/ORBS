@@ -4,7 +4,6 @@ import { env } from "../../config/env.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import { asyncHandler } from "../../utils/async-handler.js";
-import { verifyTurnstileToken } from "../../services/turnstile-service.js";
 import {
   createContractDownloadUrl,
   getCurrentContractSummary,
@@ -21,7 +20,6 @@ const startContractSchema = z
     businessName: z.string().trim().max(160).optional(),
     country: z.string().trim().max(80).optional(),
     phone: z.string().trim().max(40).optional(),
-    turnstileToken: z.string().trim().min(1),
   })
   .superRefine((payload, ctx) => {
     if (payload.customerType === "BUSINESS" && !payload.businessName) {
@@ -53,16 +51,10 @@ contractsRouter.post(
   }),
   asyncHandler(async (req, res) => {
     const payload = startContractSchema.parse(req.body);
-    const turnstile = await verifyTurnstileToken({
-      token: payload.turnstileToken,
-      remoteIp: req.ip,
-      expectedAction: env.turnstileExpectedAction,
-    });
 
     const result = await startCustomerContract({
       auth: req.auth,
       payload,
-      turnstile,
     });
 
     res.status(201).json(result);
