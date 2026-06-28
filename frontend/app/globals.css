@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  --page-bg: #f7f8fa;
+  --page-bg: #faf9f7;
   --page-text: #0f172a;
   --panel-bg: #ffffff;
   --panel-border: #e2e8f0;
@@ -31,14 +31,17 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family:
+    var(--font-geist-sans),
     -apple-system,
     BlinkMacSystemFont,
-    "SF Pro Display",
-    "SF Pro Text",
     "Segoe UI",
     sans-serif;
   background: var(--page-bg);
   color: var(--page-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
 }
 
 a {

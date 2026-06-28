@@ -58,23 +58,23 @@ function renewalLabel(value) {
 
 function KpiCard({ icon: Icon, label, value, helper, tone = "neutral", href }) {
   const tones = {
-    neutral: "bg-slate-100 text-slate-600",
-    blue: "bg-brand-50 text-brand-600",
-    green: "bg-emerald-50 text-emerald-600",
-    amber: "bg-accent-50 text-accent-600",
-    rose: "bg-rose-50 text-rose-600",
+    neutral: "text-slate-400",
+    blue: "text-brand-500",
+    green: "text-emerald-500",
+    amber: "text-accent-500",
+    rose: "text-rose-500",
   };
   const body = (
-    <Card className={cn("h-full p-5 transition-shadow", href && "hover:shadow-card-hover")}>
-      <div className="flex items-start justify-between gap-3">
-        <span className={cn("flex h-9 w-9 items-center justify-center rounded-lg", tones[tone])}>
-          <Icon className="h-4 w-4" />
-        </span>
-        {href ? <ArrowUpRight className="h-4 w-4 text-slate-300" /> : null}
+    <Card className={cn("group h-full p-5 transition-shadow", href && "hover:shadow-card-hover")}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] font-medium text-slate-500">{label}</p>
+        <Icon className={cn("h-4 w-4", tones[tone])} />
       </div>
-      <p className="mt-4 text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-900">{value}</p>
-      {helper ? <p className="mt-1 text-xs font-medium text-slate-400">{helper}</p> : null}
+      <p className="mt-3 text-[28px] font-semibold leading-none tracking-[-0.02em] text-slate-900 tabular-nums">{value}</p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {helper ? <p className="text-xs font-medium text-slate-400">{helper}</p> : <span />}
+        {href ? <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition-colors group-hover:text-slate-500" /> : null}
+      </div>
     </Card>
   );
   return href ? (
@@ -196,7 +196,7 @@ export function PortalDashboardPage() {
       {showInitialLoader ? (
         <PageLoader title="Loading your dashboard" subtitle="Gathering your services, payments, and support activity…" />
       ) : (
-        <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8" aria-busy={dashboardLoading}>
+        <div className="mx-auto w-full max-w-[1680px] space-y-8 p-6 md:p-8" aria-busy={dashboardLoading}>
           {reviewMessage ? (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
               {reviewMessage}
@@ -204,26 +204,24 @@ export function PortalDashboardPage() {
           ) : null}
 
           {/* Welcome header */}
-          <Card>
-            <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold tracking-[-0.02em] text-slate-900">
-                  {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-                </h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">{todayLabel}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700">
-                  <Wallet className="h-4 w-4 text-emerald-500" />
-                  {formatCurrency(walletBalance)} wallet
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700">
-                  <CalendarClock className="h-4 w-4 text-brand-500" />
-                  {nextRenewal ? renewalLabel(nextRenewal.renewalDate) : "No upcoming renewals"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-slate-900">
+                {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+                <Wallet className="h-4 w-4 text-emerald-500" />
+                {formatCurrency(walletBalance)} wallet
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+                <CalendarClock className="h-4 w-4 text-brand-500" />
+                {nextRenewal ? renewalLabel(nextRenewal.renewalDate) : "No upcoming renewals"}
+              </span>
+            </div>
+          </div>
 
           {/* KPI row */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

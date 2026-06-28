@@ -1,5 +1,6 @@
 import "./globals.css";
 import Script from "next/script";
+import { GeistSans } from "geist/font/sans";
 import { Providers } from "@/components/shared/providers";
 
 export const metadata = {
@@ -14,7 +15,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <Script
           id="strip-extension-hydration-attrs"

@@ -113,16 +113,16 @@ export function PortalShell({ children, groups = portalNavGroups }) {
 
   return (
     <ButtonThemeProvider value="hubspot">
-      <div className="flex min-h-screen flex-col bg-[#faf8f4] text-slate-900">
-        {/* HubSpot-style dark top navigation */}
-        <header ref={containerRef} className="sticky top-0 z-40 border-b-2 border-accent-600 bg-[#1b2433]">
-          <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-2 px-4 md:px-6">
-            <Link href="/portal" aria-label="ElevenOrbits portal" className="mr-2 flex shrink-0 items-center">
-              <BrandLogo className="h-7 w-[150px]" imageClassName="brightness-0 invert" priority />
+      <div className="flex min-h-screen flex-col bg-canvas text-slate-900">
+        {/* Light, crisp top navigation */}
+        <header ref={containerRef} className="sticky top-0 z-40 border-b border-line bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+          <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-1 px-4 md:px-6">
+            <Link href="/portal" aria-label="ElevenOrbits portal" className="mr-3 flex shrink-0 items-center">
+              <BrandLogo className="h-7 w-[150px]" priority />
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden items-center gap-1 lg:flex">
+            <nav className="hidden items-center lg:flex">
               {groups.map((group) => {
                 const active = isGroupActive(pathname, group);
                 const Icon = iconMap[group.icon] || LayoutDashboard;
@@ -133,12 +133,13 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                       key={group.label}
                       href={lockHrefFor(group.href)}
                       className={cn(
-                        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
-                        active ? "bg-white/12 text-white" : "text-white/70 hover:bg-white/8 hover:text-white",
+                        "relative flex h-14 items-center gap-2 px-3.5 text-sm font-medium transition-colors",
+                        active ? "text-slate-900" : "text-slate-500 hover:text-slate-900",
                       )}
                     >
                       <Icon className="h-4 w-4" />
                       {group.label}
+                      {active ? <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-600" /> : null}
                     </Link>
                   );
                 }
@@ -150,13 +151,14 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                       type="button"
                       onClick={() => setOpenGroup(isOpen ? "" : group.label)}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
-                        active || isOpen ? "bg-white/12 text-white" : "text-white/70 hover:bg-white/8 hover:text-white",
+                        "relative flex h-14 items-center gap-1.5 px-3.5 text-sm font-medium transition-colors",
+                        active || isOpen ? "text-slate-900" : "text-slate-500 hover:text-slate-900",
                       )}
                     >
                       <Icon className="h-4 w-4" />
                       {group.label}
                       <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+                      {active ? <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-600" /> : null}
                     </button>
                     {isOpen ? (
                       <div className="absolute left-0 top-full mt-1 w-72 overflow-hidden rounded-lg border border-line bg-white p-1.5 shadow-card-hover">
@@ -202,9 +204,9 @@ export function PortalShell({ children, groups = portalNavGroups }) {
               {!portalLocked ? (
                 <Link
                   href="/portal/payments"
-                  className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15 sm:flex"
+                  className="hidden items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:flex"
                 >
-                  <Wallet className="h-4 w-4 text-emerald-300" />
+                  <Wallet className="h-4 w-4 text-emerald-500" />
                   {formatCurrency(walletBalance)}
                 </Link>
               ) : null}
@@ -212,7 +214,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
               {!portalLocked ? (
                 <Link
                   href="/portal/services"
-                  className="hidden items-center gap-1.5 rounded-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700 sm:flex"
+                  className="hidden items-center gap-1.5 rounded-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 sm:flex"
                 >
                   <Plus className="h-4 w-4" />
                   Order an app
@@ -224,10 +226,10 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((open) => !open)}
-                  className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 text-white transition-colors hover:bg-white/10"
+                  className="flex items-center gap-2 rounded-md py-1 pl-1 pr-1.5 text-slate-700 transition-colors hover:bg-slate-100"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-600 text-sm font-semibold text-white">{initial}</span>
-                  <ChevronDown className="hidden h-3.5 w-3.5 text-white/70 sm:block" />
+                  <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 sm:block" />
                 </button>
                 {userMenuOpen ? (
                   <div className="absolute right-0 top-full mt-1 w-60 overflow-hidden rounded-lg border border-line bg-white p-1.5 shadow-card-hover">
@@ -255,7 +257,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
               <button
                 type="button"
                 onClick={() => setMobileOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10 lg:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 lg:hidden"
                 aria-label="Toggle navigation"
               >
                 {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -265,7 +267,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
 
           {/* Mobile nav sheet */}
           {mobileOpen ? (
-            <div className="border-t border-white/10 bg-[#1b2433] px-4 py-3 lg:hidden">
+            <div className="border-t border-line bg-white px-4 py-3 lg:hidden">
               <nav className="space-y-1">
                 {flattenLinks(groups).map((item) => {
                   const ItemIcon = iconMap[item.icon] || LayoutDashboard;
@@ -277,10 +279,10 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                       href={lockHrefFor(item.href)}
                       className={cn(
                         "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors",
-                        active ? "bg-white/12 text-white" : "text-white/75 hover:bg-white/8 hover:text-white",
+                        active ? "bg-accent-50 text-accent-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                       )}
                     >
-                      {locked ? <Lock className="h-4 w-4 text-amber-400" /> : <ItemIcon className="h-4 w-4" />}
+                      {locked ? <Lock className="h-4 w-4 text-amber-500" /> : <ItemIcon className={cn("h-4 w-4", active ? "text-accent-600" : "text-slate-400")} />}
                       {item.label}
                     </Link>
                   );
