@@ -17,7 +17,7 @@ export function Select({ className, children, ...props }) {
   return (
     <select
       className={cn(
-        "w-full appearance-none rounded-lg border border-line bg-white bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat px-3.5 py-2.5 pr-9 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20",
+        "w-full cursor-pointer appearance-none rounded-lg border border-line bg-white bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat px-3.5 py-2.5 pr-9 text-sm font-medium text-slate-900 transition-colors hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10",
         className,
       )}
       style={{

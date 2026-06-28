@@ -81,6 +81,29 @@ select {
   animation: loader-progress 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
+@keyframes eo-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.eo-menu {
+  animation: eo-menu-in 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top;
+}
+
+.eo-menu-shadow {
+  box-shadow:
+    0 0 0 1px rgba(16, 24, 40, 0.05),
+    0 12px 32px -8px rgba(16, 24, 40, 0.18),
+    0 4px 10px -4px rgba(16, 24, 40, 0.1);
+}
+
 .eo-scrollbar-none {
   scrollbar-width: none;
 }
