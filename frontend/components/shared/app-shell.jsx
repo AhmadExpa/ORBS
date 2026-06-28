@@ -8,38 +8,12 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { formatCurrency } from "@/lib/shared";
+import { formatCurrency, getMonthlyRecurringAmount } from "@/lib/shared";
 import { Button, ButtonThemeProvider, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui";
 import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
 import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
-
-function getSidebarMonthlyAmount(subscriptions = []) {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  return subscriptions
-    .filter((subscription) => !["cancelled", "expired"].includes(subscription.status))
-    .reduce((sum, subscription) => {
-      const amount = Number(subscription.metadata?.billingAmount || 0);
-      if (amount <= 0) {
-        return sum;
-      }
-
-      if (subscription.billingCycle === "monthly") {
-        return sum + amount;
-      }
-
-      if (!subscription.renewalDate) {
-        return sum;
-      }
-
-      const renewalDate = new Date(subscription.renewalDate);
-      return renewalDate.getMonth() === currentMonth && renewalDate.getFullYear() === currentYear ? sum + amount : sum;
-    }, 0);
-}
 
 export function AppShell({
   items,
@@ -77,7 +51,7 @@ export function AppShell({
     enabled: canLoadPortalSnapshot,
   });
   const walletBalance = Number(profileQuery.data?.user?.accountBalance || 0);
-  const monthlyAmount = getSidebarMonthlyAmount(subscriptionsQuery.data?.subscriptions || []);
+  const monthlyAmount = getMonthlyRecurringAmount(subscriptionsQuery.data?.subscriptions || []);
 
   useEffect(() => {
     let isActive = true;
