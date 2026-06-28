@@ -131,16 +131,16 @@ export function PortalSectionNav({ section }) {
   }
 
   return (
-    <aside className="border-b border-line bg-white px-3 py-5 lg:min-h-[calc(100vh-3.5rem)] lg:border-b-0 lg:border-r">
+    <aside className="border-b border-white/10 bg-[#0f1115] px-3 py-5 text-slate-300 lg:min-h-[calc(100vh-3.5rem)] lg:border-b-0 lg:border-r">
       <div className="space-y-6 lg:sticky lg:top-[4.5rem]">
         <div className="px-2">
-          <p className="text-sm font-semibold text-slate-900">{section.label}</p>
-          {section.description ? <p className="mt-0.5 text-xs leading-5 text-slate-500">{section.description}</p> : null}
+          <p className="text-sm font-semibold text-white">{section.label}</p>
+          {section.description ? <p className="mt-0.5 text-xs leading-5 text-white/45">{section.description}</p> : null}
         </div>
 
         {/* Views */}
         <div>
-          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Views</p>
+          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Views</p>
           <nav className="mt-2 space-y-0.5">
             {section.links.map((link) => {
               const Icon = iconMap[link.icon] || LayoutDashboard;
@@ -150,11 +150,12 @@ export function PortalSectionNav({ section }) {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
-                    active ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                    "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+                    active ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", active ? "text-brand-600" : "text-slate-400")} />
+                  {active ? <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-accent-500" /> : null}
+                  <Icon className={cn("h-4 w-4", active ? "text-accent-400" : "text-white/40")} />
                   {link.label}
                 </Link>
               );
@@ -164,8 +165,8 @@ export function PortalSectionNav({ section }) {
 
         {/* Filters with live counts */}
         {filter ? (
-          <div className="border-t border-line pt-4">
-            <p className="flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <div className="border-t border-white/10 pt-4">
+            <p className="flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">
               <ListFilter className="h-3.5 w-3.5" />
               {filter.label}
             </p>
@@ -180,7 +181,7 @@ export function PortalSectionNav({ section }) {
                     scroll={false}
                     className={cn(
                       "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      active ? "bg-accent-600 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <span>{option.label}</span>
@@ -188,7 +189,7 @@ export function PortalSectionNav({ section }) {
                       <span
                         className={cn(
                           "min-w-[1.5rem] rounded-full px-1.5 py-0.5 text-center text-xs font-semibold",
-                          active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500",
+                          active ? "bg-white/25 text-white" : "bg-white/10 text-white/55",
                         )}
                       >
                         {count}
@@ -203,13 +204,13 @@ export function PortalSectionNav({ section }) {
 
         {/* At-a-glance stats */}
         {stats.length ? (
-          <div className="border-t border-line pt-4">
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">At a glance</p>
+          <div className="border-t border-white/10 pt-4">
+            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">At a glance</p>
             <div className="mt-2 space-y-2 px-2">
               {stats.map((stat) => (
-                <div key={stat.label} className="flex items-center justify-between rounded-lg border border-line bg-slate-50/70 px-3 py-2">
-                  <span className="text-xs font-medium text-slate-500">{stat.label}</span>
-                  <span className="text-sm font-semibold text-slate-900">{stat.value}</span>
+                <div key={stat.label} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                  <span className="text-xs font-medium text-white/50">{stat.label}</span>
+                  <span className="text-sm font-semibold text-white">{stat.value}</span>
                 </div>
               ))}
             </div>
@@ -218,8 +219,8 @@ export function PortalSectionNav({ section }) {
 
         {/* Quick actions */}
         {section.quickActions?.length ? (
-          <div className="border-t border-line pt-4">
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick actions</p>
+          <div className="border-t border-white/10 pt-4">
+            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Quick actions</p>
             <nav className="mt-2 space-y-0.5">
               {section.quickActions.map((action) => {
                 const Icon = iconMap[action.icon] || Zap;
@@ -227,9 +228,9 @@ export function PortalSectionNav({ section }) {
                   <Link
                     key={`${action.href}-${action.label}`}
                     href={action.href}
-                    className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                   >
-                    <Icon className="h-4 w-4 text-slate-400" />
+                    <Icon className="h-4 w-4 text-white/40" />
                     {action.label}
                   </Link>
                 );
@@ -239,16 +240,16 @@ export function PortalSectionNav({ section }) {
         ) : null}
 
         {/* Help footer */}
-        <div className="rounded-lg border border-line bg-slate-50/70 p-3.5">
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3.5">
           <div className="flex items-start gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-600/15 text-accent-400">
               <LifeBuoy className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Need a hand?</p>
-              <p className="mt-0.5 text-xs leading-5 text-slate-500">
+              <p className="text-sm font-semibold text-white">Need a hand?</p>
+              <p className="mt-0.5 text-xs leading-5 text-white/50">
                 Our team replies on every ticket.{" "}
-                <Link href="/portal/support" className="font-semibold text-brand-700 hover:text-brand-600">
+                <Link href="/portal/support" className="font-semibold text-accent-400 hover:text-accent-300">
                   Contact support
                 </Link>
               </p>
