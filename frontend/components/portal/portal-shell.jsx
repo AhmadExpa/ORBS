@@ -28,6 +28,7 @@ import { useCustomerQuery } from "@/lib/api/hooks";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
 import { PortalSectionNav, getActiveSection } from "@/components/portal/portal-section-nav";
+import { PortalFooter } from "@/components/portal/portal-footer";
 
 const iconMap = {
   "layout-dashboard": LayoutDashboard,
@@ -314,6 +315,8 @@ export function PortalShell({ children, groups = portalNavGroups }) {
             children
           )}
         </main>
+
+        <PortalFooter />
       </div>
     </ButtonThemeProvider>
   );
