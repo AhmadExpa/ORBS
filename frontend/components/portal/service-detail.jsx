@@ -22,7 +22,7 @@ function hasAssignedCredentials(subscription) {
 export function ServiceDetail({ serviceId }) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const { data, isLoading } = useCustomerQuery({
-    queryKey: ["portal-service-detail", serviceId],
+    queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
 

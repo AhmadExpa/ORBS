@@ -34,15 +34,15 @@ export function InvoicesPage({
   const [regeneratingInvoices, setRegeneratingInvoices] = useState(false);
 
   const invoicesQuery = useCustomerQuery({
-    queryKey: ["portal-invoices-page"],
+    queryKey: ["portal-invoices"],
     path: "/invoices",
   });
   const profileQuery = useCustomerQuery({
-    queryKey: ["portal-invoices-profile"],
+    queryKey: ["portal-profile"],
     path: "/profile/me",
   });
   const contractQuery = useCustomerQuery({
-    queryKey: ["portal-invoices-contract"],
+    queryKey: ["portal-contract-current"],
     path: "/contracts/current",
   });
 

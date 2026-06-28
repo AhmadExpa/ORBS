@@ -18,7 +18,7 @@ export function SupportCenter() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status") || "";
   const { data, refetch, isLoading } = useCustomerQuery({
-    queryKey: ["portal-support"],
+    queryKey: ["portal-tickets"],
     path: "/tickets",
   });
   const [form, setForm] = useState({

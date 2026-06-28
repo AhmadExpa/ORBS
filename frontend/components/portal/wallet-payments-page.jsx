@@ -91,15 +91,15 @@ export function WalletPaymentsPage() {
   const { showToast } = useActionToast();
 
   const profileQuery = useCustomerQuery({
-    queryKey: ["portal-profile-balance"],
+    queryKey: ["portal-profile"],
     path: "/profile/me",
   });
   const paymentsQuery = useCustomerQuery({
-    queryKey: ["portal-wallet-payments"],
+    queryKey: ["portal-payments"],
     path: "/payments/submissions",
   });
   const contractQuery = useCustomerQuery({
-    queryKey: ["portal-wallet-payments-contract"],
+    queryKey: ["portal-contract-current"],
     path: "/contracts/current",
   });
 

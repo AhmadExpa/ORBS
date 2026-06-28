@@ -70,11 +70,11 @@ export function CheckoutPaymentView({ orderId }) {
     path: `/orders/${orderId}`,
   });
   const profileQuery = useCustomerQuery({
-    queryKey: ["portal-order-checkout-profile"],
+    queryKey: ["portal-profile"],
     path: "/profile/me",
   });
   const contractQuery = useCustomerQuery({
-    queryKey: ["portal-order-checkout-contract"],
+    queryKey: ["portal-contract-current"],
     path: "/contracts/current",
   });
 

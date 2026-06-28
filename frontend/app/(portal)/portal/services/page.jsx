@@ -604,7 +604,7 @@ function GeneralServicesSection({ subscriptions }) {
 
 export default function PortalServicesPage() {
   const subscriptionsQuery = useCustomerQuery({
-    queryKey: ["portal-services"],
+    queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
   const catalogQuery = useQuery({

@@ -66,14 +66,14 @@ export function PortalShell({ children, groups = portalNavGroups }) {
   const containerRef = useRef(null);
 
   const contractQuery = useCustomerQuery({
-    queryKey: ["portal-shell-contract-gate"],
+    queryKey: ["portal-contract-current"],
     path: "/contracts/current",
   });
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const portalLocked = !isContractSubmittedForPortal(contractStatus);
 
   const profileQuery = useCustomerQuery({
-    queryKey: ["portal-shell-profile"],
+    queryKey: ["portal-profile"],
     path: "/profile/me",
     enabled: !portalLocked,
   });

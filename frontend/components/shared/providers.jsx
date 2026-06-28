@@ -11,8 +11,12 @@ export function Providers({ children }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
+            // Serve cached data instantly on navigation; refresh in the
+            // background. gcTime keeps it warm so revisiting a page is instant.
+            staleTime: 60_000,
+            gcTime: 600_000,
             refetchOnWindowFocus: false,
+            retry: 1,
           },
         },
       }),

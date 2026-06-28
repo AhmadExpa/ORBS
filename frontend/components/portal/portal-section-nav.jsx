@@ -50,7 +50,7 @@ export function PortalSectionNav({ section }) {
   const sectionId = section?.id;
   // Reuse the same query keys as the pages so React Query dedupes the requests.
   const subscriptionsQuery = useCustomerQuery({
-    queryKey: ["portal-dashboard"],
+    queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
     enabled: sectionId === "services",
   });
@@ -60,7 +60,7 @@ export function PortalSectionNav({ section }) {
     enabled: sectionId === "billing",
   });
   const profileQuery = useCustomerQuery({
-    queryKey: ["portal-shell-profile"],
+    queryKey: ["portal-profile"],
     path: "/profile/me",
     enabled: sectionId === "billing",
   });

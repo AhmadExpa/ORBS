@@ -93,12 +93,12 @@ export function PortalDashboardPage() {
   const [reviewMessage, setReviewMessage] = useState("");
   const paymentStatus = searchParams.get("payment");
 
-  const { data, isLoading } = useCustomerQuery({ queryKey: ["portal-dashboard"], path: "/subscriptions" });
-  const profileQuery = useCustomerQuery({ queryKey: ["portal-dashboard-profile"], path: "/profile/me" });
+  const { data, isLoading } = useCustomerQuery({ queryKey: ["portal-subscriptions"], path: "/subscriptions" });
+  const profileQuery = useCustomerQuery({ queryKey: ["portal-profile"], path: "/profile/me" });
   const invoicesQuery = useCustomerQuery({ queryKey: ["portal-invoices"], path: "/invoices" });
   const paymentsQuery = useCustomerQuery({ queryKey: ["portal-payments"], path: "/payments/submissions" });
   const ticketsQuery = useCustomerQuery({ queryKey: ["portal-tickets"], path: "/tickets" });
-  const contractQuery = useCustomerQuery({ queryKey: ["portal-dashboard-contract"], path: "/contracts/current" });
+  const contractQuery = useCustomerQuery({ queryKey: ["portal-contract-current"], path: "/contracts/current" });
 
   const subscriptions = data?.subscriptions || [];
   const profile = profileQuery.data?.user;

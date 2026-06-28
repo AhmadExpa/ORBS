@@ -15,7 +15,7 @@ export function ContractGate({ children }) {
   const pathname = usePathname();
   const isContractRoute = pathname?.startsWith("/portal/contracts");
   const contractQuery = useCustomerQuery({
-    queryKey: ["portal-contract-gate"],
+    queryKey: ["portal-contract-current"],
     path: "/contracts/current",
     enabled: !isContractRoute,
   });
