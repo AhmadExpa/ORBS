@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Ban, ShieldAlert, ShieldCheck } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Ban, Search, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   Button,
   Card,
@@ -14,6 +14,7 @@ import {
   Select,
   StatusBadge,
   TextArea,
+  TextInput,
 } from "@/lib/ui";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
@@ -43,9 +44,24 @@ export function AdminUsersPage() {
   const [blockTarget, setBlockTarget] = useState(null);
   const [blockPreset, setBlockPreset] = useState(BLOCK_REASON_PRESETS[0]);
   const [blockCustom, setBlockCustom] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const customers = usersQuery.data?.customers || [];
   const staffUsers = usersQuery.data?.staffUsers || [];
+
+  const visibleCustomers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return customers.filter((user) => {
+      if (statusFilter && statusOf(user) !== statusFilter) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      return [user.name, user.email, user.company].some((field) => String(field || "").toLowerCase().includes(term));
+    });
+  }, [customers, search, statusFilter]);
 
   async function runAction(user, action, body) {
     setActionState({ loadingId: user._id, error: "" });
@@ -149,11 +165,40 @@ export function AdminUsersPage() {
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <Card>
           <CardHeader>
-            <CardTitle>Customers</CardTitle>
-            <CardDescription>Suspend accounts for suspicious activity, permanently block abuse, or reactivate access.</CardDescription>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>Customers</CardTitle>
+                <CardDescription>Suspend accounts for suspicious activity, permanently block abuse, or reactivate access.</CardDescription>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <TextInput
+                    className="pl-9 sm:w-64"
+                    placeholder="Search name, email, company…"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </div>
+                <Select className="sm:w-44" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                  <option value="">All statuses</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="blocked">Blocked</option>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <DataTable columns={customerColumns} rows={customers} emptyMessage="No customer accounts yet." />
+            <DataTable
+              dense
+              columns={customerColumns}
+              rows={visibleCustomers}
+              emptyMessage={search || statusFilter ? "No customers match your filters." : "No customer accounts yet."}
+            />
+            <p className="mt-3 text-xs font-medium text-slate-400">
+              Showing {visibleCustomers.length} of {customers.length} customers
+            </p>
             {actionState.error ? <p className="mt-3 text-sm font-medium text-rose-600">{actionState.error}</p> : null}
           </CardContent>
         </Card>

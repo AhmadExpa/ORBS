@@ -13,6 +13,7 @@ import {
   Subscription,
   SupportTicket,
   User,
+  CustomerContract,
 } from "../../db/models/index.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -70,12 +71,16 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals();
 
-    const [usersCount, subscriptions, paymentSubmissions, openTickets] = await Promise.all([
-      User.countDocuments(),
-      Subscription.find({}),
-      PaymentSubmission.find({}).sort({ submittedAt: -1 }).limit(5),
-      SupportTicket.find({ status: { $in: ["open", "pending"] } }).sort({ updatedAt: -1 }).limit(5),
-    ]);
+    const [usersCount, subscriptions, paymentSubmissions, openTickets, allInvoices, pendingContractCount, openTicketCount] =
+      await Promise.all([
+        User.countDocuments(),
+        Subscription.find({}),
+        PaymentSubmission.find({}).sort({ submittedAt: -1 }).limit(5),
+        SupportTicket.find({ status: { $in: ["open", "pending"] } }).sort({ updatedAt: -1 }).limit(5),
+        Invoice.find({}),
+        CustomerContract.countDocuments({ status: "SIGNED_PENDING_ADMIN" }),
+        SupportTicket.countDocuments({ status: { $in: ["open", "pending"] } }),
+      ]);
 
     const monthlyRecurringRevenue = subscriptions
       .filter((sub) => sub.status === "active" && sub.billingCycle === "monthly")
@@ -85,13 +90,24 @@ adminRouter.get(
       .filter((sub) => sub.status === "active" && sub.billingCycle === "yearly")
       .reduce((sum, subscription) => sum + Number(subscription.metadata?.billingAmount || 0), 0);
 
+    const unpaidInvoices = allInvoices.filter((invoice) => invoice.status !== "paid");
+    const unpaidInvoiceTotal = unpaidInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
+    const activeSubscriptions = subscriptions.filter((sub) => sub.status === "active").length;
+
     res.json({
       totalUsers: usersCount,
       totalSubscriptions: subscriptions.length,
+      activeSubscriptions,
       monthlyRecurringRevenue,
       yearlyRecurringRevenue,
       recentPayments: paymentSubmissions,
       recentTickets: openTickets,
+      attention: {
+        pendingContracts: pendingContractCount,
+        openTickets: openTicketCount,
+        unpaidInvoices: unpaidInvoices.length,
+        unpaidInvoiceTotal,
+      },
     });
   }),
 );
