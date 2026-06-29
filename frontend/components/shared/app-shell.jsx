@@ -17,6 +17,7 @@ import { SidebarNav } from "./sidebar-nav";
 
 export function AppShell({
   items,
+  groups,
   children,
   roleLabel = "Portal",
   authMode = "clerk",
@@ -163,22 +164,22 @@ export function AppShell({
   return (
     <ButtonThemeProvider value="portal">
       <div className="min-h-screen bg-canvas text-slate-900">
-        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)]">
-          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-line bg-white px-4 py-4 lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
+        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)]">
+          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-white/10 bg-[#0f1115] px-3 py-4 text-slate-300 lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
             <Link
               href={sidebarHref}
-              className="block rounded-lg border border-line bg-white px-3 py-3 transition-colors hover:border-slate-300"
+              className="block rounded-lg border border-white/10 bg-white/5 px-3 py-3 transition-colors hover:border-white/20"
             >
-              <div className="flex min-h-[84px] flex-col items-center justify-center text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{roleLabel}</p>
+              <div className="flex min-h-[76px] flex-col items-center justify-center text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">{roleLabel}</p>
                 <BrandLogo
                   className="mt-3 h-8 w-full justify-center"
-                  imageClassName="max-w-[155px]"
+                  imageClassName="max-w-[150px] brightness-0 invert"
                   src={logoSrc}
                   width={logoWidth}
                   height={logoHeight}
                 />
-                <p className="mt-2 text-xs font-medium text-slate-500">
+                <p className="mt-2 text-xs font-medium text-white/45">
                   {authMode === "staff" ? "Operations workspace" : "Customer workspace"}
                 </p>
               </div>
@@ -220,28 +221,33 @@ export function AppShell({
                 </div>
               </div>
             ) : null}
-            <div className="eo-scrollbar-none mt-4 min-h-0 flex-1 overflow-y-auto">
-              <SidebarNav items={items} locked={portalLocked} lockHref="/portal/contracts" />
+            <div className="eo-scrollbar-none mt-5 min-h-0 flex-1 overflow-y-auto">
+              <SidebarNav groups={groups} items={items} />
             </div>
-            <div className="mt-4 rounded-lg border border-line bg-white p-4">
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3.5">
               <div className="flex items-center gap-3">
                 {authMode === "clerk" ? (
                   <UserButton />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10 text-white/70">
                     <UserRound className="h-5 w-5" />
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Signed in</p>
-                  <p className="text-xs font-medium text-slate-500">{authMode === "clerk" ? "Customer account" : "Staff account"}</p>
+                  <p className="text-sm font-semibold text-white">Signed in</p>
+                  <p className="text-xs font-medium text-white/45">{authMode === "clerk" ? "Customer account" : "Staff account"}</p>
                 </div>
               </div>
-              {logoutState.error ? <p className="mt-3 text-xs font-medium text-rose-600">{logoutState.error}</p> : null}
-              <Button className="mt-4 w-full justify-center" type="button" variant="ghost" disabled={logoutState.loading} onClick={handleLogout}>
+              {logoutState.error ? <p className="mt-3 text-xs font-medium text-rose-400">{logoutState.error}</p> : null}
+              <button
+                type="button"
+                disabled={logoutState.loading}
+                onClick={handleLogout}
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60"
+              >
                 <LogOut className="h-4 w-4" />
-                {logoutState.loading ? "Logging out..." : "Log Out"}
-              </Button>
+                {logoutState.loading ? "Logging out…" : "Log out"}
+              </button>
             </div>
           </aside>
           <main className="min-w-0 overflow-x-hidden">

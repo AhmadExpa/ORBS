@@ -121,3 +121,40 @@ export const adminNavigation = [
   { href: "/eo-admin/settings", label: "Settings", icon: "settings-2" },
   { href: "/eo-admin/activity", label: "Activity", icon: "activity" },
 ];
+
+// Grouped admin navigation for the dark operations sidebar.
+export const adminNavGroups = [
+  { items: [{ href: "/eo-admin", label: "Overview", icon: "layout-dashboard" }] },
+  {
+    label: "Catalog",
+    items: [
+      { href: "/eo-admin/products", label: "Products", icon: "boxes" },
+      { href: "/eo-admin/pricing", label: "Pricing", icon: "badge-dollar-sign" },
+    ],
+  },
+  {
+    label: "Customers",
+    items: [
+      { href: "/eo-admin/users", label: "Users", icon: "users" },
+      { href: "/eo-admin/subscriptions", label: "Subscriptions & VPS", icon: "server" },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { href: "/eo-admin/invoices", label: "Invoices", icon: "receipt" },
+      { href: "/eo-admin/contracts", label: "Contracts", icon: "file-signature" },
+    ],
+  },
+  {
+    label: "Support",
+    items: [{ href: "/eo-admin/tickets", label: "Tickets", icon: "tickets" }],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/eo-admin/settings", label: "Settings", icon: "settings-2" },
+      { href: "/eo-admin/activity", label: "Activity", icon: "activity" },
+    ],
+  },
+];

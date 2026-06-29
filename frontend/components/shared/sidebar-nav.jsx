@@ -54,43 +54,49 @@ function isNavItemActive(pathname, href) {
   return pathname.startsWith(`${href}/`);
 }
 
-export function SidebarNav({ items, locked = false, lockHref = "/portal/contracts" }) {
+function NavLink({ item }) {
   const pathname = usePathname();
+  const active = isNavItemActive(pathname, item.href);
+  const Icon = iconMap[item.icon] || LayoutDashboard;
 
   return (
-    <nav className="space-y-1">
-      {items.map((item) => {
-        const active = isNavItemActive(pathname, item.href);
-        const Icon = iconMap[item.icon] || LayoutDashboard;
-        const itemLocked = locked && item.href !== lockHref;
-        const href = itemLocked ? lockHref : item.href;
+    <Link
+      href={item.href}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150",
+        active ? "bg-white/10 text-white" : "text-white/55 hover:bg-white/5 hover:text-white",
+      )}
+    >
+      {active ? <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-accent-500" aria-hidden /> : null}
+      <span
+        className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center transition-colors duration-150",
+          active ? "text-accent-400" : "text-white/40 group-hover:text-white/70",
+        )}
+      >
+        <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+      </span>
+      <span className="truncate">{item.label}</span>
+    </Link>
+  );
+}
 
-        return (
-          <Link
-            key={item.href}
-            href={href}
-            aria-disabled={itemLocked}
-            className={cn(
-              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150",
-              active
-                ? "bg-brand-50 text-brand-700"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-              itemLocked && "text-slate-400 hover:bg-amber-50 hover:text-slate-500",
-            )}
-          >
-            {active ? <span className="absolute inset-y-1.5 left-0 w-1 rounded-full bg-brand-600" aria-hidden /> : null}
-            <span
-              className={cn(
-                "flex h-5 w-5 shrink-0 items-center justify-center transition-colors duration-150",
-                active ? "text-brand-600" : itemLocked ? "text-amber-500" : "text-slate-400 group-hover:text-slate-600",
-              )}
-            >
-              {itemLocked ? <Lock className="h-[17px] w-[17px]" strokeWidth={2.2} /> : <Icon className="h-[18px] w-[18px]" strokeWidth={2} />}
-            </span>
-            <span className="truncate">{item.label}</span>
-          </Link>
-        );
-      })}
+// Dark operations sidebar. Accepts grouped `groups` (preferred) or a flat `items` list.
+export function SidebarNav({ groups, items }) {
+  const resolvedGroups = groups || (items ? [{ items }] : []);
+
+  return (
+    <nav className="space-y-5">
+      {resolvedGroups.map((group, index) => (
+        <div key={group.label || `group-${index}`} className="space-y-1">
+          {group.label ? (
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/30">{group.label}</p>
+          ) : null}
+          {(group.items || []).map((item) => (
+            <NavLink key={item.href} item={item} />
+          ))}
+        </div>
+      ))}
     </nav>
   );
 }

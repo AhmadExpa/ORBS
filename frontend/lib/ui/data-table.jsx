@@ -1,7 +1,9 @@
 import React from "react";
 import { cn } from "./utils.js";
 
-export function DataTable({ columns = [], rows = [], emptyMessage = "No records found." }) {
+export function DataTable({ columns = [], rows = [], emptyMessage = "No records found.", dense = false }) {
+  const headCell = dense ? "px-3 py-2.5" : "px-4 py-3";
+  const bodyCell = dense ? "px-3 py-2.5" : "px-4 py-3.5";
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-white shadow-card">
       <div className="overflow-x-auto">
@@ -9,7 +11,7 @@ export function DataTable({ columns = [], rows = [], emptyMessage = "No records 
           <thead className="bg-slate-50">
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <th key={column.key} className={cn("text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500", headCell)}>
                   {column.label}
                 </th>
               ))}
@@ -26,7 +28,7 @@ export function DataTable({ columns = [], rows = [], emptyMessage = "No records 
               rows.map((row, index) => (
                 <tr key={row.id || index} className="transition-colors hover:bg-slate-50/70">
                   {columns.map((column) => (
-                    <td key={column.key} className={cn("px-4 py-3.5 text-sm font-medium text-slate-700", column.className)}>
+                    <td key={column.key} className={cn("text-sm font-medium text-slate-700", bodyCell, column.className)}>
                       {column.render ? column.render(row) : row[column.key]}
                     </td>
                   ))}
