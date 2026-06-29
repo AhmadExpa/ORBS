@@ -2,7 +2,7 @@ import express from "express";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { User } from "../../db/models/index.js";
-import { requireCustomer } from "../../middleware/require-customer.js";
+import { requireCustomer, findUserFromRequest } from "../../middleware/require-customer.js";
 import { verifyClerkRequestToken } from "../../services/clerk-auth-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { syncCustomerProfile } from "../../services/customer-profile-service.js";
@@ -35,6 +35,26 @@ profilesRouter.post(
     });
 
     res.json({ user });
+  }),
+);
+
+profilesRouter.get(
+  "/account-status",
+  asyncHandler(async (req, res) => {
+    // Intentionally does NOT use requireCustomer (which rejects non-active
+    // accounts) so the portal gate can read the status with a 200 response.
+    const authContext = await findUserFromRequest(req, { ignoreInvalidToken: true });
+    const user = authContext?.user;
+
+    if (!user) {
+      res.json({ status: "active", reason: "" });
+      return;
+    }
+
+    res.json({
+      status: user.accountStatus || "active",
+      reason: user.accountStatusReason || "",
+    });
   }),
 );
 

@@ -3,7 +3,7 @@ import { HttpError } from "../utils/http-error.js";
 import { verifyClerkRequestToken } from "../services/clerk-auth-service.js";
 import { ensureCustomerProfile } from "../services/customer-profile-service.js";
 
-async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidToken = false, autoCreate = false } = {}) {
+export async function findUserFromRequest(req, { allowUnsynced = false, ignoreInvalidToken = false, autoCreate = false } = {}) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -71,6 +71,20 @@ export async function requireCustomer(req, res, next) {
     const authContext = await findUserFromRequest(req, { autoCreate: true });
     if (!authContext?.user) {
       throw new HttpError(401, "Customer authentication required.");
+    }
+
+    const status = authContext.user.accountStatus;
+    if (status === "blocked") {
+      throw new HttpError(403, "Your account has been blocked. Please check your email for details.", {
+        code: "ACCOUNT_BLOCKED",
+        accountStatus: "blocked",
+      });
+    }
+    if (status === "suspended") {
+      throw new HttpError(403, "Your account has been suspended due to suspicious activity. Contact support for more queries.", {
+        code: "ACCOUNT_SUSPENDED",
+        accountStatus: "suspended",
+      });
     }
 
     req.auth = authContext;

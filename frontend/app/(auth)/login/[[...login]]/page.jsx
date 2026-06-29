@@ -3,6 +3,7 @@ import { SignedIn, SignedOut, SignIn } from "@clerk/nextjs";
 import { ArrowRight, LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { LogoSpinner } from "@/components/shared/logo-spinner";
+import { AccountStatusNotice } from "@/components/auth/account-status-notice";
 
 function resolveRedirect(searchParams) {
   const value = searchParams?.redirect_url || searchParams?.redirectUrl || "/portal";
@@ -84,6 +85,7 @@ export default async function LoginPage({ searchParams }) {
               <BrandLogo className="h-11 w-[210px]" priority />
             </Link>
             <SignedOut>
+              <AccountStatusNotice />
               <div className="mb-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Customer Portal</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Log in to continue.</h2>

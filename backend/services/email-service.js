@@ -360,6 +360,69 @@ export async function sendServiceAccessNotification({ customer, subscription, pl
   });
 }
 
+export async function sendAccountSuspensionNotification({ customer }) {
+  return sendTransactionalEmail({
+    to: getCustomerEmail(customer),
+    subject: "Your ElevenOrbits account has been suspended",
+    title: "Your account has been suspended",
+    preheader: "Access to your ElevenOrbits account has been temporarily suspended.",
+    badge: "Account Suspended",
+    intro:
+      "We have temporarily suspended your ElevenOrbits account after detecting suspicious activity. While suspended, you will not be able to sign in to the customer portal. If you believe this was a mistake, please contact our support team for more queries.",
+    rows: [
+      { label: "Account", value: getCustomerName(customer) },
+      { label: "Status", value: "Suspended" },
+    ],
+    action: {
+      label: "Contact Support",
+      href: `mailto:${env.supportEmail}`,
+    },
+    notes: ["This is an automated security notification from ElevenOrbits."],
+  });
+}
+
+export async function sendAccountBlockNotification({ customer, reason }) {
+  return sendTransactionalEmail({
+    to: getCustomerEmail(customer),
+    subject: "Your ElevenOrbits account has been permanently blocked",
+    title: "Your account has been blocked",
+    preheader: "Your ElevenOrbits account has been permanently blocked.",
+    badge: "Account Blocked",
+    intro:
+      "Your ElevenOrbits account has been permanently blocked and you will no longer be able to sign in. The reason for this decision is shown below. If you wish to dispute this, please contact our support team.",
+    rows: [
+      { label: "Account", value: getCustomerName(customer) },
+      { label: "Status", value: "Permanently blocked" },
+      { label: "Reason", value: reason || "Not specified" },
+    ],
+    action: {
+      label: "Contact Support",
+      href: `mailto:${env.supportEmail}`,
+    },
+    notes: ["This decision was made by the ElevenOrbits team."],
+  });
+}
+
+export async function sendAccountReinstatedNotification({ customer }) {
+  return sendTransactionalEmail({
+    to: getCustomerEmail(customer),
+    subject: "Your ElevenOrbits account has been reinstated",
+    title: "Your account has been reinstated",
+    preheader: "Access to your ElevenOrbits account has been restored.",
+    badge: "Account Active",
+    intro:
+      "Good news — your ElevenOrbits account has been reinstated and you can sign in to the customer portal again. Thank you for your patience.",
+    rows: [
+      { label: "Account", value: getCustomerName(customer) },
+      { label: "Status", value: "Active" },
+    ],
+    action: {
+      label: "Open Customer Portal",
+      href: `${env.appUrl}/portal`,
+    },
+  });
+}
+
 export async function sendWalletTopupNotification({ customer, amount, reference }) {
   return sendTransactionalEmail({
     to: getCustomerEmail(customer),

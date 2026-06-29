@@ -23,6 +23,7 @@ import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { env } from "../../config/env.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { sendInvoiceNotification, sendServiceAccessNotification } from "../../services/email-service.js";
+import { blockCustomer, reactivateCustomer, suspendCustomer } from "../../services/account-status-service.js";
 import {
   approveContract,
   createContractDownloadUrl,
@@ -38,6 +39,10 @@ export const adminRouter = express.Router();
 adminRouter.use(requireStaff);
 
 const rejectContractSchema = z.object({
+  reason: z.string().trim().min(1).max(2000),
+});
+
+const blockUserSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
 });
 
@@ -108,6 +113,37 @@ adminRouter.get(
         role: req.staff.role,
       },
     });
+  }),
+);
+
+adminRouter.post(
+  "/users/:id/suspend",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const user = await suspendCustomer({ userId: req.params.id, staff: req.staff });
+    res.json({ user });
+  }),
+);
+
+adminRouter.post(
+  "/users/:id/block",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const { reason } = blockUserSchema.parse(req.body);
+    const user = await blockCustomer({ userId: req.params.id, staff: req.staff, reason });
+    res.json({ user });
+  }),
+);
+
+adminRouter.post(
+  "/users/:id/reactivate",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const user = await reactivateCustomer({ userId: req.params.id, staff: req.staff });
+    res.json({ user });
   }),
 );
 
