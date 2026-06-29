@@ -61,7 +61,18 @@ catalogRouter.get(
       }
     }
     const addons = await Addon.find(filter).sort({ addonType: 1, sortOrder: 1, name: 1 });
-    res.json({ addons });
+
+    // Per-plan scoping: an add-on with an empty planIds applies to every plan
+    // in its category; otherwise it only applies to the listed plans.
+    const planId = req.query.plan ? String(req.query.plan) : "";
+    const scoped = planId
+      ? addons.filter((addon) => {
+          const planIds = Array.isArray(addon.planIds) ? addon.planIds.map(String) : [];
+          return planIds.length === 0 || planIds.includes(planId);
+        })
+      : addons;
+
+    res.json({ addons: scoped });
   }),
 );
 

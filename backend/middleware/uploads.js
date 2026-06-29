@@ -32,3 +32,9 @@ export const uploadSupportAttachment = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: makeFileFilter(["image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain"]),
 });
+
+export const uploadImage = multer({
+  storage: makeStorage(supportAttachmentDir),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: makeFileFilter(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]),
+});

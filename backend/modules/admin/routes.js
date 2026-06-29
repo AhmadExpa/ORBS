@@ -21,6 +21,8 @@ import { requireAdmin, requireStaff } from "../../middleware/require-staff.js";
 import { requireSameOrigin } from "../../middleware/csrf.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
+import { uploadImage } from "../../middleware/uploads.js";
+import { persistUploadedFile } from "../../services/storage-service.js";
 import { env } from "../../config/env.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { sendInvoiceNotification, sendServiceAccessNotification } from "../../services/email-service.js";
@@ -227,6 +229,96 @@ adminRouter.patch(
   asyncHandler(async (req, res) => {
     const addon = await Addon.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json({ addon });
+  }),
+);
+
+adminRouter.delete(
+  "/products/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const plan = await ProductPlan.findById(req.params.id);
+    if (!plan) {
+      throw new HttpError(404, "Plan not found.");
+    }
+    // Unassign this plan from any plan-scoped add-ons so they don't dangle.
+    const scopedAddons = await Addon.find({ planIds: { $in: [String(plan._id)] } });
+    await Promise.all(
+      scopedAddons.map((addon) =>
+        Addon.findByIdAndUpdate(addon._id, {
+          planIds: (addon.planIds || []).filter((id) => String(id) !== String(plan._id)),
+        }),
+      ),
+    );
+    await ProductPlan.findByIdAndDelete(req.params.id);
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: "product.deleted",
+      targetType: "product_plan",
+      targetId: String(plan._id),
+    });
+    res.json({ success: true });
+  }),
+);
+
+adminRouter.delete(
+  "/addons/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const addon = await Addon.findById(req.params.id);
+    if (!addon) {
+      throw new HttpError(404, "Add-on not found.");
+    }
+    await Addon.findByIdAndDelete(req.params.id);
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: "addon.deleted",
+      targetType: "addon",
+      targetId: String(addon._id),
+    });
+    res.json({ success: true });
+  }),
+);
+
+adminRouter.post(
+  "/categories",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const category = await ServiceCategory.create(req.body);
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: "category.created",
+      targetType: "service_category",
+      targetId: String(category._id),
+    });
+    res.status(201).json({ category });
+  }),
+);
+
+adminRouter.patch(
+  "/categories/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const category = await ServiceCategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!category) {
+      throw new HttpError(404, "Category not found.");
+    }
+    res.json({ category });
+  }),
+);
+
+adminRouter.post(
+  "/uploads/image",
+  requireAdmin,
+  uploadImage.single("image"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new HttpError(400, "No image was provided.");
+    }
+    const url = await persistUploadedFile({ file: req.file, directory: "catalog" });
+    res.json({ url });
   }),
 );
 

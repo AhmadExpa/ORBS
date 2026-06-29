@@ -21,6 +21,7 @@ export const ServiceCategory = createPostgresModel("ServiceCategory", {
   collection: "service_categories",
   defaults: {
     description: "",
+    imageUrl: "",
     isActive: true,
     sortOrder: 0,
   },
@@ -80,6 +81,7 @@ export const ProductPlan = createPostgresModel("ProductPlan", {
     displayPriceLabel: "",
     serviceType: "",
     techStack: [],
+    imageUrl: "",
     isActive: true,
     sortOrder: 0,
   },
@@ -107,12 +109,15 @@ export const Addon = createPostgresModel("Addon", {
     minQuantity: 0,
     maxQuantity: 0,
     quantityStep: 1,
+    imageUrl: "",
+    planIds: [],
     isActive: true,
     sortOrder: 0,
   },
   refs: {
     categoryId: "ServiceCategory",
   },
+  arrayFields: ["planIds"],
   booleanFields: ["isActive"],
   numericFields: [
     "monthlyPrice",
