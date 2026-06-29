@@ -253,8 +253,8 @@ export function OrderConfigurator({ slug }) {
 
   const plan = data?.plan;
   const addonsQuery = useQuery({
-    queryKey: ["catalog-addons", plan?.categoryId?.slug],
-    queryFn: () => apiFetch(`/catalog/addons?category=${plan.categoryId.slug}`),
+    queryKey: ["catalog-addons", plan?.categoryId?.slug, plan?._id],
+    queryFn: () => apiFetch(`/catalog/addons?category=${plan.categoryId.slug}&plan=${plan._id}`),
     enabled: Boolean(plan?.categoryId?.slug),
   });
 

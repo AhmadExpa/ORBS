@@ -127,10 +127,7 @@ export const adminNavGroups = [
   { items: [{ href: "/eo-admin", label: "Overview", icon: "layout-dashboard" }] },
   {
     label: "Catalog",
-    items: [
-      { href: "/eo-admin/products", label: "Products", icon: "boxes" },
-      { href: "/eo-admin/pricing", label: "Pricing", icon: "badge-dollar-sign" },
-    ],
+    items: [{ href: "/eo-admin/products", label: "Catalog", icon: "boxes" }],
   },
   {
     label: "Customers",
