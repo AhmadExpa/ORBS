@@ -18,6 +18,8 @@ export default function AdminInvoicesPage() {
         {
           title: "All Invoices",
           description: "Generated invoice PDFs and current payment state.",
+          searchable: true,
+          searchPlaceholder: "Search invoice or customer…",
           columns: [
             { key: "invoiceNumber", label: "Invoice" },
             { key: "customer", label: "Customer", render: (row) => row.userId?.name || "Unknown" },

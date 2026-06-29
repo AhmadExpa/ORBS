@@ -13,6 +13,8 @@ export default function AdminActivityPage() {
         {
           title: "Recent Activity",
           description: "Most recent audit log entries.",
+          searchable: true,
+          searchPlaceholder: "Search action, role, target…",
           columns: [
             { key: "action", label: "Action" },
             { key: "actorRole", label: "Role" },
