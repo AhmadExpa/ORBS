@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ImagePlus, Layers, Pencil, Plus, Server, Trash2, X } from "lucide-react";
+import { ChevronDown, Globe2, HardDrive, ImageIcon, ImagePlus, Layers, Pencil, Plus, Puzzle, Server, Trash2, X } from "lucide-react";
 import {
   Button,
   Card,
@@ -23,8 +23,46 @@ import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
-const ADDON_TYPES = ["feature", "storage", "region", "image"];
+const ADDON_SECTIONS = [
+  {
+    type: "region",
+    label: "Regions",
+    singular: "region",
+    description: "One selectable deployment location. Customers pick one region during checkout.",
+    icon: Globe2,
+  },
+  {
+    type: "storage",
+    label: "Storage",
+    singular: "storage option",
+    description: "One selectable disk profile with included capacity and per-unit pricing.",
+    icon: HardDrive,
+  },
+  {
+    type: "image",
+    label: "Images",
+    singular: "image option",
+    description: "One selectable operating system, control panel, or licensed server image.",
+    icon: ImageIcon,
+  },
+  {
+    type: "feature",
+    label: "Additional Features",
+    singular: "feature",
+    description: "Optional extras that customers can add alongside the required selections.",
+    icon: Puzzle,
+  },
+];
+const ADDON_TYPES = ADDON_SECTIONS.map((section) => section.type);
 const SELECTION_MODES = ["multi", "single"];
+
+function addonSectionFor(type) {
+  return ADDON_SECTIONS.find((section) => section.type === type) || ADDON_SECTIONS.find((section) => section.type === "feature");
+}
+
+function defaultSelectionModeFor(type) {
+  return type === "feature" ? "multi" : "single";
+}
 
 function slugify(value) {
   return String(value || "")
@@ -59,11 +97,83 @@ function addonScopeLabel(addon) {
   return `${count} plans`;
 }
 
+function groupAddonsBySection(addons = []) {
+  return ADDON_SECTIONS.reduce((groups, section) => {
+    groups[section.type] = addons.filter((addon) => (addon.addonType || "feature") === section.type);
+    return groups;
+  }, {});
+}
+
 async function uploadImage(file) {
   const formData = new FormData();
   formData.append("image", file);
   const { url } = await apiFetch("/admin/uploads/image", { method: "POST", authMode: "staff", isMultipart: true, body: formData });
   return url;
+}
+
+function AddonSectionPanel({ section, addons, onCreate, onEdit, onDelete }) {
+  const Icon = section.icon;
+
+  return (
+    <section className="rounded-lg border border-line bg-slate-50/50">
+      <div className="flex flex-col gap-3 border-b border-line px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-slate-500 ring-1 ring-line">
+            <Icon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">{section.label}</h3>
+              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 ring-1 ring-line">
+                {addons.length}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs leading-5 text-slate-500">{section.description}</p>
+          </div>
+        </div>
+        <Button type="button" variant="outline" onClick={onCreate}>
+          <Plus className="h-4 w-4" />New {section.singular}
+        </Button>
+      </div>
+
+      <div className="space-y-2 p-3">
+        {addons.map((addon) => (
+          <div key={addon._id} className="flex items-center gap-3 rounded-lg border border-line bg-white p-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100 text-slate-500">
+              {addon.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={addon.imageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <Layers className="h-4 w-4" />
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-sm font-semibold text-slate-900">{addon.name}</p>
+                <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[11px] font-semibold text-brand-700">{addonScopeLabel(addon)}</span>
+                {addon.optionCode ? (
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">{addon.optionCode}</span>
+                ) : null}
+                {!addon.isActive ? <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">Inactive</span> : null}
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">{addonPriceSummary(addon)}</p>
+            </div>
+            <button type="button" onClick={() => onEdit(addon)} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={`Edit ${addon.name}`}>
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => onDelete(addon)} className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label={`Delete ${addon.name}`}>
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {!addons.length ? (
+          <div className="rounded-lg border border-dashed border-line bg-white p-4 text-sm font-medium text-slate-500">
+            No {section.label.toLowerCase()} for this plan.
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
 }
 
 function Modal({ title, description, onClose, children, wide = false }) {
@@ -237,14 +347,16 @@ function PlanEditorModal({ plan, categoryId, onClose, onSaved }) {
   );
 }
 
-function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, onClose, onSaved }) {
+function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, defaultAddonType = "feature", onClose, onSaved }) {
   const editing = Boolean(addon?._id);
   const initialPlanIds = (addon?.planIds || []).map(String);
+  const initialAddonType = addon?.addonType || defaultAddonType || "feature";
   const [form, setForm] = useState({
     name: addon?.name || "",
+    optionCode: addon?.optionCode || "",
     description: addon?.description || "",
-    addonType: addon?.addonType || "feature",
-    selectionMode: addon?.selectionMode || "multi",
+    addonType: initialAddonType,
+    selectionMode: addon?.selectionMode || defaultSelectionModeFor(initialAddonType),
     monthlyPrice: addon?.monthlyPrice ?? 0,
     yearlyPrice: addon?.yearlyPrice ?? 0,
     includedQuantity: addon?.includedQuantity ?? 0,
@@ -268,6 +380,14 @@ function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, o
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function updateAddonType(value) {
+    setForm((current) => ({
+      ...current,
+      addonType: value,
+      selectionMode: defaultSelectionModeFor(value),
+    }));
+  }
+
   function togglePlan(id) {
     setPlanIds((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
   }
@@ -283,6 +403,7 @@ function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, o
       categoryId,
       name: form.name.trim(),
       slug: slugify(addon?.slug || form.name),
+      optionCode: form.optionCode.trim(),
       description: form.description.trim(),
       addonType: form.addonType,
       selectionMode: form.selectionMode,
@@ -315,7 +436,12 @@ function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, o
   }
 
   return (
-    <Modal wide title={editing ? "Edit add-on" : "New add-on"} description="Add-ons let customers customize this plan at checkout." onClose={onClose}>
+    <Modal
+      wide
+      title={editing ? "Edit add-on" : `New ${addonSectionFor(form.addonType).singular}`}
+      description="The section controls where this appears in checkout: regions, storage, images, or additional features."
+      onClose={onClose}
+    >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -323,13 +449,20 @@ function AddonEditorModal({ addon, categoryId, plansInCategory, defaultPlanId, o
             <TextInput value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Extra IP address" required />
           </div>
           <div>
-            <FieldLabel>Type</FieldLabel>
-            <Select value={form.addonType} onChange={(e) => update("addonType", e.target.value)}>
+            <FieldLabel>Checkout section</FieldLabel>
+            <Select value={form.addonType} onChange={(e) => updateAddonType(e.target.value)}>
               {ADDON_TYPES.map((type) => (
-                <option key={type} value={type} className="capitalize">{type}</option>
+                <option key={type} value={type}>{addonSectionFor(type).label}</option>
               ))}
             </Select>
           </div>
+        </div>
+        <div>
+          <FieldLabel>Option code</FieldLabel>
+          <TextInput value={form.optionCode} onChange={(e) => update("optionCode", e.target.value)} placeholder="feature-extra-ipv4, image-ubuntu, region-eu" />
+          <p className="mt-1.5 text-xs leading-5 text-slate-500">
+            Optional stable code used by checkout for known options and artwork. Leave blank for a normal add-on.
+          </p>
         </div>
         <div>
           <FieldLabel>Description</FieldLabel>
@@ -617,6 +750,7 @@ export function AdminCatalogPage() {
             {plansInCategory.map((plan) => {
               const expanded = expandedPlanId === plan._id;
               const planAddons = addonsForPlan(plan._id);
+              const addonsBySection = groupAddonsBySection(planAddons);
               return (
                 <Card key={plan._id}>
                   <button
@@ -640,6 +774,16 @@ export function AdminCatalogPage() {
                       <p className="mt-0.5 text-xs text-slate-500">
                         {formatCurrency(plan.monthlyPrice)}/mo · {formatCurrency(plan.yearlyPrice)}/yr · {planAddons.length} add-on{planAddons.length === 1 ? "" : "s"}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {ADDON_SECTIONS.map((section) => {
+                          const count = addonsBySection[section.type]?.length || 0;
+                          return (
+                            <span key={section.type} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
+                              {section.label}: {count}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
                     <ChevronDown className={cn("h-5 w-5 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} />
                   </button>
@@ -655,46 +799,24 @@ export function AdminCatalogPage() {
                         </Button>
                       </div>
 
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-semibold text-slate-900">Add-ons for this plan</h3>
-                        <Button variant="outline" onClick={() => setModal({ type: "addon", categoryId: activeCategoryId, defaultPlanId: plan._id })}>
-                          <Plus className="h-4 w-4" />New add-on
-                        </Button>
-                      </div>
-
-                      <div className="mt-3 space-y-2">
-                        {planAddons.map((addon) => (
-                          <div key={addon._id} className="flex items-center gap-3 rounded-lg border border-line bg-white p-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100 text-slate-500">
-                              {addon.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={addon.imageUrl} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <Layers className="h-4 w-4" />
-                              )}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate text-sm font-semibold text-slate-900">{addon.name}</p>
-                                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold capitalize text-slate-500">{addon.addonType}</span>
-                                <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[11px] font-semibold text-brand-700">{addonScopeLabel(addon)}</span>
-                                {!addon.isActive ? <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">Inactive</span> : null}
-                              </div>
-                              <p className="mt-0.5 text-xs text-slate-500">{addonPriceSummary(addon)}</p>
-                            </div>
-                            <button type="button" onClick={() => setModal({ type: "addon", categoryId: activeCategoryId, addon })} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button type="button" onClick={() => deleteAddon(addon)} className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                      <div className="space-y-3">
+                        {ADDON_SECTIONS.map((section) => (
+                          <AddonSectionPanel
+                            key={section.type}
+                            section={section}
+                            addons={addonsBySection[section.type] || []}
+                            onCreate={() =>
+                              setModal({
+                                type: "addon",
+                                categoryId: activeCategoryId,
+                                defaultPlanId: plan._id,
+                                defaultAddonType: section.type,
+                              })
+                            }
+                            onEdit={(addon) => setModal({ type: "addon", categoryId: activeCategoryId, addon })}
+                            onDelete={deleteAddon}
+                          />
                         ))}
-                        {!planAddons.length ? (
-                          <p className="rounded-lg border border-dashed border-line bg-slate-50 p-4 text-sm font-medium text-slate-500">
-                            No add-ons for this plan yet — create one to offer upgrades at checkout.
-                          </p>
-                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -734,6 +856,7 @@ export function AdminCatalogPage() {
           categoryId={modal.categoryId}
           plansInCategory={plansInCategory}
           defaultPlanId={modal.defaultPlanId}
+          defaultAddonType={modal.defaultAddonType}
           onClose={() => setModal(null)}
           onSaved={refetch}
         />

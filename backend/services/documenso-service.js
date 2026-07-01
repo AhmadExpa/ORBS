@@ -240,6 +240,19 @@ function getFieldLabel(field) {
   ).toLowerCase();
 }
 
+function getReadableFieldLabel(field) {
+  return String(
+    field?.fieldMeta?.label ||
+      field?.label ||
+      field?.name ||
+      field?.fieldMeta?.placeholder ||
+      field?.placeholder ||
+      field?.secondaryId ||
+      field?.id ||
+      "",
+  ).trim();
+}
+
 function getPrefillFieldType(field) {
   const fieldType = String(field?.fieldMeta?.type || field?.type || "").toLowerCase();
   const normalizedTypes = new Set(["text", "number", "radio", "checkbox", "dropdown", "date"]);
@@ -323,6 +336,206 @@ function buildTemplateFieldValues({
       };
     })
     .filter(Boolean);
+}
+
+function getDocumentFields(payload) {
+  const document = extractDocument(payload);
+  const fields = [
+    ...flattenItems(document?.fields),
+    ...flattenItems(payload?.fields),
+    ...flattenItems(payload?.data?.fields),
+    ...flattenItems(document?.recipients?.flatMap?.((recipient) => recipient.fields || [])),
+    ...flattenItems(payload?.recipients?.flatMap?.((recipient) => recipient.fields || [])),
+  ];
+  const seen = new Set();
+
+  return fields.filter((field) => {
+    const key = String(field?.id || field?.secondaryId || `${field?.type || ""}:${getReadableFieldLabel(field)}`);
+    if (!key || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeSignedFieldValue(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => normalizeSignedFieldValue(item))
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  if (typeof value === "object") {
+    return normalizeSignedFieldValue(value.value || value.label || value.text || value.name || "");
+  }
+
+  return String(value).replace(/\s+/gu, " ").trim();
+}
+
+function extractCheckedOptionValues(fieldMeta = {}) {
+  const values = Array.isArray(fieldMeta.values) ? fieldMeta.values : [];
+  return values
+    .filter((option) => option?.checked || option?.selected || option?.isSelected)
+    .map((option) => normalizeSignedFieldValue(option.value || option.label || option.text || option.id))
+    .filter(Boolean);
+}
+
+function getSignedFieldValue(field) {
+  const checkedOptionValues = extractCheckedOptionValues(field?.fieldMeta);
+  if (checkedOptionValues.length) {
+    return checkedOptionValues.join(", ");
+  }
+
+  for (const candidate of [
+    field?.customText,
+    field?.value,
+    field?.insertedValue,
+    field?.inserted_value,
+    field?.fieldMeta?.value,
+    field?.fieldMeta?.text,
+    field?.fieldMeta?.defaultValue,
+  ]) {
+    const normalized = normalizeSignedFieldValue(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+}
+
+export function extractDocumentFieldValues(payload) {
+  const ignoredTypes = new Set(["SIGNATURE", "FREE_SIGNATURE", "INITIALS"]);
+  const fields = getDocumentFields(payload);
+
+  return fields
+    .map((field) => {
+      const type = String(field?.type || field?.fieldMeta?.type || "").toUpperCase();
+      if (ignoredTypes.has(type)) {
+        return null;
+      }
+
+      const value = getSignedFieldValue(field);
+      if (!value) {
+        return null;
+      }
+
+      return {
+        id: String(field?.id || field?.secondaryId || ""),
+        label: getReadableFieldLabel(field),
+        type,
+        value,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function mapDocumensoFieldValuesToContractDetails(fieldValues = []) {
+  const details = {};
+
+  for (const field of fieldValues) {
+    const label = String(field?.label || "").toLowerCase();
+    const value = normalizeSignedFieldValue(field?.value);
+    if (!label || !value) {
+      continue;
+    }
+
+    if (
+      !details.customerType &&
+      (label.includes("customer type") ||
+        label.includes("signing as") ||
+        label.includes("account type") ||
+        label.includes("client type"))
+    ) {
+      const normalizedType = value.toLowerCase();
+      if (normalizedType.includes("business") || normalizedType.includes("company") || normalizedType.includes("organization")) {
+        details.customerType = "BUSINESS";
+      } else if (normalizedType.includes("individual") || normalizedType.includes("personal") || normalizedType.includes("person")) {
+        details.customerType = "INDIVIDUAL";
+      }
+      continue;
+    }
+
+    if (
+      !details.businessRegistrationType &&
+      (label.includes("registration type") || label.includes("tax type") || label.includes("identifier type"))
+    ) {
+      details.businessRegistrationType = value;
+      continue;
+    }
+
+    if (
+      !details.businessRegistrationNumber &&
+      (label.includes("registration number") ||
+        label.includes("business registration") ||
+        label.includes("company registration") ||
+        label.includes("ein") ||
+        label.includes("tax id") ||
+        label.includes("vat number") ||
+        label.includes("business identifier") ||
+        label.includes("company number"))
+    ) {
+      details.businessRegistrationNumber = value;
+      continue;
+    }
+
+    if (!details.incorporationCountry && (label.includes("incorporation") || label.includes("formation") || label.includes("jurisdiction"))) {
+      details.incorporationCountry = value;
+      continue;
+    }
+
+    if (!details.businessRole && (label.includes("business role") || label.includes("company role") || label.includes("job title") || label.includes("title") || label.includes("position"))) {
+      details.businessRole = value;
+      continue;
+    }
+
+    if (!details.signingCapacity && (label.includes("signing capacity") || label.includes("capacity") || label.includes("authority"))) {
+      details.signingCapacity = value;
+      continue;
+    }
+
+    if (
+      !details.businessName &&
+      ((label.includes("business") && label.includes("name")) ||
+        (label.includes("company") && label.includes("name")) ||
+        (label.includes("organization") && label.includes("name")) ||
+        (label.includes("organisation") && label.includes("name")) ||
+        label.includes("legal entity"))
+    ) {
+      details.businessName = value;
+      continue;
+    }
+
+    if (!details.phone && (label.includes("phone") || label.includes("mobile") || label.includes("telephone") || label.includes("contact number"))) {
+      details.phone = value;
+      continue;
+    }
+
+    if (!details.country && label.includes("country")) {
+      details.country = value;
+      continue;
+    }
+
+    if (
+      !details.customerName &&
+      (label.includes("full name") || label.includes("legal name") || label.includes("customer name") || label.includes("client name") || label.includes("signer name"))
+    ) {
+      details.customerName = value;
+      continue;
+    }
+
+    if (!details.customerEmail && label.includes("email")) {
+      details.customerEmail = value;
+    }
+  }
+
+  return details;
 }
 
 function buildRecipientPayload({ templateRecipientId, customerName, customerEmail }) {
@@ -485,6 +698,17 @@ export async function getDocument(documentId) {
 export async function getDocumentStatus(documentId) {
   const document = await getDocument(documentId);
   return normalizeStatus(extractDocument(document));
+}
+
+export async function getDocumentCompletionDetails(documentId) {
+  const payload = await getDocument(documentId);
+  const document = extractDocument(payload);
+
+  return {
+    status: normalizeStatus(document),
+    completedAt: document?.completedAt || document?.completed_at || null,
+    fieldValues: extractDocumentFieldValues(payload),
+  };
 }
 
 export async function getRecipientSigningUrl(documentId, recipientId) {

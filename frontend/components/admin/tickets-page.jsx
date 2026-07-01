@@ -244,9 +244,9 @@ export function AdminTicketsPage() {
           />
         }
       />
-      <div className="space-y-6 p-6">
-        <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-          <Card>
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+          <Card className="min-w-0">
             <CardHeader className="flex flex-row items-center justify-between gap-3">
               <div>
                 <CardTitle>Ticket queue</CardTitle>
@@ -255,9 +255,9 @@ export function AdminTicketsPage() {
                 </CardDescription>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0">
               {view === "board" ? (
-                <Board>
+                <Board className="max-w-full">
                   {STATUS_COLUMNS.map((column) => {
                     const columnTickets = tickets.filter((ticket) => (ticket.status || "open") === column.value);
                     return (
@@ -316,7 +316,7 @@ export function AdminTicketsPage() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className="h-fit min-w-0">
             <CardHeader>
               <CardTitle>Ticket Actions</CardTitle>
               <CardDescription>Adjust the workflow state and route the ticket to an active support agent.</CardDescription>
@@ -370,13 +370,13 @@ export function AdminTicketsPage() {
         </div>
 
         {selectedTicket ? (
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <Card>
+          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+            <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Conversation</CardTitle>
                 <CardDescription>Review the full thread and send a reply using a customer-facing support name.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="min-w-0 space-y-4">
                 {detailQuery.isLoading ? <p className="text-sm text-slate-500">Loading conversation...</p> : null}
                 {messages.map((entry) => (
                   <div key={entry._id} className={`rounded-lg border p-4 ${entry.senderType === "customer" ? "border-brand-100 bg-brand-50/60" : "border-line bg-slate-50"}`}>
@@ -420,7 +420,7 @@ export function AdminTicketsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="h-fit min-w-0">
               <CardHeader>
                 <CardTitle>Ticket Details</CardTitle>
                 <CardDescription>Customer context and routing details for the selected conversation.</CardDescription>

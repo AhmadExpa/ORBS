@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { env } from "../config/env.js";
 import { assertPdfBuffer, calculateSha256, createPresignedContractDownloadUrl } from "../services/contract-storage-service.js";
-import { normalizeDocumensoStatus } from "../services/documenso-service.js";
+import {
+  extractDocumentFieldValues,
+  mapDocumensoFieldValuesToContractDetails,
+  normalizeDocumensoStatus,
+} from "../services/documenso-service.js";
 import { resetTurnstileReplayCacheForTests, verifyTurnstileToken } from "../services/turnstile-service.js";
 
 const originalFetch = globalThis.fetch;
@@ -101,6 +105,79 @@ test("Documenso status normalization maps completed, rejected, cancelled, and ex
   assert.equal(normalizeDocumensoStatus("declined"), "REJECTED");
   assert.equal(normalizeDocumensoStatus("voided"), "CANCELLED");
   assert.equal(normalizeDocumensoStatus("expired"), "EXPIRED");
+});
+
+test("Documenso completed field extraction keeps signer-entered values", () => {
+  const fields = extractDocumentFieldValues({
+    data: {
+      fields: [
+        {
+          id: 1,
+          type: "TEXT",
+          customText: "Acme Cloud Ltd",
+          fieldMeta: {
+            label: "Business Name",
+          },
+        },
+        {
+          id: 2,
+          type: "SIGNATURE",
+          customText: "signature-data",
+          fieldMeta: {
+            label: "Signature",
+          },
+        },
+        {
+          id: 3,
+          type: "CHECKBOX",
+          fieldMeta: {
+            label: "Agreements",
+            values: [
+              { value: "MSA", checked: true },
+              { value: "Privacy", checked: false },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(fields, [
+    {
+      id: "1",
+      label: "Business Name",
+      type: "TEXT",
+      value: "Acme Cloud Ltd",
+    },
+    {
+      id: "3",
+      label: "Agreements",
+      type: "CHECKBOX",
+      value: "MSA",
+    },
+  ]);
+});
+
+test("Documenso completed field labels map to contract details", () => {
+  const details = mapDocumensoFieldValuesToContractDetails([
+    { label: "Signing as", value: "Business" },
+    { label: "Business Name", value: "Acme Cloud Ltd" },
+    { label: "Job Title", value: "Director" },
+    { label: "Registration Type", value: "Tax ID" },
+    { label: "Business Registration", value: "PK-12345" },
+    { label: "Incorporation Country", value: "Pakistan" },
+    { label: "Phone Number", value: "+92 300 0000000" },
+  ]);
+
+  assert.deepEqual(details, {
+    customerType: "BUSINESS",
+    businessName: "Acme Cloud Ltd",
+    businessRole: "Director",
+    businessRegistrationType: "Tax ID",
+    businessRegistrationNumber: "PK-12345",
+    incorporationCountry: "Pakistan",
+    phone: "+92 300 0000000",
+  });
 });
 
 test("Presigned contract download URLs expire in five minutes", async () => {

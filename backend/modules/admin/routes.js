@@ -49,10 +49,211 @@ const blockUserSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
 });
 
+function isSuspendedOrBlockedCustomer(user) {
+  return ["suspended", "blocked"].includes(user?.accountStatus || "active");
+}
+
+function serializePerson(record, fallbackType = "") {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    id: String(record._id || record.id || ""),
+    name: record.name || "",
+    email: record.email || "",
+    role: record.role || fallbackType,
+    accountStatus: record.accountStatus || "",
+  };
+}
+
 function ensureRole(req, roles) {
   if (!roles.includes(req.staff.role)) {
     throw new HttpError(403, "You do not have permission for this action.");
   }
+}
+
+async function mapById(Model, ids) {
+  const uniqueIds = [...new Set((ids || []).map((id) => String(id || "")).filter(Boolean))];
+  if (!uniqueIds.length) {
+    return new Map();
+  }
+
+  const records = await Model.find({ _id: { $in: uniqueIds } });
+  return new Map(records.map((record) => [String(record._id), record]));
+}
+
+async function mapUsersByClerkId(clerkIds) {
+  const uniqueIds = [...new Set((clerkIds || []).map((id) => String(id || "")).filter(Boolean))];
+  if (!uniqueIds.length) {
+    return new Map();
+  }
+
+  const users = await User.find({ clerkId: { $in: uniqueIds } });
+  return new Map(users.map((user) => [String(user.clerkId), user]));
+}
+
+function logToPlainObject(log) {
+  return log?.toJSON?.() || log;
+}
+
+function targetCustomerId(targetType, targetId, targetMaps) {
+  const id = String(targetId || "");
+  if (!id) {
+    return "";
+  }
+
+  if (targetType === "user") {
+    return id;
+  }
+
+  if (targetType === "support_ticket") {
+    return String(targetMaps.tickets.get(id)?.userId || "");
+  }
+
+  if (targetType === "subscription") {
+    return String(targetMaps.subscriptions.get(id)?.userId || "");
+  }
+
+  if (targetType === "order") {
+    return String(targetMaps.orders.get(id)?.userId || "");
+  }
+
+  if (targetType === "invoice") {
+    return String(targetMaps.invoices.get(id)?.userId || "");
+  }
+
+  if (targetType === "payment_submission") {
+    return String(targetMaps.paymentSubmissions.get(id)?.userId || "");
+  }
+
+  return "";
+}
+
+function targetClerkCustomerId(targetType, targetId, targetMaps) {
+  if (targetType !== "customer_contract") {
+    return "";
+  }
+
+  return String(targetMaps.contracts.get(String(targetId || ""))?.clerkUserId || "");
+}
+
+function resolveTargetLabel(log, targetMaps) {
+  const targetType = String(log.targetType || "");
+  const targetId = String(log.targetId || "");
+
+  if (targetType === "user") {
+    const user = targetMaps.users.get(targetId);
+    return user?.name || user?.email || targetId;
+  }
+
+  if (targetType === "staff_user") {
+    const staff = targetMaps.staffUsers.get(targetId);
+    return staff?.name || staff?.email || targetId;
+  }
+
+  if (targetType === "customer_contract") {
+    return targetMaps.contracts.get(targetId)?.contractNumber || targetId;
+  }
+
+  if (targetType === "support_ticket") {
+    return targetMaps.tickets.get(targetId)?.subject || targetId;
+  }
+
+  if (targetType === "subscription") {
+    return targetMaps.subscriptions.get(targetId)?.productPlanId?.name || targetId;
+  }
+
+  if (targetType === "order") {
+    return targetMaps.orders.get(targetId)?.status || targetId;
+  }
+
+  if (targetType === "invoice") {
+    return targetMaps.invoices.get(targetId)?.invoiceNumber || targetId;
+  }
+
+  if (targetType === "payment_submission") {
+    return targetMaps.paymentSubmissions.get(targetId)?.invoiceCode || targetId;
+  }
+
+  return targetId;
+}
+
+async function enrichActivityLogs(logs) {
+  const plainLogs = logs.map(logToPlainObject);
+  const targetIdsByType = plainLogs.reduce((groups, log) => {
+    const type = String(log.targetType || "");
+    const id = String(log.targetId || "");
+    if (type && id) {
+      groups[type] = [...(groups[type] || []), id];
+    }
+    return groups;
+  }, {});
+  const staffActorIds = plainLogs
+    .filter((log) => ["admin", "support_agent"].includes(log.actorRole))
+    .map((log) => log.actorId);
+  const customerActorIds = plainLogs
+    .filter((log) => log.actorRole === "customer")
+    .map((log) => log.actorId);
+
+  const [staffUsers, directUsers, targetUsers, contracts, tickets, subscriptions, orders, invoices, paymentSubmissions] = await Promise.all([
+    mapById(StaffUser, [...staffActorIds, ...(targetIdsByType.staff_user || [])]),
+    mapById(User, [...customerActorIds, ...(targetIdsByType.user || [])]),
+    mapById(User, targetIdsByType.user || []),
+    mapById(CustomerContract, targetIdsByType.customer_contract || []),
+    mapById(SupportTicket, targetIdsByType.support_ticket || []),
+    mapById(Subscription, targetIdsByType.subscription || []),
+    mapById(Order, targetIdsByType.order || []),
+    mapById(Invoice, targetIdsByType.invoice || []),
+    mapById(PaymentSubmission, targetIdsByType.payment_submission || []),
+  ]);
+
+  const targetMaps = {
+    staffUsers,
+    users: targetUsers,
+    contracts,
+    tickets,
+    subscriptions,
+    orders,
+    invoices,
+    paymentSubmissions,
+  };
+  const linkedCustomerIds = plainLogs
+    .map((log) => targetCustomerId(log.targetType, log.targetId, targetMaps))
+    .filter(Boolean);
+  const contractClerkIds = plainLogs
+    .map((log) => targetClerkCustomerId(log.targetType, log.targetId, targetMaps))
+    .filter(Boolean);
+  const [linkedUsers, clerkUsers] = await Promise.all([
+    mapById(User, linkedCustomerIds),
+    mapUsersByClerkId([
+      ...contractClerkIds,
+      ...plainLogs.filter((log) => log.actorRole === "customer").map((log) => log.actorId),
+    ]),
+  ]);
+
+  return plainLogs.map((log) => {
+    const actorId = String(log.actorId || "");
+    const customerId = targetCustomerId(log.targetType, log.targetId, targetMaps);
+    const customerByClerkId = targetClerkCustomerId(log.targetType, log.targetId, targetMaps);
+    const actor =
+      log.actorRole === "customer"
+        ? directUsers.get(actorId) || clerkUsers.get(actorId)
+        : ["admin", "support_agent"].includes(log.actorRole)
+          ? staffUsers.get(actorId)
+          : null;
+    const customer =
+      log.actorRole === "customer"
+        ? directUsers.get(actorId) || clerkUsers.get(actorId)
+        : linkedUsers.get(customerId) || clerkUsers.get(customerByClerkId) || null;
+
+    return {
+      ...log,
+      actor: serializePerson(actor, log.actorRole),
+      customer: serializePerson(customer, "customer"),
+      targetLabel: resolveTargetLabel(log, targetMaps),
+    };
+  });
 }
 
 async function resolveAssignedSupportAgentId(assignedTo) {
@@ -348,7 +549,9 @@ adminRouter.get(
         },
       })
       .sort({ createdAt: -1 });
-    res.json({ subscriptions });
+    res.json({
+      subscriptions: subscriptions.filter((subscription) => !isSuspendedOrBlockedCustomer(subscription.userId)),
+    });
   }),
 );
 
@@ -367,6 +570,10 @@ adminRouter.patch(
 
     if (!subscription) {
       throw new HttpError(404, "Subscription not found.");
+    }
+
+    if (isSuspendedOrBlockedCustomer(subscription.userId)) {
+      throw new HttpError(403, "Suspended or blocked customer accounts cannot have subscription access managed.");
     }
 
     await requireApprovedContract(subscription.userId?.clerkId);
@@ -676,7 +883,7 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     ensureRole(req, ["admin"]);
     const logs = await ActivityLog.find({}).sort({ createdAt: -1 }).limit(100);
-    res.json({ logs });
+    res.json({ logs: await enrichActivityLogs(logs) });
   }),
 );
 

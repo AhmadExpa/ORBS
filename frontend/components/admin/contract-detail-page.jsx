@@ -41,6 +41,9 @@ export function AdminContractDetailPage({ contractId }) {
 
   const contract = contractQuery.data?.contract;
   const canReview = contract?.status === "SIGNED_PENDING_ADMIN";
+  const signedFieldValues = Array.isArray(contract?.documensoFieldValues)
+    ? contract.documensoFieldValues.filter((field) => field?.value)
+    : [];
 
   async function runAction(nextAction, request) {
     setAction(nextAction);
@@ -153,37 +156,58 @@ export function AdminContractDetailPage({ contractId }) {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contract Details</CardTitle>
-              <CardDescription>Customer, signing, storage, and review metadata.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-              <DetailFact label="Status" value={<StatusBadge status={contract.status} />} />
-              <DetailFact label="Agreement Version" value={`v${contract.templateVersion}`} />
-              <DetailFact label="Customer Name" value={fieldValue(contract.customerName)} />
-              <DetailFact label="Customer Email" value={fieldValue(contract.customerEmail)} />
-              <DetailFact label="Clerk User ID" value={fieldValue(contract.clerkUserId)} />
-              <DetailFact label="Type" value={contract.customerType === "BUSINESS" ? "Business" : "Individual"} />
-              <DetailFact label="Signing Capacity" value={fieldValue(contract.signingCapacity)} />
-              <DetailFact label="Business Name" value={fieldValue(contract.businessName)} />
-              <DetailFact label="Business Role" value={fieldValue(contract.businessRole)} />
-              <DetailFact label="Business Registration" value={fieldValue(contract.businessRegistrationNumber)} />
-              <DetailFact label="Registration Type" value={fieldValue(contract.businessRegistrationType)} />
-              <DetailFact label="Incorporation Country" value={fieldValue(contract.incorporationCountry)} />
-              <DetailFact label="Country" value={fieldValue(contract.country)} />
-              <DetailFact label="Phone" value={fieldValue(contract.phone)} />
-              <DetailFact label="Documenso Document ID" value={fieldValue(contract.documensoDocumentId)} />
-              <DetailFact label="Signing Started" value={formatDate(contract.turnstileVerifiedAt || contract.createdAt)} />
-              <DetailFact label="Signed At" value={formatDate(contract.signedAt)} />
-              <DetailFact label="Admin Reviewed At" value={formatDate(contract.adminReviewedAt)} />
-              <DetailFact label="Admin Reviewed By" value={fieldValue(contract.adminReviewedBy)} />
-              <DetailFact label="SHA-256" value={fieldValue(contract.signedPdfSha256)} />
-              <DetailFact label="Signed PDF Key" value={fieldValue(contract.r2SignedPdfKey)} />
-              <DetailFact label="Audit Certificate Key" value={fieldValue(contract.r2AuditCertificateKey)} />
-              <DetailFact label="Evidence Key" value={fieldValue(contract.r2EvidenceKey)} />
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Contract Details</CardTitle>
+                <CardDescription>Customer, signing, storage, and review metadata.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                <DetailFact label="Status" value={<StatusBadge status={contract.status} />} />
+                <DetailFact label="Agreement Version" value={`v${contract.templateVersion}`} />
+                <DetailFact label="Customer Name" value={fieldValue(contract.customerName)} />
+                <DetailFact label="Customer Email" value={fieldValue(contract.customerEmail)} />
+                <DetailFact label="Clerk User ID" value={fieldValue(contract.clerkUserId)} />
+                <DetailFact label="Type" value={contract.customerType === "BUSINESS" ? "Business" : "Individual"} />
+                <DetailFact label="Signing Capacity" value={fieldValue(contract.signingCapacity)} />
+                <DetailFact label="Business Name" value={fieldValue(contract.businessName)} />
+                <DetailFact label="Business Role" value={fieldValue(contract.businessRole)} />
+                <DetailFact label="Business Registration" value={fieldValue(contract.businessRegistrationNumber)} />
+                <DetailFact label="Registration Type" value={fieldValue(contract.businessRegistrationType)} />
+                <DetailFact label="Incorporation Country" value={fieldValue(contract.incorporationCountry)} />
+                <DetailFact label="Country" value={fieldValue(contract.country)} />
+                <DetailFact label="Phone" value={fieldValue(contract.phone)} />
+                <DetailFact label="Documenso Document ID" value={fieldValue(contract.documensoDocumentId)} />
+                <DetailFact label="Documenso Fields Synced" value={formatDate(contract.documensoFieldValuesSyncedAt)} />
+                <DetailFact label="Signing Started" value={formatDate(contract.turnstileVerifiedAt || contract.createdAt)} />
+                <DetailFact label="Signed At" value={formatDate(contract.signedAt || contract.documensoCompletedAt)} />
+                <DetailFact label="Admin Reviewed At" value={formatDate(contract.adminReviewedAt)} />
+                <DetailFact label="Admin Reviewed By" value={fieldValue(contract.adminReviewedBy)} />
+                <DetailFact label="SHA-256" value={fieldValue(contract.signedPdfSha256)} />
+                <DetailFact label="Signed PDF Key" value={fieldValue(contract.r2SignedPdfKey)} />
+                <DetailFact label="Audit Certificate Key" value={fieldValue(contract.r2AuditCertificateKey)} />
+                <DetailFact label="Evidence Key" value={fieldValue(contract.r2EvidenceKey)} />
+              </CardContent>
+            </Card>
+
+            {signedFieldValues.length ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Signed Form Fields</CardTitle>
+                  <CardDescription>Values returned by Documenso for the completed document.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-2">
+                  {signedFieldValues.map((field, index) => (
+                    <DetailFact
+                      key={`${field.id || field.label || "field"}-${index}`}
+                      label={field.label || field.type || `Field ${index + 1}`}
+                      value={fieldValue(field.value)}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
 
           <Card>
             <CardHeader>

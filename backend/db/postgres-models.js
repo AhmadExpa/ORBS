@@ -246,6 +246,7 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
     adminRejectionReason: "",
     documensoDocumentId: "",
     documensoRecipientId: "",
+    documensoFieldValues: [],
     r2SignedPdfKey: "",
     r2AuditCertificateKey: "",
     r2EvidenceKey: "",
@@ -256,10 +257,13 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
     "signedAt",
     "turnstileVerifiedAt",
     "adminReviewedAt",
+    "documensoCompletedAt",
+    "documensoFieldValuesSyncedAt",
     "storageStartedAt",
     "storedAt",
     "supersededAt",
   ],
+  arrayFields: ["documensoFieldValues"],
 });
 
 export const ContractCounter = createPostgresModel("ContractCounter", {

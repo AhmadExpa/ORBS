@@ -22,6 +22,15 @@ import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
+const HIDDEN_CUSTOMER_STATUSES = new Set(["suspended", "blocked"]);
+
+function customerAccountStatus(subscription) {
+  return subscription?.userId?.accountStatus || "active";
+}
+
+function canShowSubscription(subscription) {
+  return !HIDDEN_CUSTOMER_STATUSES.has(customerAccountStatus(subscription));
+}
 
 function isServerSubscription(subscription) {
   return SERVER_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
@@ -61,7 +70,7 @@ export default function AdminSubscriptionsPage() {
   const [sharedDetails, setSharedDetails] = useState([createDetailRow()]);
   const [state, setState] = useState({ saving: false, message: "", error: "" });
 
-  const subscriptions = data?.subscriptions || [];
+  const subscriptions = (data?.subscriptions || []).filter(canShowSubscription);
 
   const pendingCredentialCount = useMemo(
     () => subscriptions.filter((item) => credentialState(item) === "pending" && !["cancelled", "expired"].includes(item.status)).length,
@@ -223,6 +232,7 @@ export default function AdminSubscriptionsPage() {
                         <p className="mt-0.5 truncate text-xs text-slate-500">
                           {subscription.userId?.name || "Unknown customer"} · {subscription.productPlanId?.categoryId?.name || "Service"}
                         </p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{subscription.userId?.email || "No customer email"}</p>
                       </div>
                       <StatusBadge status={subscription.status} />
                     </div>
@@ -266,6 +276,7 @@ export default function AdminSubscriptionsPage() {
                 <form className="space-y-5" onSubmit={handleSubmit}>
                   <div className="rounded-lg border border-line bg-slate-50/70 p-4 text-sm text-slate-600">
                     <p><span className="font-semibold text-slate-900">Customer:</span> {selectedSubscription.userId?.name || "Unknown"}</p>
+                    <p className="mt-1"><span className="font-semibold text-slate-900">Email:</span> {selectedSubscription.userId?.email || "No customer email"}</p>
                     <p className="mt-1"><span className="font-semibold text-slate-900">Plan:</span> {selectedSubscription.productPlanId?.name || "Managed service"} · {selectedSubscription.productPlanId?.categoryId?.name || "Service"}</p>
                     {selectedSubscription.serviceAccess?.assignedAt ? (
                       <p className="mt-1"><span className="font-semibold text-slate-900">Access updated:</span> {new Date(selectedSubscription.serviceAccess.assignedAt).toLocaleString()}</p>

@@ -9,8 +9,9 @@ import {
   downloadAuditCertificate,
   downloadCompletedDocument,
   ensureDocumentDistributedForSigning,
-  getDocumentStatus,
+  getDocumentCompletionDetails,
   getRecipientSigningUrl,
+  mapDocumensoFieldValuesToContractDetails,
 } from "./documenso-service.js";
 import {
   createPresignedContractDownloadUrl,
@@ -145,6 +146,103 @@ async function insertContract(data) {
 
 function normalizeContractDetail(value) {
   return String(value || "").trim();
+}
+
+const documensoDetailLimits = {
+  customerName: 160,
+  customerEmail: 254,
+  businessName: 160,
+  signingCapacity: 120,
+  businessRole: 120,
+  businessRegistrationType: 80,
+  businessRegistrationNumber: 120,
+  incorporationCountry: 80,
+  country: 80,
+  phone: 40,
+};
+
+function normalizeDocumensoContractDetail(key, value) {
+  if (key === "customerType") {
+    return value === "BUSINESS" ? "BUSINESS" : value === "INDIVIDUAL" ? "INDIVIDUAL" : "";
+  }
+
+  const limit = documensoDetailLimits[key] || 200;
+  return normalizeContractDetail(value).slice(0, limit);
+}
+
+function buildDocumensoFieldUpdateSet(fieldValues = [], completedAt = null) {
+  const updateSet = {};
+
+  if (Array.isArray(fieldValues)) {
+    const normalizedFields = fieldValues
+      .map((field) => ({
+        id: normalizeContractDetail(field?.id).slice(0, 120),
+        label: normalizeContractDetail(field?.label).slice(0, 160),
+        type: normalizeContractDetail(field?.type).slice(0, 40),
+        value: normalizeContractDetail(field?.value).slice(0, 1000),
+      }))
+      .filter((field) => field.value);
+    const mappedDetails = mapDocumensoFieldValuesToContractDetails(normalizedFields);
+
+    updateSet.documensoFieldValues = normalizedFields;
+    updateSet.documensoFieldValuesSyncedAt = new Date();
+
+    for (const [key, value] of Object.entries(mappedDetails)) {
+      const normalized = normalizeDocumensoContractDetail(key, value);
+      if (normalized) {
+        updateSet[key] = normalized;
+      }
+    }
+  }
+
+  if (completedAt) {
+    updateSet.documensoCompletedAt = completedAt;
+  }
+
+  return updateSet;
+}
+
+function contractUpdateChanged(contract, updateSet) {
+  return Object.entries(updateSet).some(([key, value]) => {
+    if (Array.isArray(value)) {
+      return JSON.stringify(contract?.[key] || []) !== JSON.stringify(value);
+    }
+    if (value instanceof Date) {
+      return true;
+    }
+    return String(contract?.[key] || "") !== String(value || "");
+  });
+}
+
+async function resolveCompletedDocumensoDetails(contract, details = {}) {
+  if (Array.isArray(details.fieldValues)) {
+    return details;
+  }
+
+  try {
+    return await getDocumentCompletionDetails(contract.documensoDocumentId);
+  } catch (error) {
+    console.warn("Unable to sync completed Documenso field values", {
+      contractId: String(contract._id),
+      documensoDocumentId: String(contract.documensoDocumentId || ""),
+      message: error.message,
+    });
+    return {
+      fieldValues: null,
+      completedAt: null,
+    };
+  }
+}
+
+async function syncCompletedDocumensoFields(contract, details = {}) {
+  const completedDetails = await resolveCompletedDocumensoDetails(contract, details);
+  const updateSet = buildDocumensoFieldUpdateSet(completedDetails.fieldValues, completedDetails.completedAt);
+
+  if (!contractUpdateChanged(contract, updateSet)) {
+    return contract;
+  }
+
+  return CustomerContract.findByIdAndUpdate(contract._id, { $set: updateSet }, { new: true });
 }
 
 function buildCustomerContractDetails(payload = {}) {
@@ -613,7 +711,7 @@ async function acquireStorageContract(contractId) {
   return result.rows[0]?.id ? CustomerContract.findById(result.rows[0].id) : null;
 }
 
-export async function processCompletedContract(contractOrId, { actorRole = "system" } = {}) {
+export async function processCompletedContract(contractOrId, { actorRole = "system", documensoDetails = null } = {}) {
   const contractId = typeof contractOrId === "object" ? contractOrId._id : contractOrId;
   const existing = typeof contractOrId === "object" ? contractOrId : await CustomerContract.findById(contractId);
   if (!existing) {
@@ -621,13 +719,17 @@ export async function processCompletedContract(contractOrId, { actorRole = "syst
   }
 
   if (["SIGNED_PENDING_ADMIN", "APPROVED", "REJECTED"].includes(existing.status) && existing.r2SignedPdfKey) {
-    return existing;
+    return syncCompletedDocumensoFields(existing, documensoDetails || {});
   }
 
   const contract = await acquireStorageContract(existing._id);
   if (!contract) {
-    return CustomerContract.findById(existing._id);
+    const current = await CustomerContract.findById(existing._id);
+    return current ? syncCompletedDocumensoFields(current, documensoDetails || {}) : current;
   }
+
+  const completedDetails = await resolveCompletedDocumensoDetails(contract, documensoDetails || {});
+  const documensoFieldUpdateSet = buildDocumensoFieldUpdateSet(completedDetails.fieldValues, completedDetails.completedAt);
 
   await recordActivity({
     actorId: contract.clerkUserId,
@@ -670,6 +772,7 @@ export async function processCompletedContract(contractOrId, { actorRole = "syst
         r2AuditCertificateKey: stored.auditCertificateKey,
         r2EvidenceKey: stored.evidenceKey,
         signedPdfSha256: stored.sha256,
+        ...documensoFieldUpdateSet,
       },
     },
     { new: true },
@@ -711,9 +814,15 @@ export async function syncContractWithDocumenso({ contractId, auth, staff }) {
     return normalizeContractForResponse(contract);
   }
 
-  const status = statusFromDocumensoEvent("", await getDocumentStatus(contract.documensoDocumentId));
+  const completionDetails = await getDocumentCompletionDetails(contract.documensoDocumentId);
+  const status = statusFromDocumensoEvent("", completionDetails.status);
   if (status === "COMPLETED") {
-    return normalizeContractForResponse(await processCompletedContract(contract, { actorRole: staff ? "admin" : "customer" }));
+    return normalizeContractForResponse(
+      await processCompletedContract(contract, {
+        actorRole: staff ? "admin" : "customer",
+        documensoDetails: completionDetails,
+      }),
+    );
   }
 
   if (["REJECTED", "CANCELLED", "EXPIRED"].includes(status) && contract.status === "PENDING_SIGNATURE") {
