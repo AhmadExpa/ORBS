@@ -5,7 +5,7 @@ import { Activity, LockKeyhole, ShieldCheck, UsersRound } from "lucide-react";
 export default function StandaloneAdminLoginPage() {
   return (
     <div className="min-h-screen bg-[#f6f5f2] text-slate-950">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1440px] grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.75fr)]">
+      <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.84fr)]">
         <section className="relative hidden overflow-hidden bg-[#0f1115] p-8 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] [background-size:64px_64px]" />
           <div className="relative">
