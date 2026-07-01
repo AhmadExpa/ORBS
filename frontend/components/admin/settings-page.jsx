@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, TextArea, TextInput } from "@/lib/ui";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
@@ -20,12 +20,29 @@ export function SettingsPage() {
     password: "",
     role: "support_agent",
   });
-  const [companyValue, setCompanyValue] = useState("");
+  const [companyForm, setCompanyForm] = useState({
+    companyName: "",
+    supportEmail: "",
+    notes: "",
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
   });
   const [state, setState] = useState({ saving: false, message: "", error: "" });
+  const companyProfileSetting = useMemo(
+    () => (data?.settings || []).find((setting) => setting.key === "company-profile") || null,
+    [data],
+  );
+
+  useEffect(() => {
+    const value = companyProfileSetting?.value || {};
+    setCompanyForm({
+      companyName: value.companyName || "",
+      supportEmail: value.supportEmail || "",
+      notes: value.notes || "",
+    });
+  }, [companyProfileSetting?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleStaffCreate(event) {
     event.preventDefault();
@@ -67,7 +84,9 @@ export function SettingsPage() {
         body: {
           group: "general",
           value: {
-            notes: companyValue,
+            companyName: companyForm.companyName.trim(),
+            supportEmail: companyForm.supportEmail.trim(),
+            notes: companyForm.notes.trim(),
           },
         },
       });
@@ -154,22 +173,48 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>General Settings</CardTitle>
-            <CardDescription>Store lightweight portal-wide settings in `AdminSetting`.</CardDescription>
+            <CardDescription>Manage the company profile shown across admin and portal workflows.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form className="space-y-4" onSubmit={handleCompanyProfileUpdate}>
-              <TextArea placeholder="Company profile notes or deployment notes" value={companyValue} onChange={(event) => setCompanyValue(event.target.value)} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextInput
+                  placeholder="Company name"
+                  value={companyForm.companyName}
+                  onChange={(event) => setCompanyForm((current) => ({ ...current, companyName: event.target.value }))}
+                />
+                <TextInput
+                  type="email"
+                  placeholder="Support email"
+                  value={companyForm.supportEmail}
+                  onChange={(event) => setCompanyForm((current) => ({ ...current, supportEmail: event.target.value }))}
+                />
+              </div>
+              <TextArea
+                placeholder="Company profile notes or deployment notes"
+                value={companyForm.notes}
+                onChange={(event) => setCompanyForm((current) => ({ ...current, notes: event.target.value }))}
+              />
               <Button type="submit" disabled={state.saving}>
                 Save Setting
               </Button>
             </form>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              {(data?.settings || []).map((setting) => (
-                <p key={setting._id}>
-                  <span className="font-semibold text-slate-900">{setting.key}:</span> {JSON.stringify(setting.value)}
-                </p>
-              ))}
-            </div>
+            {companyProfileSetting ? (
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company Name</p>
+                  <p className="mt-1 font-semibold text-slate-900">{companyProfileSetting.value?.companyName || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Support Email</p>
+                  <p className="mt-1 font-semibold text-slate-900">{companyProfileSetting.value?.supportEmail || "Not set"}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</p>
+                  <p className="mt-1 whitespace-pre-wrap text-slate-700">{companyProfileSetting.value?.notes || "No notes saved."}</p>
+                </div>
+              </div>
+            ) : null}
             {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
             {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
           </CardContent>
