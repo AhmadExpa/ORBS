@@ -6,6 +6,7 @@ import {
   ActivityLog,
   AdminSetting,
   Invoice,
+  Order,
   PaymentSubmission,
   ProductPlan,
   ServiceCategory,
