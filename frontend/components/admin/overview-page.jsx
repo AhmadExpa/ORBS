@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BadgeDollarSign, FileSignature, Package, Receipt, TicketCheck, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BadgeDollarSign, FileSignature, Package, Receipt, TicketCheck, TrendingUp, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import { MetricGrid } from "@/components/shared/metric-grid";
@@ -50,7 +50,7 @@ export function AdminOverviewPage() {
         {/* Needs attention */}
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">Needs attention</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <AttentionCard
               icon={FileSignature}
               tone="amber"
@@ -66,6 +66,14 @@ export function AdminOverviewPage() {
               value={attention.openTickets || 0}
               hint="Open or waiting on the team"
               href="/eo-admin/tickets"
+            />
+            <AttentionCard
+              icon={AlertTriangle}
+              tone="rose"
+              label="Disputed payments"
+              value={attention.disputedPayments || 0}
+              hint="Card disputes and chargebacks"
+              href="/eo-admin/disputes"
             />
             <AttentionCard
               icon={Receipt}

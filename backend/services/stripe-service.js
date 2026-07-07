@@ -365,6 +365,7 @@ export async function createOffSessionCharge({ user, amount, description, metada
     off_session: true,
     description,
     metadata: normalizeMetadata(metadata),
+    expand: ["latest_charge"],
   });
 }
 
@@ -382,7 +383,7 @@ export async function retrieveCheckoutSession(sessionId) {
   assertStripeConfigured();
 
   return stripe.checkout.sessions.retrieve(sessionId, {
-    expand: ["payment_intent.payment_method", "setup_intent.payment_method"],
+    expand: ["payment_intent.payment_method", "payment_intent.latest_charge", "setup_intent.payment_method"],
   });
 }
 
@@ -390,7 +391,15 @@ export async function retrievePaymentIntent(paymentIntentId) {
   assertStripeConfigured();
 
   return stripe.paymentIntents.retrieve(paymentIntentId, {
-    expand: ["payment_method"],
+    expand: ["payment_method", "latest_charge"],
+  });
+}
+
+export async function retrieveCharge(chargeId) {
+  assertStripeConfigured();
+
+  return stripe.charges.retrieve(chargeId, {
+    expand: ["payment_intent"],
   });
 }
 

@@ -54,6 +54,18 @@ function isSuspendedOrBlockedCustomer(user) {
   return ["suspended", "blocked"].includes(user?.accountStatus || "active");
 }
 
+function normalizeDocumentId(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "object") {
+    return value._id ? String(value._id) : "";
+  }
+
+  return String(value);
+}
+
 function serializePerson(record, fallbackType = "") {
   if (!record) {
     return null;
@@ -270,12 +282,60 @@ async function resolveAssignedSupportAgentId(assignedTo) {
   return assignedStaff._id;
 }
 
+async function findInvoicesForDisputedPayments(submissions) {
+  const paymentReferences = [
+    ...new Set(
+      submissions
+        .flatMap((submission) => [submission.invoiceCode, submission.gatewayPaymentId])
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const orderIds = [
+    ...new Set(
+      submissions
+        .map((submission) => normalizeDocumentId(submission.orderId))
+        .filter(Boolean),
+    ),
+  ];
+  const filters = [];
+
+  if (paymentReferences.length) {
+    filters.push({ paymentReferenceCode: { $in: paymentReferences } });
+  }
+
+  if (orderIds.length) {
+    filters.push({ orderId: { $in: orderIds } });
+  }
+
+  if (!filters.length) {
+    return new Map();
+  }
+
+  const invoices = await Invoice.find(filters.length === 1 ? filters[0] : { $or: filters }).populate("userId subscriptionId orderId");
+  const invoiceMap = new Map();
+
+  for (const invoice of invoices) {
+    if (invoice.paymentReferenceCode) {
+      invoiceMap.set(`reference:${invoice.paymentReferenceCode}`, invoice);
+    }
+
+    const orderId = normalizeDocumentId(invoice.orderId);
+    if (orderId) {
+      invoiceMap.set(`order:${orderId}`, invoice);
+    }
+  }
+
+  return invoiceMap;
+}
+
 adminRouter.get(
   "/analytics/summary",
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals();
 
-    const [usersCount, subscriptions, paymentSubmissions, openTickets, allInvoices, pendingContractCount, openTicketCount] =
+    const disputedStatuses = ["disputed", "charged_back"];
+    const [usersCount, subscriptions, paymentSubmissions, openTickets, allInvoices, pendingContractCount, openTicketCount, disputedPaymentCount] =
       await Promise.all([
         User.countDocuments(),
         Subscription.find({}),
@@ -284,6 +344,7 @@ adminRouter.get(
         Invoice.find({}),
         CustomerContract.countDocuments({ status: "SIGNED_PENDING_ADMIN" }),
         SupportTicket.countDocuments({ status: { $in: ["open", "pending"] } }),
+        PaymentSubmission.countDocuments({ status: { $in: disputedStatuses } }),
       ]);
 
     const monthlyRecurringRevenue = subscriptions
@@ -309,6 +370,7 @@ adminRouter.get(
       attention: {
         pendingContracts: pendingContractCount,
         openTickets: openTicketCount,
+        disputedPayments: disputedPaymentCount,
         unpaidInvoices: unpaidInvoices.length,
         unpaidInvoiceTotal,
       },
@@ -724,6 +786,71 @@ adminRouter.patch(
   requireAdmin,
   asyncHandler(async (req, res) => {
     throw new HttpError(410, "Legacy payment review is no longer supported. Card payments are recorded automatically.");
+  }),
+);
+
+adminRouter.get(
+  "/disputes",
+  asyncHandler(async (req, res) => {
+    ensureRole(req, ["admin", "support_agent"]);
+
+    const submissions = await PaymentSubmission.find({ stripeDisputeId: { $exists: true, $ne: "" } })
+      .populate("userId")
+      .populate({
+        path: "subscriptionId",
+        populate: {
+          path: "productPlanId",
+        },
+      })
+      .populate({
+        path: "orderId",
+        populate: {
+          path: "productPlanId",
+        },
+      })
+      .sort({ disputedAt: -1, submittedAt: -1 });
+    const disputedSubmissions = submissions.filter((submission) => submission.stripeDisputeId);
+    const invoiceMap = await findInvoicesForDisputedPayments(disputedSubmissions);
+    const disputes = disputedSubmissions.map((submission) => {
+      const invoice =
+        invoiceMap.get(`reference:${submission.invoiceCode || ""}`) ||
+        invoiceMap.get(`reference:${submission.gatewayPaymentId || ""}`) ||
+        invoiceMap.get(`order:${normalizeDocumentId(submission.orderId)}`) ||
+        null;
+
+      return {
+        id: String(submission._id),
+        submission,
+        invoice,
+        customer: submission.userId || invoice?.userId || null,
+        subscription: submission.subscriptionId || invoice?.subscriptionId || null,
+        order: submission.orderId || invoice?.orderId || null,
+        disputeId: submission.stripeDisputeId,
+        disputeStatus: submission.stripeDisputeStatus || "",
+        disputeReason: submission.stripeDisputeReason || "",
+        disputeAmount: submission.stripeDisputeAmount || submission.amount || 0,
+        disputeCurrency: submission.stripeDisputeCurrency || env.stripeCurrency.toUpperCase(),
+        dueBy: submission.stripeDisputeDueBy || null,
+        disputedAt: submission.disputedAt || submission.submittedAt,
+        resolvedAt: submission.disputeResolvedAt || null,
+        paymentStatus: submission.status,
+        paymentIntentId: submission.gatewayPaymentId || "",
+        chargeId: submission.gatewayChargeId || "",
+        adminRemarks: submission.adminRemarks || "",
+      };
+    });
+
+    const now = new Date();
+    const summary = {
+      total: disputes.length,
+      open: disputes.filter((dispute) => dispute.paymentStatus === "disputed").length,
+      chargedBack: disputes.filter((dispute) => dispute.paymentStatus === "charged_back").length,
+      resolved: disputes.filter((dispute) => dispute.paymentStatus === "approved").length,
+      evidenceDue: disputes.filter((dispute) => dispute.paymentStatus === "disputed" && dispute.dueBy).length,
+      overdue: disputes.filter((dispute) => dispute.paymentStatus === "disputed" && dispute.dueBy && new Date(dispute.dueBy) < now).length,
+    };
+
+    res.json({ disputes, summary });
   }),
 );
 

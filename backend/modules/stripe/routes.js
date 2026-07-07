@@ -19,6 +19,7 @@ import {
   updateUserCardAutoBilling,
   updateUserDefaultPaymentMethod,
 } from "../../services/stripe-service.js";
+import { handleStripeDisputeEvent } from "../../services/stripe-dispute-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { recordActivity } from "../../services/activity-log-service.js";
@@ -47,7 +48,11 @@ function normalizePaymentMethodId(paymentMethod) {
   return typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id || "";
 }
 
-async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionId }) {
+function normalizeChargeId(charge) {
+  return typeof charge === "string" ? charge : charge?.id || "";
+}
+
+async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionId, chargeId }) {
   const filters = [];
 
   if (paymentIntentId) {
@@ -56,6 +61,10 @@ async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionI
 
   if (checkoutSessionId) {
     filters.push({ gatewayCheckoutSessionId: checkoutSessionId });
+  }
+
+  if (chargeId) {
+    filters.push({ gatewayChargeId: chargeId });
   }
 
   if (!filters.length) {
@@ -106,7 +115,7 @@ async function findOrderPaymentContext({ orderId, userId }) {
   return { order, subscription, invoice };
 }
 
-async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
+async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
     await requireApprovedContract(user.clerkId);
@@ -119,6 +128,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
     const existingSubmission = await findExistingGatewaySubmission({
       paymentIntentId,
       checkoutSessionId,
+      chargeId,
     });
     if (existingSubmission) {
       return { submission: existingSubmission, shouldNotify: false };
@@ -192,6 +202,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       gateway: "stripe",
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
+      gatewayChargeId: chargeId,
       submittedAt: new Date(),
       reviewedAt: new Date(),
     });
@@ -229,7 +240,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
   return result.submission;
 }
 
-async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", metadata, user, paymentMethodId, customerId }) {
+async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
     await requireApprovedContract(user.clerkId);
@@ -237,6 +248,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
     const existingSubmission = await findExistingGatewaySubmission({
       paymentIntentId,
       checkoutSessionId,
+      chargeId,
     });
     if (existingSubmission) {
       return { submission: existingSubmission, amount: existingSubmission.amount, shouldNotify: false };
@@ -270,6 +282,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       gateway: "stripe",
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
+      gatewayChargeId: chargeId,
       submittedAt: new Date(),
       reviewedAt: new Date(),
     });
@@ -340,6 +353,7 @@ async function finalizeCheckoutSession({ session, user }) {
 
   const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
   const paymentMethodId = normalizePaymentMethodId(session.payment_intent?.payment_method);
+  const chargeId = normalizeChargeId(session.payment_intent?.latest_charge);
   const setupIntentId = typeof session.setup_intent === "string" ? session.setup_intent : session.setup_intent?.id;
   const setupPaymentMethodId = normalizePaymentMethodId(session.setup_intent?.payment_method);
   const customerId = normalizeCustomerId(session.customer);
@@ -352,6 +366,7 @@ async function finalizeCheckoutSession({ session, user }) {
     const submission = await finalizeStripeWalletTopup({
       paymentIntentId,
       checkoutSessionId: session.id,
+      chargeId,
       metadata: session.metadata,
       user,
       paymentMethodId,
@@ -369,6 +384,7 @@ async function finalizeCheckoutSession({ session, user }) {
     const submission = await finalizeStripeOrderPayment({
       paymentIntentId,
       checkoutSessionId: session.id,
+      chargeId,
       metadata: session.metadata,
       user,
       paymentMethodId,
@@ -402,10 +418,12 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
 
   const paymentMethodId = normalizePaymentMethodId(paymentIntent.payment_method);
   const customerId = normalizeCustomerId(paymentIntent.customer);
+  const chargeId = normalizeChargeId(paymentIntent.latest_charge);
 
   if (metadataType === "wallet_topup") {
     const submission = await finalizeStripeWalletTopup({
       paymentIntentId: paymentIntent.id,
+      chargeId,
       metadata: paymentIntent.metadata,
       user,
       paymentMethodId,
@@ -418,6 +436,7 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
   if (metadataType === "order_payment") {
     const submission = await finalizeStripeOrderPayment({
       paymentIntentId: paymentIntent.id,
+      chargeId,
       metadata: paymentIntent.metadata,
       user,
       paymentMethodId,
@@ -850,6 +869,13 @@ stripeWebhookRouter.post(
       if (user && setupIntent.metadata?.type === "card_setup") {
         await finalizeSetupIntent({ setupIntent, user });
       }
+    }
+
+    if (event.type.startsWith("charge.dispute.")) {
+      await handleStripeDisputeEvent({
+        dispute: event.data.object,
+        eventType: event.type,
+      });
     }
 
     res.json({ received: true });

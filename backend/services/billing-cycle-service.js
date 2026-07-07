@@ -21,6 +21,18 @@ function buildRenewalBillingCode(date) {
   return `renewal_${date.toISOString().slice(0, 10)}`;
 }
 
+function normalizeStripeId(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value.id || "";
+}
+
 const renewalSweepIntervalMs = 5 * 60 * 1000;
 let renewalSweepTimer = null;
 let renewalSweepInFlight = false;
@@ -228,6 +240,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
                   : "Automatic renewal collected using the saved Stripe card.",
               gateway: "stripe",
               gatewayPaymentId: paymentIntent.id,
+              gatewayChargeId: normalizeStripeId(paymentIntent.latest_charge),
               submittedAt: new Date(),
               reviewedAt: new Date(),
             });

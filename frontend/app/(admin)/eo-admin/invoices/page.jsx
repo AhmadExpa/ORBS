@@ -25,6 +25,15 @@ export default function AdminInvoicesPage() {
             { key: "customer", label: "Customer", render: (row) => row.userId?.name || "Unknown" },
             { key: "amount", label: "Amount", render: (row) => formatCurrency(row.amount) },
             { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
+            { key: "paymentReferenceCode", label: "Payment Ref", render: (row) => row.paymentReferenceCode || "Pending" },
+            {
+              key: "stripeDisputeReason",
+              label: "Dispute",
+              render: (row) =>
+                row.stripeDisputeId
+                  ? `${String(row.stripeDisputeReason || "general").replaceAll("_", " ")} / ${String(row.stripeDisputeStatus || "open").replaceAll("_", " ")}`
+                  : "None",
+            },
             {
               key: "actions",
               label: "Actions",

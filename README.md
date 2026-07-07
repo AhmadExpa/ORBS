@@ -58,9 +58,15 @@ This repository contains a Next.js frontend in `frontend/` and an Express backen
 
 13. Verify Stripe checkout/order/payment flows are unlocked only after approval.
 
-14. Verify a second customer cannot access the first customer PDF download endpoint.
+14. Configure the Stripe webhook endpoint at:
+   ```text
+   https://api.elevenorbits.com/api/v1/stripe/webhook
+   ```
+   Include checkout, payment intent, setup intent, and dispute events. At minimum, dispute handling requires `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`, `charge.dispute.funds_withdrawn`, and `charge.dispute.funds_reinstated`.
 
-15. Verify a non-approved customer cannot call Stripe or order APIs directly; the backend must return `403` with `CONTRACT_APPROVAL_REQUIRED`.
+15. Verify a second customer cannot access the first customer PDF download endpoint.
+
+16. Verify a non-approved customer cannot call Stripe or order APIs directly; the backend must return `403` with `CONTRACT_APPROVAL_REQUIRED`.
 
 ### Scheduled Sync
 

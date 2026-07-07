@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Activity,
+  AlertTriangle,
   BadgeDollarSign,
   Boxes,
   CreditCard,
@@ -26,6 +27,7 @@ const rootSectionHrefs = new Set(["/portal", "/eo-admin"]);
 
 const iconMap = {
   activity: Activity,
+  "alert-triangle": AlertTriangle,
   "badge-dollar-sign": BadgeDollarSign,
   boxes: Boxes,
   "credit-card": CreditCard,

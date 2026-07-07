@@ -15,6 +15,8 @@ const documentIndexes = [
   ["eo_documents_collection_invoice_number_idx", "collection, (data->>'invoiceNumber')"],
   ["eo_documents_collection_gateway_payment_idx", "collection, (data->>'gatewayPaymentId')"],
   ["eo_documents_collection_gateway_checkout_idx", "collection, (data->>'gatewayCheckoutSessionId')"],
+  ["eo_documents_collection_gateway_charge_idx", "collection, (data->>'gatewayChargeId')"],
+  ["eo_documents_collection_stripe_dispute_idx", "collection, (data->>'stripeDisputeId')"],
   ["eo_documents_collection_renewal_date_idx", "collection, (data->>'renewalDate')"],
   ["eo_documents_collection_submitted_at_idx", "collection, (data->>'submittedAt') DESC"],
   ["eo_documents_collection_issued_at_idx", "collection, (data->>'issuedAt') DESC"],
@@ -65,6 +67,16 @@ const uniqueDocumentIndexes = [
     "eo_documents_submission_gateway_checkout_unique_idx",
     "(data->>'gatewayCheckoutSessionId')",
     "collection = 'payment_submissions' AND COALESCE(data->>'gatewayCheckoutSessionId', '') <> ''",
+  ],
+  [
+    "eo_documents_submission_gateway_charge_unique_idx",
+    "(data->>'gatewayChargeId')",
+    "collection = 'payment_submissions' AND COALESCE(data->>'gatewayChargeId', '') <> ''",
+  ],
+  [
+    "eo_documents_submission_stripe_dispute_unique_idx",
+    "(data->>'stripeDisputeId')",
+    "collection = 'payment_submissions' AND COALESCE(data->>'stripeDisputeId', '') <> ''",
   ],
   [
     "eo_documents_contract_number_unique_idx",
