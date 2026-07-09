@@ -9,6 +9,7 @@
     "seed": "node seed.js",
     "test": "node --test test/*.test.js",
     "documenso:list-templates": "node scripts/documenso-list-templates.js",
+    "documenso:verify-template": "node scripts/documenso-verify-template.js",
     "r2:test": "node scripts/r2-test.js"
   },
   "dependencies": {

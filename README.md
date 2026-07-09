@@ -26,6 +26,12 @@ This repository contains a Next.js frontend in `frontend/` and an Express backen
    npm run documenso:list-templates
    ```
    Set `DOCUMENSO_TEMPLATE_ID` and `DOCUMENSO_TEMPLATE_RECIPIENT_ID` in `backend/.env`.
+   `DOCUMENSO_TEMPLATE_RECIPIENT_ID` can be the recipient `id` returned by Documenso for the template.
+   Verify the configured pair without creating a document:
+   ```bash
+   cd backend
+   npm run documenso:verify-template
+   ```
 
 5. Configure the optional Documenso webhook to post to:
    ```text
