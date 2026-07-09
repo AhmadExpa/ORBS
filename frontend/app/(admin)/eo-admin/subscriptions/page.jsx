@@ -23,6 +23,7 @@ import { apiFetch } from "@/lib/api/client";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
 const EDGE_STORAGE_CATEGORY_SLUGS = new Set(["cdn", "object-storage"]);
+const APP_HOSTING_CATEGORY_SLUGS = new Set(["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"]);
 const HIDDEN_CUSTOMER_STATUSES = new Set(["suspended", "blocked"]);
 
 function customerAccountStatus(subscription) {
@@ -41,12 +42,16 @@ function isEdgeStorageSubscription(subscription) {
   return EDGE_STORAGE_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
 }
 
+function isAppHostingSubscription(subscription) {
+  return APP_HOSTING_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
+}
+
 function hasAccessAssigned(subscription) {
   return Boolean(subscription?.serviceAccess?.username || subscription?.serviceAccess?.password || subscription?.serviceAccess?.ipAddress);
 }
 
 function credentialState(subscription) {
-  if (!isServerSubscription(subscription)) {
+  if (!isServerSubscription(subscription) && !isAppHostingSubscription(subscription)) {
     return "na";
   }
   return hasAccessAssigned(subscription) ? "assigned" : "pending";
@@ -92,6 +97,9 @@ export default function AdminSubscriptionsPage() {
         return false;
       }
       if (filter === "edge-storage" && !isEdgeStorageSubscription(sub)) {
+        return false;
+      }
+      if (filter === "app-hosting" && !isAppHostingSubscription(sub)) {
         return false;
       }
       if (["active", "cancelled", "expired"].includes(filter) && sub.status !== filter) {
@@ -164,9 +172,19 @@ export default function AdminSubscriptionsPage() {
 
   const selectedIsServer = isServerSubscription(selectedSubscription);
   const selectedIsEdgeStorage = isEdgeStorageSubscription(selectedSubscription);
+  const selectedIsAppHosting = isAppHostingSubscription(selectedSubscription);
+  const selectedUsesAccess = selectedIsServer || selectedIsAppHosting;
   const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
-  const detailLabelPlaceholder = selectedIsEdgeStorage ? "CDN hostname / S3 endpoint" : "Label";
-  const detailValuePlaceholder = selectedIsEdgeStorage ? "cdn.example.com / s3.example.com" : "Value";
+  const detailLabelPlaceholder = selectedIsAppHosting
+    ? "App URL / SSH host / Setup status"
+    : selectedIsEdgeStorage
+      ? "CDN hostname / S3 endpoint"
+      : "Label";
+  const detailValuePlaceholder = selectedIsAppHosting
+    ? "https://app.example.com / 203.0.113.10 / Ready"
+    : selectedIsEdgeStorage
+      ? "cdn.example.com / s3.example.com"
+      : "Value";
 
   if (isLoading && !data) {
     return <PageLoader title="Loading subscriptions" subtitle="Gathering subscriptions and provisioning details…" />;
@@ -176,7 +194,7 @@ export default function AdminSubscriptionsPage() {
     <div>
       <Topbar
         title="Subscriptions & Services"
-        subtitle="Assign VPS/VDS credentials and publish service details for CDN, Object Storage, and other managed subscriptions."
+        subtitle="Assign VPS/VDS credentials and publish app, CDN, storage, and managed service details to the customer's portal."
       />
       <div className="p-6 md:p-8">
         {pendingCredentialCount > 0 ? (
@@ -186,7 +204,7 @@ export default function AdminSubscriptionsPage() {
             className="mb-6 flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
           >
             <KeyRound className="h-4 w-4" />
-            {pendingCredentialCount} active VPS/VDS subscription{pendingCredentialCount === 1 ? "" : "s"} still need server credentials - click to filter.
+            {pendingCredentialCount} active server or app subscription{pendingCredentialCount === 1 ? "" : "s"} still need access details - click to filter.
           </button>
         ) : null}
 
@@ -214,6 +232,7 @@ export default function AdminSubscriptionsPage() {
                     <option value="needs-credentials">Needs credentials</option>
                     <option value="servers">VPS / VDS only</option>
                     <option value="edge-storage">CDN / Storage only</option>
+                    <option value="app-hosting">Apps / Agents only</option>
                     <option value="active">Active</option>
                     <option value="cancelled">Cancelled</option>
                     <option value="expired">Expired</option>
@@ -256,7 +275,7 @@ export default function AdminSubscriptionsPage() {
                         </span>
                       ) : cred === "pending" ? (
                         <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">
-                          <KeyRound className="h-3 w-3" /> Needs credentials
+                          <KeyRound className="h-3 w-3" /> Needs access
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
@@ -304,15 +323,21 @@ export default function AdminSubscriptionsPage() {
                     </p>
                   </div>
 
-                  {selectedIsServer ? (
+                  {selectedUsesAccess ? (
                     <div className="space-y-4 rounded-lg border border-line p-4">
                       <div className="flex items-start gap-2.5">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
-                          <Server className="h-4 w-4" />
+                          {selectedIsAppHosting ? <Cloud className="h-4 w-4" /> : <Server className="h-4 w-4" />}
                         </span>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900">Server access (VPS / VDS)</h3>
-                          <p className="mt-0.5 text-xs leading-5 text-slate-500">Shown to the customer on this subscription. Fill all three to mark credentials as assigned.</p>
+                          <h3 className="text-sm font-semibold text-slate-900">
+                            {selectedIsAppHosting ? "Application and server access" : "Server access (VPS / VDS)"}
+                          </h3>
+                          <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                            {selectedIsAppHosting
+                              ? "Shown to the customer on this subscription. Use shared details below for app URL, setup status, provider notes, and admin handoff fields."
+                              : "Shown to the customer on this subscription. Fill all three to mark credentials as assigned."}
+                          </p>
                         </div>
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -337,7 +362,9 @@ export default function AdminSubscriptionsPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-900">Shared details</h3>
                         <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                          {selectedIsEdgeStorage
+                          {selectedIsAppHosting
+                            ? "Use these fields for app URL, setup status, admin dashboard, SSH tunnel notes, model/provider details, backup status, domain, and integration handoff."
+                            : selectedIsEdgeStorage
                             ? "Use these fields for CDN hostnames, origins, cache notes, storage region, bucket endpoints, ACL notes, and API access handoff."
                             : "Custom label/value pairs the customer sees in the portal."}
                         </p>

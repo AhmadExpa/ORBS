@@ -19,14 +19,14 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Sect
 export const metadata = {
   title: "Services",
   description:
-    "Explore ElevenOrbits managed servers, AI services, VoIP and Vicidial management, CDN, object storage, cybersecurity, workflow automation, and managed IT support.",
+    "Explore ElevenOrbits managed servers, AI services, VoIP and Vicidial management, CDN, object storage, self-hosted apps, cybersecurity, workflow automation, and managed IT support.",
   alternates: {
     canonical: "/services",
   },
   openGraph: {
     title: "ElevenOrbits Services",
     description:
-      "Managed servers, AI services, VoIP, CDN, object storage, cybersecurity, workflow automation, and technical support from ElevenOrbits.",
+    "Managed servers, AI services, VoIP, CDN, object storage, self-hosted apps, cybersecurity, workflow automation, and technical support from ElevenOrbits.",
     url: `${siteConfig.publicUrl}/services`,
     siteName: siteConfig.name,
     type: "website",
@@ -44,6 +44,9 @@ const serviceIconMap = {
   cybersecurity: ShieldCheck,
   cdn: Network,
   "object-storage": Cloud,
+  "hermes-ai-hosting": Bot,
+  "openclaw-hosting": Bot,
+  "nextcloud-hosting": Cloud,
 };
 
 export default function ServicesPage() {
@@ -54,12 +57,12 @@ export default function ServicesPage() {
           <div>
             <SectionHeading
               eyebrow="Services"
-              title="Managed products and service lines for infrastructure, AI, VoIP, CDN, storage, cybersecurity, workflows, and support."
+              title="Managed products and service lines for infrastructure, AI, VoIP, CDN, storage, self-hosted apps, cybersecurity, workflows, and support."
               description="Use this hub to choose the right ElevenOrbits product lane, then open detailed plans, pricing, and order paths."
               className="max-w-none"
             />
             <div className="mt-6 flex flex-wrap gap-2">
-              {["Managed Servers", "AI Services", "VoIP Operations", "CDN & Storage", "Cybersecurity", "Workflow Automation", "IT Support"].map((item) => (
+              {["Managed Servers", "AI Services", "VoIP Operations", "CDN & Storage", "Self-Hosted Apps", "Cybersecurity", "Workflow Automation", "IT Support"].map((item) => (
                 <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                   {item}
                 </span>

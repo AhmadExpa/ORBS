@@ -30,6 +30,7 @@ const verticalIconMap = {
   "voip-services": PhoneCall,
   "cybersecurity-services": ShieldCheck,
   "edge-storage-services": Cloud,
+  "self-hosted-app-services": Bot,
   "workflow-automation": Workflow,
   "managed-it-support": Wrench,
 };
@@ -45,6 +46,9 @@ const categoryIconMap = {
   cybersecurity: ShieldCheck,
   cdn: Network,
   "object-storage": Cloud,
+  "hermes-ai-hosting": Bot,
+  "openclaw-hosting": Bot,
+  "nextcloud-hosting": Cloud,
 };
 
 const verticalThemes = {
@@ -77,6 +81,12 @@ const verticalThemes = {
     accent: "text-cyan-700",
     icon: "bg-cyan-100 text-cyan-700 ring-cyan-600/10",
     bar: "bg-cyan-600",
+  },
+  "self-hosted-app-services": {
+    shell: "border-indigo-200 bg-[linear-gradient(135deg,#eef2ff_0%,#ffffff_54%,#ecfeff_100%)]",
+    accent: "text-indigo-700",
+    icon: "bg-indigo-100 text-indigo-700 ring-indigo-600/10",
+    bar: "bg-indigo-600",
   },
   "workflow-automation": {
     shell: "border-blue-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#fff7ed_100%)]",

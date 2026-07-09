@@ -84,6 +84,11 @@ const serviceDepartmentMap = {
   "ai-solutions": "sales",
   "development-support": "support",
   cybersecurity: "security",
+  cdn: "sales",
+  "object-storage": "sales",
+  "hermes-ai-hosting": "sales",
+  "openclaw-hosting": "sales",
+  "nextcloud-hosting": "sales",
 };
 
 export const siteConfig = {

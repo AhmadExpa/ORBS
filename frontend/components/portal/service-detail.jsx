@@ -9,9 +9,14 @@ import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
+const APP_HOSTING_CATEGORY_SLUGS = new Set(["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"]);
 
 function isServerSubscription(subscription) {
   return SERVER_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
+}
+
+function isAppHostingSubscription(subscription) {
+  return APP_HOSTING_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
 }
 
 function hasAssignedCredentials(subscription) {
@@ -33,6 +38,8 @@ export function ServiceDetail({ serviceId }) {
   const serviceAccess = subscription?.serviceAccess || {};
   const sharedDetails = subscription?.sharedDetails || [];
   const isServer = isServerSubscription(subscription);
+  const isAppHosting = isAppHostingSubscription(subscription);
+  const showsAccess = isServer || isAppHosting;
   const credentialsAssigned = hasAssignedCredentials(subscription);
 
   if (isLoading) {
@@ -51,7 +58,7 @@ export function ServiceDetail({ serviceId }) {
     <div>
       <Topbar
         title={subscription.productPlanId?.name || "Managed Service"}
-        subtitle={isServer ? "Server access and renewal details for this deployment." : `${categoryName} managed and operated by ElevenOrbits.`}
+        subtitle={showsAccess ? "Access and renewal details for this managed deployment." : `${categoryName} managed and operated by ElevenOrbits.`}
       />
       <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-6">
@@ -81,11 +88,15 @@ export function ServiceDetail({ serviceId }) {
               </div>
             </CardContent>
           </Card>
-          {isServer ? (
+          {showsAccess ? (
             <Card>
               <CardHeader>
-                <CardTitle>Server Access</CardTitle>
-                <CardDescription>Credentials assigned by the admin team appear here after your VPS or VDS is provisioned.</CardDescription>
+                <CardTitle>{isAppHosting ? "Application Access" : "Server Access"}</CardTitle>
+                <CardDescription>
+                  {isAppHosting
+                    ? "App and server handoff details assigned by the admin team appear here after provisioning."
+                    : "Credentials assigned by the admin team appear here after your VPS or VDS is provisioned."}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-slate-600">
                 {credentialsAssigned ? (
@@ -115,7 +126,9 @@ export function ServiceDetail({ serviceId }) {
                   </>
                 ) : (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                    Server credentials have not been assigned yet. After approval and provisioning, the admin team will place the login, password, and IP details here.
+                    {isAppHosting
+                      ? "Application access has not been assigned yet. After approval and provisioning, the admin team will publish app, login, password, IP, and setup details here."
+                      : "Server credentials have not been assigned yet. After approval and provisioning, the admin team will place the login, password, and IP details here."}
                   </div>
                 )}
               </CardContent>
@@ -151,7 +164,7 @@ export function ServiceDetail({ serviceId }) {
         </div>
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle>{isServer ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
+              <CardTitle>{showsAccess ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
             <CardDescription>Renewals use wallet balance first and saved-card fallback second when card billing is available.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

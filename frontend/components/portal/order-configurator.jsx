@@ -719,7 +719,7 @@ export function OrderConfigurator({ slug }) {
               </div>
               <div className="mt-5">
                 <TextArea
-                  placeholder="Example: preferred hostname, storage region, migration timing, cache rules, API access needs, or deployment notes."
+                  placeholder="Example: preferred hostname, app domain, storage region, model/provider keys, user count, migration timing, cache rules, API access needs, or deployment notes."
                   value={finalNote}
                   onChange={(event) => setFinalNote(event.target.value)}
                   className="min-h-32"

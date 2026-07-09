@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Cloud, Cpu, Phone, Server, Shield } from "lucide-react";
+import { ArrowRight, Bot, Cloud, Cpu, Phone, Server, Shield } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Topbar } from "@/components/shared/topbar";
@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/shared";
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
 const AI_CATEGORY_SLUGS = new Set(["ai-servers", "workflows", "ai-solutions"]);
 const EDGE_STORAGE_CATEGORY_SLUGS = new Set(["cdn", "object-storage"]);
+const APP_HOSTING_CATEGORY_SLUGS = new Set(["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"]);
 const OPERATIONS_CATEGORY_SLUGS = new Set(["vicidial", "development-support"]);
 const SECURITY_CATEGORY_SLUGS = new Set(["cybersecurity"]);
 
@@ -48,6 +49,10 @@ function getServiceSection(subscription) {
     return "edge-storage";
   }
 
+  if (APP_HOSTING_CATEGORY_SLUGS.has(slug)) {
+    return "apps";
+  }
+
   if (OPERATIONS_CATEGORY_SLUGS.has(slug)) {
     return "operations";
   }
@@ -64,6 +69,7 @@ function getSectionBreakdown(subscriptions) {
     { id: "servers", label: "Servers", count: subscriptions.filter((item) => getServiceSection(item) === "servers").length },
     { id: "ai", label: "AI & Automation", count: subscriptions.filter((item) => getServiceSection(item) === "ai").length },
     { id: "edge-storage", label: "Edge & Storage", count: subscriptions.filter((item) => getServiceSection(item) === "edge-storage").length },
+    { id: "apps", label: "Hosted Apps", count: subscriptions.filter((item) => getServiceSection(item) === "apps").length },
     { id: "operations", label: "Operations", count: subscriptions.filter((item) => getServiceSection(item) === "operations").length },
     { id: "security", label: "Security", count: subscriptions.filter((item) => getServiceSection(item) === "security").length },
   ].filter((item) => item.count);
@@ -156,7 +162,7 @@ function SummaryCard({ subscriptions }) {
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-600">Current Services</p>
             <CardTitle className="mt-3 text-2xl text-slate-950">What you are actively running</CardTitle>
             <CardDescription className="mt-2 max-w-2xl text-slate-600">
-              Your portal separates current services by how they are used, so servers, AI, edge delivery, storage, support, and security do not all look the same.
+              Your portal separates current services by how they are used, so servers, AI, edge delivery, storage, hosted apps, support, and security do not all look the same.
             </CardDescription>
           </div>
           <Server className="h-8 w-8 shrink-0 text-sky-600" />
@@ -508,6 +514,95 @@ function EdgeStorageSection({ subscriptions }) {
   );
 }
 
+function AppHostingSection({ subscriptions }) {
+  return (
+    <Card className="overflow-hidden border-indigo-200">
+      <CardHeader className="bg-gradient-to-r from-indigo-50 via-white to-cyan-50">
+        <div className="flex items-start gap-3">
+          <Bot className="mt-1 h-6 w-6 text-indigo-700" />
+          <div>
+            <CardTitle>Hosted Apps & Agents</CardTitle>
+            <CardDescription>
+              Hermes AI, OpenClaw, and Nextcloud services are shown with app stack, renewal timing, and admin-published handoff details.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+        {subscriptions.map((subscription) => {
+          const stack = getTechHighlights(subscription, 4);
+          const details = getSharedDetails(subscription, 5);
+          const access = subscription.serviceAccess || {};
+          const hasAccess = hasAssignedCredentials(subscription);
+
+          return (
+            <div key={subscription._id} className="rounded-[1.75rem] border border-indigo-100 bg-gradient-to-br from-white via-indigo-50/60 to-cyan-50/60 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-indigo-700">Hosted App</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-950">{subscription.productPlanId?.name || "Hosted App"}</p>
+                  <p className="mt-1 text-sm text-slate-500">{getCategoryName(subscription)}</p>
+                </div>
+                <StatusBadge status={subscription.status} />
+              </div>
+
+              <div className="mt-5 rounded-3xl border border-indigo-100 bg-white/85 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">App Stack</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {stack.length ? (
+                    stack.map((item) => (
+                      <span key={item} className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-800">
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-500">App stack details will appear after provisioning.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-indigo-100 bg-white/85 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Access</p>
+                  <p className="mt-2 font-semibold text-slate-950">{hasAccess ? "Published" : "Provisioning"}</p>
+                </div>
+                <div className="rounded-2xl border border-indigo-100 bg-white/85 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>
+                  <p className="mt-2 font-semibold text-slate-950">{formatRenewalText(subscription)}</p>
+                </div>
+              </div>
+
+              {hasAccess ? (
+                <div className="mt-4 rounded-2xl border border-indigo-100 bg-white/85 px-4 py-3 text-sm text-slate-700">
+                  <span className="font-semibold text-slate-950">Primary access:</span>{" "}
+                  {access.ipAddress || access.username || "Access credentials published"}
+                </div>
+              ) : null}
+
+              {details.length ? (
+                <div className="mt-4 space-y-2">
+                  {details.map((detail) => (
+                    <div key={`${detail.label}-${detail.value}`} className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-white/85 px-4 py-3 text-sm">
+                      <span className="text-slate-500">{detail.label}</span>
+                      <span className="text-right font-semibold text-slate-950">{detail.value}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-5">
+                <Link href={`/portal/services/${subscription._id}`}>
+                  <Button variant="ghost">Open Hosted App</Button>
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 function OperationsSection({ subscriptions }) {
   return (
     <Card className="overflow-hidden border-amber-200">
@@ -705,6 +800,7 @@ export default function PortalServicesPage() {
   const serverSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "servers");
   const aiSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "ai");
   const edgeStorageSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "edge-storage");
+  const appHostingSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "apps");
   const operationsSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "operations");
   const securitySubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "security");
   const generalSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "general");
@@ -742,6 +838,7 @@ export default function PortalServicesPage() {
         {serverSubscriptions.length ? <ServerUsageSection subscriptions={serverSubscriptions} /> : null}
         {aiSubscriptions.length ? <AiAutomationSection subscriptions={aiSubscriptions} /> : null}
         {edgeStorageSubscriptions.length ? <EdgeStorageSection subscriptions={edgeStorageSubscriptions} /> : null}
+        {appHostingSubscriptions.length ? <AppHostingSection subscriptions={appHostingSubscriptions} /> : null}
         {operationsSubscriptions.length ? <OperationsSection subscriptions={operationsSubscriptions} /> : null}
         {securitySubscriptions.length ? <SecuritySection subscriptions={securitySubscriptions} /> : null}
         {generalSubscriptions.length ? <GeneralServicesSection subscriptions={generalSubscriptions} /> : null}
