@@ -11,7 +11,6 @@ import {
   Globe2,
   HardDrive,
   PlusCircle,
-  Server,
   Settings2,
 } from "lucide-react";
 import {
@@ -436,14 +435,14 @@ export function OrderConfigurator({ slug }) {
     <div>
       <Topbar
         title={`Configure ${plan.name}`}
-        subtitle="Treat the homepage as the storefront, then use this flow to choose managed server options, deployment details, and optional add-ons before checkout."
+        subtitle="Choose billing, service details, optional add-ons, and provisioning notes before checkout."
       />
       <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>
             <CardTitle>Order Flow</CardTitle>
             <CardDescription>
-              Choose billing, deployment preferences, and additional managed features. ElevenOrbits will operate the server and its ongoing maintenance.
+              Choose billing, service preferences, and any available managed add-ons. ElevenOrbits will handle provisioning and ongoing support.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -473,7 +472,7 @@ export function OrderConfigurator({ slug }) {
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-start gap-3">
                 <span className="rounded-2xl bg-white p-2.5 text-slate-700 shadow-sm">
-                  <Server className="h-5 w-5" />
+                  <CheckCircle2 className="h-5 w-5" />
                 </span>
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Included</p>
@@ -511,7 +510,7 @@ export function OrderConfigurator({ slug }) {
                   <div>
                     <p className="text-lg font-semibold text-slate-950">Region</p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Choose the region where you want ElevenOrbits to provision this managed server.
+                      Choose the region where you want ElevenOrbits to provision this managed service.
                     </p>
                   </div>
                 </div>
@@ -712,15 +711,15 @@ export function OrderConfigurator({ slug }) {
                   <Settings2 className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-lg font-semibold text-slate-950">Final Deployment Note</p>
+                  <p className="text-lg font-semibold text-slate-950">Final Service Note</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Add anything the admin team should know for provisioning. Login details will be assigned by the admin team after the order is created and approved.
+                    Add anything the admin team should know for provisioning. Access details will be assigned by the admin team after the order is created and approved.
                   </p>
                 </div>
               </div>
               <div className="mt-5">
                 <TextArea
-                  placeholder="Example: install Docker, prefer UTC timezone, deploy in Singapore for APAC traffic, or keep the hostname aligned to our project name."
+                  placeholder="Example: preferred hostname, storage region, migration timing, cache rules, API access needs, or deployment notes."
                   value={finalNote}
                   onChange={(event) => setFinalNote(event.target.value)}
                   className="min-h-32"

@@ -74,6 +74,10 @@ async function buildQuote(body) {
     };
   }
 
+  if (!Array.isArray(plan.billingCycles) || !plan.billingCycles.includes(payload.billingCycle)) {
+    throw new HttpError(400, "Selected billing cycle is unavailable for this plan.");
+  }
+
   const categoryAddons = await Addon.find({ categoryId: plan.categoryId._id, isActive: true }).sort({ addonType: 1, sortOrder: 1, name: 1 });
   const addonsById = new Map(categoryAddons.map((addon) => [String(addon._id), addon]));
 

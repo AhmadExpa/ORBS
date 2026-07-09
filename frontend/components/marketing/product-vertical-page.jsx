@@ -3,9 +3,10 @@ import {
   ArrowRight,
   Bot,
   CheckCircle2,
+  Cloud,
   Cpu,
   Database,
-  Headset,
+  Network,
   PhoneCall,
   Server,
   ShieldCheck,
@@ -28,6 +29,7 @@ const verticalIconMap = {
   "ai-services": Bot,
   "voip-services": PhoneCall,
   "cybersecurity-services": ShieldCheck,
+  "edge-storage-services": Cloud,
   "workflow-automation": Workflow,
   "managed-it-support": Wrench,
 };
@@ -41,6 +43,8 @@ const categoryIconMap = {
   "ai-solutions": Bot,
   "development-support": Wrench,
   cybersecurity: ShieldCheck,
+  cdn: Network,
+  "object-storage": Cloud,
 };
 
 const verticalThemes = {
@@ -67,6 +71,12 @@ const verticalThemes = {
     accent: "text-emerald-700",
     icon: "bg-emerald-100 text-emerald-700 ring-emerald-600/10",
     bar: "bg-emerald-600",
+  },
+  "edge-storage-services": {
+    shell: "border-cyan-200 bg-[linear-gradient(135deg,#ecfeff_0%,#ffffff_54%,#f0fdf4_100%)]",
+    accent: "text-cyan-700",
+    icon: "bg-cyan-100 text-cyan-700 ring-cyan-600/10",
+    bar: "bg-cyan-600",
   },
   "workflow-automation": {
     shell: "border-blue-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#fff7ed_100%)]",

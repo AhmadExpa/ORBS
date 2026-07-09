@@ -134,7 +134,7 @@ export const adminNavGroups = [
     label: "Customers",
     items: [
       { href: "/eo-admin/users", label: "Users", icon: "users" },
-      { href: "/eo-admin/subscriptions", label: "Subscriptions & VPS", icon: "server" },
+      { href: "/eo-admin/subscriptions", label: "Subscriptions & Services", icon: "server" },
     ],
   },
   {

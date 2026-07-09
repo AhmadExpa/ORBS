@@ -7,7 +7,7 @@ import { Button, cn } from "@/lib/ui";
 export const metadata = {
   title: "Pricing | ElevenOrbits",
   description:
-    "Managed service pricing for VPS, VDS, AI servers, Vicidial, workflow automation, AI solutions, development support, and cybersecurity.",
+    "Managed service pricing for VPS, VDS, AI servers, Vicidial, CDN, object storage, workflow automation, AI solutions, development support, and cybersecurity.",
 };
 
 const categoryTone = {
@@ -19,6 +19,8 @@ const categoryTone = {
   "ai-solutions": "from-fuchsia-500/18 to-cyan-500/8 text-fuchsia-200 border-fuchsia-300/20",
   "development-support": "from-slate-400/18 to-cyan-500/8 text-slate-200 border-slate-300/20",
   cybersecurity: "from-red-500/18 to-cyan-500/8 text-red-200 border-red-300/20",
+  cdn: "from-cyan-500/18 to-emerald-500/8 text-cyan-200 border-cyan-300/20",
+  "object-storage": "from-emerald-500/18 to-cyan-500/8 text-emerald-200 border-emerald-300/20",
 };
 
 const confidenceItems = [
@@ -120,7 +122,7 @@ export default function PricingPage() {
               Managed service pricing with clear delivery ownership.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300">
-              Compare managed hosting, dedicated servers, AI infrastructure, Vicidial operations, automation, support, and cybersecurity plans. Pricing can be adjusted from the admin dashboard after deployment.
+              Compare managed hosting, dedicated servers, AI infrastructure, CDN, object storage, Vicidial operations, automation, support, and cybersecurity plans. Pricing can be adjusted from the admin dashboard after deployment.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/contact" className="inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_16px_36px_-22px_rgba(255,255,255,0.6)] transition hover:bg-slate-100">

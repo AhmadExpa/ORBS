@@ -57,6 +57,9 @@ export async function ensureBootstrapData() {
       existingPlan.categoryId = category._id;
       existingPlan.name = planSeed.name;
       existingPlan.description = planSeed.description;
+      existingPlan.monthlyPrice = planSeed.monthlyPrice;
+      existingPlan.yearlyPrice = planSeed.yearlyPrice;
+      existingPlan.yearlyDiscountPercent = planSeed.yearlyDiscountPercent;
       existingPlan.features = planSeed.features;
       existingPlan.techStack = planSeed.techStack || [];
       existingPlan.planType = planSeed.planType;

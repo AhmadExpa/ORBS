@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BrainCircuit,
   Clock3,
+  Cloud,
   Headset,
   Mail,
   PhoneCall,
@@ -168,6 +169,15 @@ const familyThemes = {
     chipClassName: "border-slate-200 bg-white/80 text-slate-700",
     dividerClassName: "bg-slate-950",
     overlayClassName: "bg-[linear-gradient(135deg,rgba(15,23,42,0.08),transparent_62%)]",
+  },
+  "Edge and Storage": {
+    icon: Cloud,
+    index: "05",
+    cardClassName: "border-cyan-200 bg-[linear-gradient(180deg,#ecfeff_0%,#ffffff_54%,#ecfdf5_100%)] text-slate-950",
+    descriptionClassName: "text-slate-600",
+    chipClassName: "border-cyan-200 bg-white/85 text-slate-700",
+    dividerClassName: "bg-cyan-600",
+    overlayClassName: "bg-[linear-gradient(135deg,rgba(8,145,178,0.12),transparent_62%)]",
   },
 };
 
@@ -355,7 +365,7 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="grid gap-px overflow-hidden rounded-[2.6rem] border border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] xl:grid-cols-4">
+            <div className="grid gap-px overflow-hidden rounded-[2.6rem] border border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] xl:grid-cols-5">
               {serviceFamilies.map((family) => {
                 const theme = familyThemes[family.name];
                 const Icon = theme.icon;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { KeyRound, Search, Server, ShieldCheck } from "lucide-react";
+import { Cloud, KeyRound, Search, Server, ShieldCheck } from "lucide-react";
 import {
   Button,
   Card,
@@ -22,6 +22,7 @@ import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
+const EDGE_STORAGE_CATEGORY_SLUGS = new Set(["cdn", "object-storage"]);
 const HIDDEN_CUSTOMER_STATUSES = new Set(["suspended", "blocked"]);
 
 function customerAccountStatus(subscription) {
@@ -34,6 +35,10 @@ function canShowSubscription(subscription) {
 
 function isServerSubscription(subscription) {
   return SERVER_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
+}
+
+function isEdgeStorageSubscription(subscription) {
+  return EDGE_STORAGE_CATEGORY_SLUGS.has(subscription?.productPlanId?.categoryId?.slug);
 }
 
 function hasAccessAssigned(subscription) {
@@ -84,6 +89,9 @@ export default function AdminSubscriptionsPage() {
         return false;
       }
       if (filter === "servers" && !isServerSubscription(sub)) {
+        return false;
+      }
+      if (filter === "edge-storage" && !isEdgeStorageSubscription(sub)) {
         return false;
       }
       if (["active", "cancelled", "expired"].includes(filter) && sub.status !== filter) {
@@ -155,7 +163,10 @@ export default function AdminSubscriptionsPage() {
   }
 
   const selectedIsServer = isServerSubscription(selectedSubscription);
+  const selectedIsEdgeStorage = isEdgeStorageSubscription(selectedSubscription);
   const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
+  const detailLabelPlaceholder = selectedIsEdgeStorage ? "CDN hostname / S3 endpoint" : "Label";
+  const detailValuePlaceholder = selectedIsEdgeStorage ? "cdn.example.com / s3.example.com" : "Value";
 
   if (isLoading && !data) {
     return <PageLoader title="Loading subscriptions" subtitle="Gathering subscriptions and provisioning details…" />;
@@ -164,8 +175,8 @@ export default function AdminSubscriptionsPage() {
   return (
     <div>
       <Topbar
-        title="Subscriptions & VPS"
-        subtitle="Find a subscription, assign server access for VPS/VDS, and publish shared details to the customer's portal."
+        title="Subscriptions & Services"
+        subtitle="Assign VPS/VDS credentials and publish service details for CDN, Object Storage, and other managed subscriptions."
       />
       <div className="p-6 md:p-8">
         {pendingCredentialCount > 0 ? (
@@ -175,7 +186,7 @@ export default function AdminSubscriptionsPage() {
             className="mb-6 flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
           >
             <KeyRound className="h-4 w-4" />
-            {pendingCredentialCount} active VPS/VDS subscription{pendingCredentialCount === 1 ? "" : "s"} still need server credentials — click to filter.
+            {pendingCredentialCount} active VPS/VDS subscription{pendingCredentialCount === 1 ? "" : "s"} still need server credentials - click to filter.
           </button>
         ) : null}
 
@@ -202,6 +213,7 @@ export default function AdminSubscriptionsPage() {
                     <option value="">All subscriptions</option>
                     <option value="needs-credentials">Needs credentials</option>
                     <option value="servers">VPS / VDS only</option>
+                    <option value="edge-storage">CDN / Storage only</option>
                     <option value="active">Active</option>
                     <option value="cancelled">Cancelled</option>
                     <option value="expired">Expired</option>
@@ -213,6 +225,7 @@ export default function AdminSubscriptionsPage() {
               {visibleSubscriptions.map((subscription) => {
                 const cred = credentialState(subscription);
                 const isSelected = selectedId === subscription._id;
+                const sharedDetailCount = subscription.sharedDetails?.length || 0;
                 return (
                   <button
                     type="button"
@@ -247,11 +260,12 @@ export default function AdminSubscriptionsPage() {
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                          No server access
+                          {isEdgeStorageSubscription(subscription) ? <Cloud className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                          {sharedDetailCount ? "Shared details published" : "Shared details only"}
                         </span>
                       )}
                       <span className="text-[11px] font-medium text-slate-400">
-                        {subscription.sharedDetails?.length || 0} shared detail{(subscription.sharedDetails?.length || 0) === 1 ? "" : "s"}
+                        {sharedDetailCount} shared detail{sharedDetailCount === 1 ? "" : "s"}
                       </span>
                     </div>
                   </button>
@@ -322,7 +336,11 @@ export default function AdminSubscriptionsPage() {
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <h3 className="text-sm font-semibold text-slate-900">Shared details</h3>
-                        <p className="mt-0.5 text-xs leading-5 text-slate-500">Custom label/value pairs the customer sees in the portal.</p>
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                          {selectedIsEdgeStorage
+                            ? "Use these fields for CDN hostnames, origins, cache notes, storage region, bucket endpoints, ACL notes, and API access handoff."
+                            : "Custom label/value pairs the customer sees in the portal."}
+                        </p>
                       </div>
                       <Button type="button" variant="outline" onClick={() => setSharedDetails((current) => [...current, createDetailRow()])}>
                         Add
@@ -331,12 +349,12 @@ export default function AdminSubscriptionsPage() {
                     {sharedDetails.map((item) => (
                       <div key={item.id} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <TextInput
-                          placeholder="Label"
+                          placeholder={detailLabelPlaceholder}
                           value={item.label}
                           onChange={(event) => setSharedDetails((c) => c.map((d) => (d.id === item.id ? { ...d, label: event.target.value } : d)))}
                         />
                         <TextInput
-                          placeholder="Value"
+                          placeholder={detailValuePlaceholder}
                           value={item.value}
                           onChange={(event) => setSharedDetails((c) => c.map((d) => (d.id === item.id ? { ...d, value: event.target.value } : d)))}
                         />
