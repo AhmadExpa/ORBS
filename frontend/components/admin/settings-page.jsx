@@ -23,6 +23,7 @@ export function SettingsPage() {
   const [companyForm, setCompanyForm] = useState({
     companyName: "",
     supportEmail: "",
+    address: "",
     notes: "",
   });
   const [passwordForm, setPasswordForm] = useState({
@@ -40,6 +41,7 @@ export function SettingsPage() {
     setCompanyForm({
       companyName: value.companyName || "",
       supportEmail: value.supportEmail || "",
+      address: value.address || "",
       notes: value.notes || "",
     });
   }, [companyProfileSetting?._id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -86,6 +88,7 @@ export function SettingsPage() {
           value: {
             companyName: companyForm.companyName.trim(),
             supportEmail: companyForm.supportEmail.trim(),
+            address: companyForm.address.trim(),
             notes: companyForm.notes.trim(),
           },
         },
@@ -190,6 +193,11 @@ export function SettingsPage() {
                   onChange={(event) => setCompanyForm((current) => ({ ...current, supportEmail: event.target.value }))}
                 />
               </div>
+              <TextInput
+                placeholder="Company address"
+                value={companyForm.address}
+                onChange={(event) => setCompanyForm((current) => ({ ...current, address: event.target.value }))}
+              />
               <TextArea
                 placeholder="Company profile notes or deployment notes"
                 value={companyForm.notes}
@@ -208,6 +216,10 @@ export function SettingsPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Support Email</p>
                   <p className="mt-1 font-semibold text-slate-900">{companyProfileSetting.value?.supportEmail || "Not set"}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Address</p>
+                  <p className="mt-1 font-semibold text-slate-900">{companyProfileSetting.value?.address || "Not set"}</p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</p>

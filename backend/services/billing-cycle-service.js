@@ -152,7 +152,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
         subscription.status = "suspended";
         subscription.metadata = {
           ...subscription.metadata,
-          billingNote: "Current service agreement approval is required before renewal billing can continue.",
+          billingNote: "Current Managed Service Agreement approval is required before renewal billing can continue.",
           contractStatus: error.details.contractStatus || "NOT_STARTED",
         };
         await subscription.save();

@@ -190,23 +190,29 @@ export function AdminContractDetailPage({ contractId }) {
               </CardContent>
             </Card>
 
-            {signedFieldValues.length ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Signed Form Fields</CardTitle>
-                  <CardDescription>Values returned by Documenso for the completed document.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-2">
-                  {signedFieldValues.map((field, index) => (
-                    <DetailFact
-                      key={`${field.id || field.label || "field"}-${index}`}
-                      label={field.label || field.type || `Field ${index + 1}`}
-                      value={fieldValue(field.value)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            ) : null}
+            <Card>
+              <CardHeader>
+                <CardTitle>Signed Form Fields</CardTitle>
+                <CardDescription>Values returned by Documenso for the completed document.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {signedFieldValues.length ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {signedFieldValues.map((field, index) => (
+                      <DetailFact
+                        key={`${field.id || field.label || "field"}-${index}`}
+                        label={field.label || field.type || `Field ${index + 1}`}
+                        value={fieldValue(field.value)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                    No signed field values are stored yet. Use Sync Documenso after the document is completed to refresh captured form fields.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <Card>

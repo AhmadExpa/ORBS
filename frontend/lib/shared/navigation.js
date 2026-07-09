@@ -27,7 +27,7 @@ export const portalNavGroups = [
     items: [
       { href: "/portal/invoices", label: "Invoices", icon: "receipt", description: "Review, download, and pay invoices" },
       { href: "/portal/payments", label: "Wallet & Payments", icon: "wallet", description: "Top up balance and manage cards" },
-      { href: "/portal/contracts", label: "Contracts", icon: "file-signature", description: "Your signed service agreement" },
+      { href: "/portal/contracts", label: "Contracts", icon: "file-signature", description: "Your signed Managed Service Agreement" },
     ],
   },
   { label: "Support", href: "/portal/support", icon: "life-buoy" },

@@ -158,6 +158,99 @@ test("Documenso completed field extraction keeps signer-entered values", () => {
   ]);
 });
 
+test("Documenso completed field extraction handles capitalized document fields and fieldMeta values", () => {
+  const fields = extractDocumentFieldValues({
+    data: {
+      document: {
+        Field: [
+          {
+            id: 10,
+            type: "TEXT",
+            fieldMeta: {
+              label: "Company Name",
+              text: "Orbit Support LLC",
+            },
+          },
+          {
+            id: 11,
+            type: "DROPDOWN",
+            fieldMeta: {
+              label: "Country",
+              defaultValue: "United States",
+              values: [{ value: "United States" }, { value: "Canada" }],
+            },
+          },
+        ],
+        Recipient: [
+          {
+            id: 20,
+            Field: [
+              {
+                id: 12,
+                type: "RADIO",
+                fieldMeta: {
+                  label: "Signing as",
+                  value: "Business",
+                  values: [{ value: "Individual" }, { value: "Business" }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+  assert.deepEqual(fields, [
+    {
+      id: "10",
+      label: "Company Name",
+      type: "TEXT",
+      value: "Orbit Support LLC",
+    },
+    {
+      id: "11",
+      label: "Country",
+      type: "DROPDOWN",
+      value: "United States",
+    },
+    {
+      id: "12",
+      label: "Signing as",
+      type: "RADIO",
+      value: "Business",
+    },
+  ]);
+});
+
+test("Documenso completed field extraction captures single checked acknowledgements", () => {
+  const fields = extractDocumentFieldValues({
+    data: {
+      document: {
+        Field: [
+          {
+            id: 21,
+            type: "CHECKBOX",
+            fieldMeta: {
+              label: "Required acknowledgement",
+              checked: true,
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  assert.deepEqual(fields, [
+    {
+      id: "21",
+      label: "Required acknowledgement",
+      type: "CHECKBOX",
+      value: "Checked",
+    },
+  ]);
+});
+
 test("Documenso completed field labels map to contract details", () => {
   const details = mapDocumensoFieldValuesToContractDetails([
     { label: "Signing as", value: "Business" },

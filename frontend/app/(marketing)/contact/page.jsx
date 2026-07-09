@@ -11,7 +11,7 @@ export default function ContactPage() {
         title="Reach the right ElevenOrbits team without routing every request through one inbox."
         description="Use the directory below for service-specific questions, sales conversations, billing, support, and operational requests."
       />
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
+      <div className="mt-10 grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>General Inbox</CardTitle>
@@ -21,6 +21,21 @@ export default function ContactPage() {
             <a className="text-base font-semibold text-sky-700" href={`mailto:${siteConfig.generalEmail}`}>
               {siteConfig.generalEmail}
             </a>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Company Address</CardTitle>
+            <CardDescription>Use this address for company records and formal correspondence.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <address className="text-base font-semibold not-italic leading-7 text-slate-950">
+              {siteConfig.companyAddressLines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </address>
           </CardContent>
         </Card>
         <Card>

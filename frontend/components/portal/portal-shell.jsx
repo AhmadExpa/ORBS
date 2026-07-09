@@ -313,7 +313,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                 <AlertTriangle className="h-4 w-4" />
               </span>
-              <span>Sign your current ElevenOrbits service agreement to unlock your workspace.</span>
+              <span>Sign your current ElevenOrbits Managed Service Agreement to unlock your workspace.</span>
             </div>
           </div>
         ) : null}

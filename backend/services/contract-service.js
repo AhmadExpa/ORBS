@@ -215,12 +215,18 @@ function contractUpdateChanged(contract, updateSet) {
 }
 
 async function resolveCompletedDocumensoDetails(contract, details = {}) {
-  if (Array.isArray(details.fieldValues)) {
+  if (Array.isArray(details.fieldValues) && details.fieldValues.length) {
     return details;
   }
 
   try {
-    return await getDocumentCompletionDetails(contract.documensoDocumentId);
+    const fetchedDetails = await getDocumentCompletionDetails(contract.documensoDocumentId);
+    return {
+      ...details,
+      ...fetchedDetails,
+      completedAt: fetchedDetails.completedAt || details.completedAt || null,
+      fieldValues: fetchedDetails.fieldValues?.length ? fetchedDetails.fieldValues : details.fieldValues || [],
+    };
   } catch (error) {
     console.warn("Unable to sync completed Documenso field values", {
       contractId: String(contract._id),
@@ -228,8 +234,8 @@ async function resolveCompletedDocumensoDetails(contract, details = {}) {
       message: error.message,
     });
     return {
-      fieldValues: null,
-      completedAt: null,
+      fieldValues: Array.isArray(details.fieldValues) ? details.fieldValues : null,
+      completedAt: details.completedAt || null,
     };
   }
 }
@@ -473,6 +479,7 @@ async function createDocumensoDocumentForContract({
       contractNumber: contract.contractNumber,
       templateId: templateConfig.templateId,
       templateRecipientId: templateConfig.templateRecipientId,
+      customerType: contract.customerType || "",
       customerName: identity.customerName,
       customerEmail: identity.customerEmail,
       businessName: contract.businessName || "",
@@ -853,7 +860,7 @@ export async function recordDocumensoWebhookEvent({ eventId, eventType, document
   }
 }
 
-export async function handleDocumensoWebhook({ eventId, eventType, documentId, status }) {
+export async function handleDocumensoWebhook({ eventId, eventType, documentId, status, completedAt = null, fieldValues = [] }) {
   const event = await recordDocumensoWebhookEvent({ eventId, eventType, documentId });
   if (!event) {
     return { duplicate: true };
@@ -870,7 +877,17 @@ export async function handleDocumensoWebhook({ eventId, eventType, documentId, s
 
   const mappedStatus = statusFromDocumensoEvent(eventType, status);
   if (mappedStatus === "COMPLETED") {
-    const updated = await processCompletedContract(contract, { actorRole: "system" });
+    const webhookDetails = Array.isArray(fieldValues) && fieldValues.length
+      ? {
+          status: mappedStatus,
+          completedAt,
+          fieldValues,
+        }
+      : null;
+    const updated = await processCompletedContract(contract, {
+      actorRole: "system",
+      documensoDetails: webhookDetails,
+    });
     return { contract: normalizeContractForResponse(updated) };
   }
 
@@ -1101,7 +1118,7 @@ export async function requireApprovedContract(clerkUserId) {
   const latest = await findLatestContractForUser(clerkUserId);
   throw new HttpError(
     403,
-    "You must sign the current service agreement and receive administrative approval before purchasing.",
+    "You must sign the current Managed Service Agreement and receive administrative approval before purchasing.",
     {
       code: "CONTRACT_APPROVAL_REQUIRED",
       contractStatus: latest?.status || "NOT_STARTED",
@@ -1131,7 +1148,7 @@ export async function requireSubmittedContract(clerkUserId) {
   const latest = await findLatestContractForUser(clerkUserId);
   throw new HttpError(
     403,
-    "You must sign the current service agreement before creating orders.",
+    "You must sign the current Managed Service Agreement before creating orders.",
     {
       code: "CONTRACT_SIGNATURE_REQUIRED",
       contractStatus: latest?.status || "NOT_STARTED",

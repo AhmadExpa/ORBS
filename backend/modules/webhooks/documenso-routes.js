@@ -3,7 +3,7 @@ import express from "express";
 import { env } from "../../config/env.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
-import { getDocumensoWebhookSignature } from "../../services/documenso-service.js";
+import { extractDocumentFieldValues, getDocumensoWebhookSignature } from "../../services/documenso-service.js";
 import { handleDocumensoWebhook } from "../../services/contract-service.js";
 
 export const documensoWebhookRouter = express.Router();
@@ -68,12 +68,25 @@ function extractWebhookFields(payload, rawBody) {
       payload?.data?.document?.status ||
       "",
   );
+  const completedAt = String(
+    payload?.completedAt ||
+      payload?.completed_at ||
+      payload?.document?.completedAt ||
+      payload?.document?.completed_at ||
+      payload?.data?.completedAt ||
+      payload?.data?.completed_at ||
+      payload?.data?.document?.completedAt ||
+      payload?.data?.document?.completed_at ||
+      "",
+  );
 
   return {
     eventId,
     eventType,
     documentId,
     status,
+    completedAt: completedAt || null,
+    fieldValues: extractDocumentFieldValues(payload),
   };
 }
 

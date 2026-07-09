@@ -2,7 +2,7 @@
 
 ## Contract Signing And Purchase Approval Setup
 
-This repository contains a Next.js frontend in `frontend/` and an Express backend in `backend/`. Customer purchases, Stripe payment creation, wallet invoice payment, renewals, and service access assignment are gated by the current approved Master Services Agreement.
+This repository contains a Next.js frontend in `frontend/` and an Express backend in `backend/`. Customer purchases, Stripe payment creation, wallet invoice payment, renewals, and service access assignment are gated by the current approved Managed Service Agreement.
 
 ### Development Setup
 

@@ -114,15 +114,27 @@ export async function ensureBootstrapData() {
     await existingAddon.save();
   }
 
+  const defaultCompanyProfile = {
+    companyName: "ElevenOrbits",
+    supportEmail: env.supportEmail,
+    address: env.companyAddress,
+  };
   const companyProfile = await AdminSetting.findOne({ key: "company-profile" });
   if (!companyProfile) {
     await AdminSetting.create({
       key: "company-profile",
-      value: {
-        companyName: "ElevenOrbits",
-        supportEmail: env.supportEmail,
-      },
+      value: defaultCompanyProfile,
       group: "general",
     });
+  } else {
+    const currentValue = companyProfile.value && typeof companyProfile.value === "object" ? companyProfile.value : {};
+    if (!currentValue.address && env.companyAddress) {
+      companyProfile.value = {
+        ...defaultCompanyProfile,
+        ...currentValue,
+        address: env.companyAddress,
+      };
+      await companyProfile.save();
+    }
   }
 }

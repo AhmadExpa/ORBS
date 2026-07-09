@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { UserProfile } from "@clerk/nextjs";
-import { Building2, UserRound } from "lucide-react";
+import Link from "next/link";
+import { Building2, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { Topbar } from "@/components/shared/topbar";
 import { AccountForm } from "@/components/portal/account-form";
-import { cn } from "@/lib/ui";
+import { useCustomerQuery } from "@/lib/api/hooks";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, cn } from "@/lib/ui";
+import { LogoSpinner } from "@/components/shared/logo-spinner";
 
 const tabs = [
   {
     id: "general",
-    label: "General information",
-    description: "Email, password, and sign-in security",
+    label: "Account overview",
+    description: "Profile, email, and account status",
     icon: UserRound,
   },
   {
@@ -22,18 +24,96 @@ const tabs = [
   },
 ];
 
-const clerkAppearance = {
-  elements: {
-    rootBox: "w-full",
-    cardBox: "w-full shadow-none",
-    card: "w-full border border-line rounded-xl shadow-card",
-    headerTitle: "text-slate-900",
-    headerSubtitle: "text-slate-500",
-    formButtonPrimary: "bg-accent-600 hover:bg-accent-700 text-white normal-case",
-    profileSectionPrimaryButton: "text-brand-700",
-    badge: "bg-brand-50 text-brand-700",
-  },
-};
+function fieldValue(value) {
+  return value ? String(value) : "Not provided";
+}
+
+function AccountFact({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-2 break-words text-sm font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function GeneralAccountPanel({ onEditBusiness }) {
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-profile"],
+    path: "/profile/me",
+  });
+  const user = profileQuery.data?.user;
+
+  if (profileQuery.isLoading && !profileQuery.data) {
+    return (
+      <div className="flex justify-center py-16">
+        <LogoSpinner size={56} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Overview</CardTitle>
+          <CardDescription>Your primary ElevenOrbits account record.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <AccountFact label="Name" value={fieldValue(user?.name)} />
+          <AccountFact label="Email" value={fieldValue(user?.email)} />
+          <AccountFact label="Status" value={<StatusBadge status={user?.accountStatus || "active"} />} />
+          <AccountFact label="Company" value={fieldValue(user?.company)} />
+          <AccountFact label="Phone" value={fieldValue(user?.phone)} />
+          <AccountFact label="Customer ID" value={fieldValue(user?._id)} />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Record</CardTitle>
+            <CardDescription>Business details used for invoices, support, and provisioning.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+              <div>
+                <p className="text-sm font-semibold text-slate-950">{fieldValue(user?.company || user?.name)}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{fieldValue(user?.address)}</p>
+              </div>
+            </div>
+            <Button type="button" onClick={onEditBusiness}>
+              Edit Business Details
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Access</CardTitle>
+            <CardDescription>Account access is handled through your ElevenOrbits sign-in session.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <Mail className="h-5 w-5 text-slate-500" />
+                <span className="min-w-0 break-words text-sm font-semibold text-slate-950">{fieldValue(user?.email)}</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+                <ShieldCheck className="h-5 w-5" />
+                <span className="text-sm font-semibold">Portal session active</span>
+              </div>
+            </div>
+            <Link href="/portal/support" className="inline-flex">
+              <Button variant="ghost">Contact Support</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export function AccountSettingsPage() {
   const [tab, setTab] = useState("general");
@@ -78,7 +158,7 @@ export function AccountSettingsPage() {
 
           <div className="min-w-0">
             {tab === "general" ? (
-              <UserProfile routing="hash" appearance={clerkAppearance} />
+              <GeneralAccountPanel onEditBusiness={() => setTab("business")} />
             ) : (
               <AccountForm embedded />
             )}

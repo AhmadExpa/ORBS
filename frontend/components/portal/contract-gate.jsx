@@ -25,7 +25,7 @@ export function ContractGate({ children }) {
   }
 
   if (contractQuery.isLoading && !contractQuery.data) {
-    return <PageLoader title="Contract Required" subtitle="Checking your service agreement status..." cardCount={1} lines={4} />;
+    return <PageLoader title="Contract Required" subtitle="Checking your Managed Service Agreement status..." cardCount={1} lines={4} />;
   }
 
   const status = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";

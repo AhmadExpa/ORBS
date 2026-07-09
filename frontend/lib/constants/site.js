@@ -38,6 +38,9 @@ const salesEmail = process.env.NEXT_PUBLIC_SALES_EMAIL || "sales@elevenorbits.co
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com";
 const billingEmail = process.env.NEXT_PUBLIC_BILLING_EMAIL || "billing@elevenorbits.com";
 const securityEmail = process.env.NEXT_PUBLIC_SECURITY_EMAIL || "security@elevenorbits.com";
+const companyAddressLine1 = process.env.NEXT_PUBLIC_COMPANY_ADDRESS_LINE1 || "3326 Anna Gorge Dr.";
+const companyAddressLine2 = process.env.NEXT_PUBLIC_COMPANY_ADDRESS_LINE2 || "Valrico, FL 33596";
+const companyAddress = process.env.NEXT_PUBLIC_COMPANY_ADDRESS || `${companyAddressLine1} ${companyAddressLine2}`;
 
 const departmentContacts = [
   {
@@ -90,6 +93,8 @@ export const siteConfig = {
   supportEmail,
   billingEmail,
   securityEmail,
+  companyAddress,
+  companyAddressLines: [companyAddressLine1, companyAddressLine2].filter(Boolean),
   departmentContacts,
   serviceDepartmentMap,
   publicUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_MARKETING_URL),

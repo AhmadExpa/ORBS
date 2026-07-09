@@ -42,6 +42,7 @@ export function ServicePage({ slug }) {
       name: siteConfig.name,
       url: siteConfig.publicUrl,
       email: departmentContact.email,
+      address: siteConfig.companyAddress,
     },
     hasOfferCatalog: {
       "@type": "OfferCatalog",
@@ -168,7 +169,8 @@ export function ServicePage({ slug }) {
               <a className="text-base font-semibold text-sky-700" href={`mailto:${departmentContact.email}`}>
                 {departmentContact.email}
               </a>
-              <p>Use this address for questions related to {category.name.toLowerCase()}, scoping, onboarding, or managed service coordination.</p>
+              <p>Use this inbox for questions related to {category.name.toLowerCase()}, scoping, onboarding, or managed service coordination.</p>
+              <address className="not-italic text-slate-700">{siteConfig.companyAddress}</address>
             </CardContent>
           </Card>
           <Card className="h-fit">

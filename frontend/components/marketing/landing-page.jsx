@@ -704,7 +704,7 @@ export function LandingPage() {
                   </a>
                 </div>
 
-                <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-[1.8rem] border border-slate-200 bg-white/88 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">General Inquiries</p>
                     <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.generalEmail}</p>
@@ -714,6 +714,11 @@ export function LandingPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Support Desk</p>
                     <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.supportEmail}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For customer help, service follow-up, and operational issue escalation.</p>
+                  </div>
+                  <div className="rounded-[1.8rem] border border-slate-200 bg-white/88 p-5 sm:col-span-2 xl:col-span-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Company Address</p>
+                    <address className="mt-3 text-lg font-semibold not-italic leading-7 text-slate-950">{siteConfig.companyAddress}</address>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">For company records and formal correspondence.</p>
                   </div>
                 </div>
               </div>

@@ -40,7 +40,7 @@ export function AdminContractsPage() {
 
   return (
     <div>
-      <Topbar title="Contracts" subtitle="Review signed MSAs before customers can purchase or activate services." />
+      <Topbar title="Contracts" subtitle="Review signed managed service agreements before customers can purchase or activate services." />
       <div className="space-y-6 p-6">
         <Card>
           <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

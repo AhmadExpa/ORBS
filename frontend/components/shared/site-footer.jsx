@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { legalPages } from "@/lib/legal-content";
 import { companyLinks, featuredPartnerLogos } from "@/lib/marketing-content";
+import { siteConfig } from "@/lib/constants/site";
 import { serviceVerticals } from "@/lib/shared";
 import { BrandLogo } from "./brand-logo";
 
@@ -84,6 +85,16 @@ export function SiteFooter() {
                   {item.label}
                 </Link>
               ))}
+            </div>
+            <div className="mt-6 text-sm leading-7 text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Address</p>
+              <address className="mt-3 not-italic">
+                {siteConfig.companyAddressLines.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+              </address>
             </div>
           </div>
 

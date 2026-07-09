@@ -192,7 +192,7 @@ export function AppShell({
                   </span>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em]">Portal locked</p>
-                    <p className="mt-1 text-xs leading-5 text-amber-800">Sign the service agreement to unlock your workspace.</p>
+                    <p className="mt-1 text-xs leading-5 text-amber-800">Sign the Managed Service Agreement to unlock your workspace.</p>
                   </div>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export function AppShell({
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                     <AlertTriangle className="h-4 w-4" />
                   </span>
-                  <span>Sign your current ElevenOrbits service agreement to unlock your workspace.</span>
+                  <span>Sign your current ElevenOrbits Managed Service Agreement to unlock your workspace.</span>
                 </div>
               </div>
             ) : null}

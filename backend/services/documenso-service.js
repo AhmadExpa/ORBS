@@ -112,7 +112,22 @@ function flattenItems(value) {
     return value;
   }
 
-  for (const key of ["data", "items", "templates", "documents", "recipients", "fields"]) {
+  for (const key of [
+    "data",
+    "items",
+    "templates",
+    "documents",
+    "Documents",
+    "envelopes",
+    "Envelopes",
+    "recipients",
+    "Recipients",
+    "Recipient",
+    "fields",
+    "Fields",
+    "Field",
+    "fieldValues",
+  ]) {
     if (Array.isArray(value[key])) {
       return value[key];
     }
@@ -221,9 +236,17 @@ function getTemplateFields(template) {
   const document = extractDocument(template);
   return flattenItems(
     document?.fields ||
+      document?.Fields ||
+      document?.Field ||
       template?.fields ||
+      template?.Fields ||
+      template?.Field ||
       template?.data?.fields ||
+      template?.data?.Fields ||
+      template?.data?.Field ||
       document?.recipients?.flatMap?.((recipient) => recipient.fields || []) ||
+      document?.Recipients?.flatMap?.((recipient) => recipient.Fields || recipient.Field || recipient.fields || []) ||
+      document?.Recipient?.flatMap?.((recipient) => recipient.Field || recipient.fields || []) ||
       [],
   );
 }
@@ -245,6 +268,7 @@ function getReadableFieldLabel(field) {
     field?.fieldMeta?.label ||
       field?.label ||
       field?.name ||
+      field?.fieldMeta?.name ||
       field?.fieldMeta?.placeholder ||
       field?.placeholder ||
       field?.secondaryId ||
@@ -260,6 +284,9 @@ function getPrefillFieldType(field) {
 }
 
 function resolveTemplateFieldValue(label, values) {
+  if (label.includes("signing as") || label.includes("customer type") || label.includes("account type") || label.includes("client type")) {
+    return values.customerTypeLabel;
+  }
   if (label.includes("legal") || label.includes("full name")) {
     return values.customerName;
   }
@@ -293,8 +320,23 @@ function resolveTemplateFieldValue(label, values) {
   return "";
 }
 
+function formatCustomerType(value) {
+  return value === "BUSINESS" ? "Business" : value === "INDIVIDUAL" ? "Individual" : "";
+}
+
+function normalizePrefillValueForType(type, label, value) {
+  const normalizedValue = normalizeSignedFieldValue(value);
+  if (type !== "number") {
+    return normalizedValue;
+  }
+
+  const numericValue = normalizedValue.replace(/[^\d.-]/gu, "");
+  return numericValue && /[0-9]/u.test(numericValue) ? numericValue : "";
+}
+
 function buildTemplateFieldValues({
   template,
+  customerType,
   customerName,
   customerEmail,
   businessName,
@@ -310,7 +352,8 @@ function buildTemplateFieldValues({
     .map((field) => {
       const label = getFieldLabel(field);
       const type = getPrefillFieldType(field);
-      const value = resolveTemplateFieldValue(label, {
+      const value = normalizePrefillValueForType(type, label, resolveTemplateFieldValue(label, {
+        customerTypeLabel: formatCustomerType(customerType),
         customerName,
         customerEmail,
         businessName,
@@ -321,7 +364,7 @@ function buildTemplateFieldValues({
         incorporationCountry,
         country,
         phone,
-      });
+      }));
 
       if (!field?.id || !type || !value) {
         return null;
@@ -340,17 +383,39 @@ function buildTemplateFieldValues({
 
 function getDocumentFields(payload) {
   const document = extractDocument(payload);
+  const recipients = [
+    ...flattenItems(document?.recipients),
+    ...flattenItems(document?.Recipients),
+    ...flattenItems(document?.Recipient),
+    ...flattenItems(payload?.recipients),
+    ...flattenItems(payload?.Recipients),
+    ...flattenItems(payload?.Recipient),
+    ...flattenItems(payload?.data?.recipients),
+    ...flattenItems(payload?.data?.Recipients),
+    ...flattenItems(payload?.data?.Recipient),
+  ];
   const fields = [
     ...flattenItems(document?.fields),
+    ...flattenItems(document?.Fields),
+    ...flattenItems(document?.Field),
     ...flattenItems(payload?.fields),
+    ...flattenItems(payload?.Fields),
+    ...flattenItems(payload?.Field),
+    ...flattenItems(payload?.fieldValues),
     ...flattenItems(payload?.data?.fields),
-    ...flattenItems(document?.recipients?.flatMap?.((recipient) => recipient.fields || [])),
-    ...flattenItems(payload?.recipients?.flatMap?.((recipient) => recipient.fields || [])),
+    ...flattenItems(payload?.data?.Fields),
+    ...flattenItems(payload?.data?.Field),
+    ...flattenItems(payload?.data?.fieldValues),
+    ...recipients.flatMap((recipient) => [
+      ...flattenItems(recipient?.fields),
+      ...flattenItems(recipient?.Fields),
+      ...flattenItems(recipient?.Field),
+    ]),
   ];
   const seen = new Set();
 
   return fields.filter((field) => {
-    const key = String(field?.id || field?.secondaryId || `${field?.type || ""}:${getReadableFieldLabel(field)}`);
+    const key = String(field?.id || field?.secondaryId || field?.fieldId || `${field?.type || ""}:${getReadableFieldLabel(field)}`);
     if (!key || seen.has(key)) {
       return false;
     }
@@ -372,34 +437,86 @@ function normalizeSignedFieldValue(value) {
   }
 
   if (typeof value === "object") {
-    return normalizeSignedFieldValue(value.value || value.label || value.text || value.name || "");
+    return normalizeSignedFieldValue(value.value ?? value.label ?? value.text ?? value.name ?? value.id ?? "");
   }
 
   return String(value).replace(/\s+/gu, " ").trim();
 }
 
-function extractCheckedOptionValues(fieldMeta = {}) {
-  const values = Array.isArray(fieldMeta.values) ? fieldMeta.values : [];
+function optionValue(option) {
+  return normalizeSignedFieldValue(option?.value ?? option?.label ?? option?.text ?? option?.name ?? option?.id ?? "");
+}
+
+function normalizeSelectionSet(values = []) {
+  return new Set(
+    values
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .map((value) => normalizeSignedFieldValue(value).toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function extractCheckedOptionValues(field = {}) {
+  const fieldMeta = field?.fieldMeta || {};
+  const values = [
+    ...flattenItems(fieldMeta.values),
+    ...flattenItems(fieldMeta.options),
+    ...flattenItems(field?.values),
+    ...flattenItems(field?.options),
+  ];
+  const selectedValues = normalizeSelectionSet([
+    field?.value,
+    field?.selectedValue,
+    field?.selected_value,
+    field?.selectedValues,
+    field?.selected_values,
+    fieldMeta.value,
+    fieldMeta.defaultValue,
+    fieldMeta.selectedValue,
+    fieldMeta.selected_value,
+    fieldMeta.selectedValues,
+    fieldMeta.selected_values,
+  ]);
+
   return values
-    .filter((option) => option?.checked || option?.selected || option?.isSelected)
-    .map((option) => normalizeSignedFieldValue(option.value || option.label || option.text || option.id))
+    .filter((option) => {
+      const normalizedOptionValue = optionValue(option).toLowerCase();
+      return option?.checked || option?.selected || option?.isSelected || selectedValues.has(normalizedOptionValue);
+    })
+    .map(optionValue)
     .filter(Boolean);
 }
 
 function getSignedFieldValue(field) {
-  const checkedOptionValues = extractCheckedOptionValues(field?.fieldMeta);
+  const checkedOptionValues = extractCheckedOptionValues(field);
   if (checkedOptionValues.length) {
     return checkedOptionValues.join(", ");
+  }
+
+  if (field?.checked || field?.selected || field?.isSelected || field?.fieldMeta?.checked || field?.fieldMeta?.selected || field?.fieldMeta?.isSelected) {
+    return "Checked";
   }
 
   for (const candidate of [
     field?.customText,
     field?.value,
+    field?.text,
+    field?.answer,
     field?.insertedValue,
     field?.inserted_value,
-    field?.fieldMeta?.value,
+    field?.fieldValue,
+    field?.field_value,
+    field?.recipientValue,
+    field?.recipient_value,
+    field?.completedValue,
+    field?.completed_value,
     field?.fieldMeta?.text,
+    field?.fieldMeta?.value,
     field?.fieldMeta?.defaultValue,
+    field?.fieldMeta?.selectedValue,
+    field?.fieldMeta?.selected_value,
+    field?.fieldMeta?.selectedValues,
+    field?.fieldMeta?.selected_values,
   ]) {
     const normalized = normalizeSignedFieldValue(candidate);
     if (normalized) {
@@ -427,7 +544,7 @@ export function extractDocumentFieldValues(payload) {
       }
 
       return {
-        id: String(field?.id || field?.secondaryId || ""),
+        id: String(field?.id || field?.secondaryId || field?.fieldId || ""),
         label: getReadableFieldLabel(field),
         type,
         value,
@@ -522,10 +639,7 @@ export function mapDocumensoFieldValuesToContractDetails(fieldValues = []) {
       continue;
     }
 
-    if (
-      !details.customerName &&
-      (label.includes("full name") || label.includes("legal name") || label.includes("customer name") || label.includes("client name") || label.includes("signer name"))
-    ) {
+    if (!details.customerName && (label.includes("full name") || label.includes("legal name") || label.includes("customer name") || label.includes("client name") || label.includes("signer name") || label === "name")) {
       details.customerName = value;
       continue;
     }
@@ -552,6 +666,7 @@ function buildTemplateUsePayload({
   template,
   templateId,
   templateRecipientId,
+  customerType = "",
   customerName,
   customerEmail,
   businessName = "",
@@ -566,6 +681,7 @@ function buildTemplateUsePayload({
 }) {
   const fieldValues = buildTemplateFieldValues({
     template,
+    customerType,
     customerName,
     customerEmail,
     businessName,
@@ -577,7 +693,7 @@ function buildTemplateUsePayload({
     country,
     phone,
   });
-  const title = `ElevenOrbits Master Services Agreement ${contractNumber}`;
+  const title = `ElevenOrbits Managed Service Agreement ${contractNumber}`;
   const recipient = buildRecipientPayload({ templateRecipientId, customerName, customerEmail });
 
   return {
@@ -589,8 +705,8 @@ function buildTemplateUsePayload({
     override: {
       title,
       redirectUrl,
-      subject: "ElevenOrbits Master Services Agreement",
-      message: "Please review and sign the ElevenOrbits Master Services Agreement.",
+      subject: "ElevenOrbits Managed Service Agreement",
+      message: "Please review and sign the ElevenOrbits Managed Service Agreement.",
       distributionMethod: "NONE",
     },
   };
@@ -604,8 +720,8 @@ export async function distributeDocumentForSigning(documentId, redirectUrl) {
       meta: {
         redirectUrl,
         distributionMethod: "NONE",
-        subject: "ElevenOrbits Master Services Agreement",
-        message: "Please review and sign the ElevenOrbits Master Services Agreement.",
+        subject: "ElevenOrbits Managed Service Agreement",
+        message: "Please review and sign the ElevenOrbits Managed Service Agreement.",
       },
     },
   });
@@ -706,7 +822,14 @@ export async function getDocumentCompletionDetails(documentId) {
 
   return {
     status: normalizeStatus(document),
-    completedAt: document?.completedAt || document?.completed_at || null,
+    completedAt:
+      document?.completedAt ||
+      document?.completed_at ||
+      payload?.completedAt ||
+      payload?.completed_at ||
+      payload?.data?.completedAt ||
+      payload?.data?.completed_at ||
+      null,
     fieldValues: extractDocumentFieldValues(payload),
   };
 }

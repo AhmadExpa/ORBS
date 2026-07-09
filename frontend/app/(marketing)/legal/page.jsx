@@ -58,7 +58,7 @@ export default function LegalCenterPage() {
             <a className="font-semibold text-sky-700" href={`mailto:${siteConfig.billingEmail}`}>
               {siteConfig.billingEmail}
             </a>
-            .
+            . Company address: <span className="font-semibold text-slate-900">{siteConfig.companyAddress}</span>.
           </p>
         </div>
       </section>

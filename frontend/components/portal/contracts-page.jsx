@@ -120,6 +120,9 @@ export function ContractsPage() {
   const contract = contractQuery.data?.contract;
   const status = contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const agreementVersion = contract?.templateVersion || contractQuery.data?.agreementVersion || "1.0";
+  const signedFieldValues = Array.isArray(contract?.documensoFieldValues)
+    ? contract.documensoFieldValues.filter((field) => field?.value)
+    : [];
   const isBusiness = form.customerType === "BUSINESS";
   const firstStepComplete = Boolean(form.customerType && form.country && form.signingCapacity);
   const businessStepComplete =
@@ -297,7 +300,7 @@ export function ContractsPage() {
 
   return (
     <div>
-      <Topbar title="Contracts" subtitle="Sign the current services agreement and track administrative approval before purchasing." />
+      <Topbar title="Contracts" subtitle="Sign the current Managed Service Agreement and track administrative approval before purchasing." />
 
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <Card>
@@ -330,12 +333,28 @@ export function ContractsPage() {
                   ) : null}
                   <ContractFact label="Created" value={formatDate(contract.createdAt)} />
                   <ContractFact label="Signed" value={formatDate(contract.signedAt)} />
+                  <ContractFact label="Document Fields Synced" value={formatDate(contract.documensoFieldValuesSyncedAt)} />
                   <ContractFact label="Stored PDF Hash" value={fieldValue(contract.signedPdfSha256)} />
                   <ContractFact label="Account Email" value={fieldValue(contract.customerEmail)} />
                 </div>
               ) : (
-                <EmptyState title="No agreement started" description="Start the signing flow with your Clerk account name and verified email." />
+                <EmptyState title="No agreement started" description="Start the signing flow with your ElevenOrbits account name and verified email." />
               )}
+
+              {signedFieldValues.length ? (
+                <div className="border-t border-slate-200 pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Signed Document Fields</p>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {signedFieldValues.map((field, index) => (
+                      <ContractFact
+                        key={`${field.id || field.label || "field"}-${index}`}
+                        label={field.label || field.type || `Field ${index + 1}`}
+                        value={fieldValue(field.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               {contract?.adminRejectionReason ? (
                 <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
@@ -370,7 +389,7 @@ export function ContractsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Signing Access</CardTitle>
-              <CardDescription>Your Clerk account name and verified email are assigned to the Documenso signer automatically.</CardDescription>
+              <CardDescription>Your ElevenOrbits account name and verified email are assigned to the signer automatically.</CardDescription>
             </CardHeader>
             <CardContent>
               {status === "APPROVED" ? (
@@ -461,7 +480,7 @@ export function ContractsPage() {
                         </>
                       ) : (
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                          Individual agreements use your verified Clerk account name and email. No business registration details are required.
+                          Individual agreements use your verified ElevenOrbits account name and email. No business registration details are required.
                         </div>
                       )}
                       <TextInput

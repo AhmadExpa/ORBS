@@ -90,6 +90,7 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || "",
   jwtSecret: process.env.JWT_SECRET || "change-me",
   supportEmail: process.env.SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com",
+  companyAddress: process.env.COMPANY_ADDRESS || process.env.NEXT_PUBLIC_COMPANY_ADDRESS || "3326 Anna Gorge Dr. Valrico, FL 33596",
   notificationFromEmail: process.env.NOTIFICATION_FROM_EMAIL || process.env.SMTP_USER || "noreply@elevenorbits.com",
   notificationFromName: process.env.NOTIFICATION_FROM_NAME || "ElevenOrbits",
   smtpHost: process.env.SMTP_HOST || "mail.elevenorbits.com",
