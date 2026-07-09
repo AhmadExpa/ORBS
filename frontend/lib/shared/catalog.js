@@ -100,12 +100,12 @@ export const serviceCategories = [
 
 export const serviceFamilies = [
   {
-    name: "Servers",
-    description: "Managed compute foundations for hosted applications and business systems.",
-    pageSlug: "managed-servers",
-    categorySlugs: ["vps", "vds"],
-    includes: ["VPS", "VDS"],
-    techHighlights: ["KVM / Proxmox", "Ubuntu / AlmaLinux", "Nginx / Apache", "Managed backups"],
+    name: "Managed Cloud",
+    description: "Managed VPS, VDS, CDN, object storage, and self-hosted app infrastructure under one operating model.",
+    pageSlug: "services",
+    categorySlugs: ["vps", "vds", "cdn", "object-storage", "hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
+    includes: ["VPS", "VDS", "CDN", "Object Storage", "Hosted Apps"],
+    techHighlights: ["KVM / Proxmox", "S3-compatible storage", "Managed CDN", "Self-hosted apps"],
   },
   {
     name: "Call Centers",
@@ -130,22 +130,6 @@ export const serviceFamilies = [
     categorySlugs: ["cybersecurity"],
     includes: ["Basic", "Premium", "Platinum"],
     techHighlights: ["WAF", "SIEM", "EDR", "Patch governance"],
-  },
-  {
-    name: "Edge and Storage",
-    description: "Managed CDN delivery and S3-compatible object storage for fast, resilient content operations.",
-    pageSlug: "edge-storage-services",
-    categorySlugs: ["cdn", "object-storage"],
-    includes: ["CDN", "Object Storage"],
-    techHighlights: ["European edge delivery", "S3-compatible API", "DDoS protection", "Image optimization"],
-  },
-  {
-    name: "Self-Hosted Apps",
-    description: "Managed VPS-backed applications and AI agents with private data control, app handoff, and operational support.",
-    pageSlug: "self-hosted-app-services",
-    categorySlugs: ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
-    includes: ["Hermes AI", "OpenClaw", "Nextcloud"],
-    techHighlights: ["1-click app install", "Private VPS", "App URL handoff", "SSH and admin access"],
   },
 ];
 
