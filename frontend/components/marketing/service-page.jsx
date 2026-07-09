@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
+import { ServiceLogo, ServiceLogoCluster, ServiceVisualPanel, TechLogoPills, getCategoryBrand } from "./service-branding";
 
 function JsonLd({ data }) {
   return (
@@ -24,6 +25,8 @@ export function ServicePage({ slug }) {
   const marketing = serviceMarketingContent[slug];
   const departmentContact = getDepartmentContactByServiceSlug(slug);
   const primaryPurchasePlan = plans.find((plan) => !plan.contactSalesOnly);
+  const categoryBrand = getCategoryBrand(slug);
+  const planTechItems = [...new Set(plans.flatMap((plan) => plan.techStack || []))];
 
   if (!category) {
     return null;
@@ -87,18 +90,31 @@ export function ServicePage({ slug }) {
       <JsonLd data={serviceSchema} />
       <JsonLd data={breadcrumbSchema} />
       <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-panel">
-        <SectionHeading
-          eyebrow="Service Detail"
-          title={marketing?.headline || category.name}
-          description={marketing?.body || category.description}
-        />
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/#contact"}>
-            <Button>{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
-          </Link>
-          <a href={`mailto:${departmentContact.email}`}>
-            <Button variant="ghost">Email {departmentContact.title}</Button>
-          </a>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+          <div>
+            <div className="mb-6">
+              <ServiceLogo brand={categoryBrand} showLabel imageClassName="h-8 w-10" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-2xl" />
+            </div>
+            <SectionHeading
+              eyebrow="Service Detail"
+              title={marketing?.headline || category.name}
+              description={marketing?.body || category.description}
+            />
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/#contact"}>
+                <Button>{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
+              </Link>
+              <a href={`mailto:${departmentContact.email}`}>
+                <Button variant="ghost">Email {departmentContact.title}</Button>
+              </a>
+            </div>
+          </div>
+          <ServiceVisualPanel
+            title={`${category.name} delivery stack`}
+            description="The public plan, portal order, and managed handoff all stay tied to this service lane."
+            categorySlugs={[slug]}
+            techItems={planTechItems}
+          />
         </div>
       </section>
 
@@ -120,8 +136,13 @@ export function ServicePage({ slug }) {
             plans.map((plan) => (
               <Card key={plan.slug}>
                 <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <CardTitle>{plan.name}</CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </div>
+                    <ServiceLogo brand={categoryBrand} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-end justify-between gap-4">
@@ -140,13 +161,7 @@ export function ServicePage({ slug }) {
                   {plan.techStack?.length ? (
                     <div>
                       <p className="text-sm font-semibold text-slate-500">Tech Stack</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {plan.techStack.map((item) => (
-                          <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                            {item}
-                          </span>
-                        ))}
-                      </div>
+                      <TechLogoPills items={plan.techStack} limit={6} className="mt-3" />
                     </div>
                   ) : null}
                   <ul className="grid gap-2 text-sm text-slate-600 md:grid-cols-2">
@@ -182,6 +197,7 @@ export function ServicePage({ slug }) {
               <p>Customers do not self-manage infra from this portal. We handle monitoring, maintenance, and day-to-day operations.</p>
               <p>Fixed-price plans now start with account access, then configuration, card payment, and a confirmation page before the portal opens.</p>
               <p>Contact-sales plans route through the department contact flow first.</p>
+              <ServiceLogoCluster categorySlugs={[slug]} techItems={planTechItems} max={5} />
             </CardContent>
           </Card>
         </div>

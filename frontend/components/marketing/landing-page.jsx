@@ -14,6 +14,7 @@ import {
 import { getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
+import { ServiceLogoCluster, ServiceVisualPanel, TechLogoPills } from "./service-branding";
 import { TechStackShowcase } from "./tech-stack-showcase";
 
 const highlightSlugs = [
@@ -23,6 +24,19 @@ const highlightSlugs = [
   "starter-vicidial-management",
   "workflow-starter",
   "cybersecurity-basic",
+];
+
+const heroBrandSlugs = [
+  "vps",
+  "vds",
+  "vicidial",
+  "workflows",
+  "cdn",
+  "object-storage",
+  "hermes-ai-hosting",
+  "openclaw-hosting",
+  "nextcloud-hosting",
+  "cybersecurity",
 ];
 
 const heroSignals = [
@@ -255,16 +269,7 @@ export function LandingPage() {
                     </div>
 
                     <div className="mt-10 border-t border-[color:var(--marketing-line)] pt-6">
-                      <div className="flex flex-wrap gap-2.5">
-                        {serviceCategories.map((category) => (
-                          <span
-                            key={category.slug}
-                            className="rounded-full border border-slate-200 bg-white/88 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.2)]"
-                          >
-                            {category.name}
-                          </span>
-                        ))}
-                      </div>
+                      <ServiceLogoCluster categorySlugs={heroBrandSlugs} max={10} showLabels />
                     </div>
                   </div>
                 </div>
@@ -286,6 +291,7 @@ export function LandingPage() {
                   <p className="mt-5 text-sm leading-7 text-slate-600">
                     ElevenOrbits keeps provisioning, card payment activity, support, credential assignment, and service continuity inside one accountable delivery model.
                   </p>
+                  <ServiceLogoCluster categorySlugs={["vps", "workflows", "vicidial", "cdn", "hermes-ai-hosting"]} className="mt-6" />
                   <p className="mt-6 text-sm font-semibold text-slate-950">ElevenOrbits Team</p>
                 </div>
               </div>
@@ -384,6 +390,7 @@ export function LandingPage() {
                       <div className={cn("mt-8 h-1.5 w-16 rounded-full", theme.dividerClassName)} />
 
                       <div className="mt-8 space-y-6">
+                        <ServiceLogoCluster categorySlugs={family.categorySlugs} max={5} />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">Includes</p>
                           <p className={cn("mt-3 text-base font-semibold leading-7", theme.descriptionClassName)}>
@@ -502,6 +509,11 @@ export function LandingPage() {
                 </div>
 
                 <div className="space-y-6">
+                  <ServiceVisualPanel
+                    title="Partner-backed delivery"
+                    description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
+                    categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
+                  />
                   <div className="rounded-[2.4rem] border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]">
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
                     <div className="mt-6 space-y-4">
@@ -652,14 +664,7 @@ export function LandingPage() {
                     </div>
                     <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
                     <div className="mt-5 flex flex-wrap gap-2">
-                      {plan.techStack.slice(0, 2).map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700"
-                        >
-                          {item}
-                        </span>
-                      ))}
+                      <TechLogoPills items={plan.techStack} limit={2} />
                     </div>
                   </div>
                 ))}

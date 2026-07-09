@@ -2,6 +2,9 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { legalLastUpdated, legalPages } from "@/lib/legal-content";
 import { cn } from "@/lib/ui";
+import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
+
+const legalServiceSlugs = ["vps", "vds", "workflows", "cybersecurity", "object-storage", "development-support"];
 
 export function LegalPageShell({ page }) {
   return (
@@ -12,6 +15,7 @@ export function LegalPageShell({ page }) {
             <Link href="/legal" className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
               Legal
             </Link>
+            <ServiceLogoCluster categorySlugs={legalServiceSlugs} max={5} className="mt-5" />
             <nav className="mt-5 grid gap-2">
               {legalPages.map((item) => (
                 <Link
@@ -34,6 +38,12 @@ export function LegalPageShell({ page }) {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Last updated {legalLastUpdated}</p>
             <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{page.description}</p>
+            <ServiceVisualPanel
+              title="Managed service policy scope"
+              description="These policies apply across the website, customer portal, managed infrastructure, AI systems, workflow automation, storage, security, support, billing, and service handoff."
+              categorySlugs={legalServiceSlugs}
+              className="mt-8"
+            />
 
             <div className="mt-10 space-y-10 border-t border-slate-200 pt-10">
               {page.sections.map((section) => (

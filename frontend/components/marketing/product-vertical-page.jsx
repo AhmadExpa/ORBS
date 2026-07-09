@@ -4,9 +4,6 @@ import {
   Bot,
   CheckCircle2,
   Cloud,
-  Cpu,
-  Database,
-  Network,
   PhoneCall,
   Server,
   ShieldCheck,
@@ -23,6 +20,7 @@ import {
 } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
+import { ServiceLogo, ServiceLogoCluster, TechLogoPills, getCategoryBrand } from "./service-branding";
 
 const verticalIconMap = {
   "managed-servers": Server,
@@ -33,22 +31,6 @@ const verticalIconMap = {
   "self-hosted-app-services": Bot,
   "workflow-automation": Workflow,
   "managed-it-support": Wrench,
-};
-
-const categoryIconMap = {
-  vps: Server,
-  vds: Database,
-  "ai-servers": Cpu,
-  vicidial: PhoneCall,
-  workflows: Workflow,
-  "ai-solutions": Bot,
-  "development-support": Wrench,
-  cybersecurity: ShieldCheck,
-  cdn: Network,
-  "object-storage": Cloud,
-  "hermes-ai-hosting": Bot,
-  "openclaw-hosting": Bot,
-  "nextcloud-hosting": Cloud,
 };
 
 const verticalThemes = {
@@ -202,6 +184,7 @@ export function ProductVerticalPage({ slug }) {
   const theme = verticalThemes[slug] || verticalThemes["managed-servers"];
   const Icon = verticalIconMap[slug] || Server;
   const plans = productPlanSeeds.filter((plan) => vertical.categorySlugs.includes(plan.categorySlug));
+  const laneTechItems = [...new Set(plans.flatMap((plan) => plan.techStack || []))];
   const categories = vertical.categorySlugs
     .map((categorySlug) => serviceCategories.find((category) => category.slug === categorySlug))
     .filter(Boolean);
@@ -231,6 +214,7 @@ export function ProductVerticalPage({ slug }) {
                   {vertical.title}
                 </h1>
                 <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">{vertical.description}</p>
+                <ServiceLogoCluster categorySlugs={vertical.categorySlugs} techItems={laneTechItems} max={7} showLabels className="mt-7" />
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href={getSignupPath()}>
@@ -260,6 +244,7 @@ export function ProductVerticalPage({ slug }) {
                   <p className="text-sm leading-7 text-slate-600">
                     This page is part of the ElevenOrbits public product network. Login, billing, support, and private dashboards stay behind protected portal routes.
                   </p>
+                  <ServiceLogoCluster categorySlugs={vertical.categorySlugs} techItems={laneTechItems} max={5} className="mt-5" />
                 </div>
               </aside>
             </div>
@@ -306,22 +291,17 @@ export function ProductVerticalPage({ slug }) {
               {plans.map((plan) => (
                 <article key={plan.slug} className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{categoryNameFor(plan.categorySlug)}</p>
                       <h3 className="mt-2 text-xl font-semibold tracking-[-0.015em] text-slate-950">{plan.name}</h3>
                     </div>
+                    <ServiceLogo brand={getCategoryBrand(plan.categorySlug)} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
                     <p className="shrink-0 text-sm font-semibold text-slate-950">
                       {plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`}
                     </p>
                   </div>
                   <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {plan.techStack?.slice(0, 4).map((item) => (
-                      <span key={item} className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
+                  <TechLogoPills items={plan.techStack} limit={4} className="mt-5" />
                   <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-950/[0.07] pt-4">
                     <Link href={`/services/${plan.categorySlug}`} className="text-sm font-semibold text-slate-600 transition hover:text-slate-950">
                       Service details
@@ -356,7 +336,7 @@ export function ProductVerticalPage({ slug }) {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Related Detail Pages</p>
               <div className="mt-4 space-y-2">
                 {categories.map((category) => {
-                  const CategoryIcon = categoryIconMap[category.slug] || Server;
+                  const brand = getCategoryBrand(category.slug);
 
                   return (
                     <Link
@@ -365,7 +345,7 @@ export function ProductVerticalPage({ slug }) {
                       className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white hover:text-slate-950"
                     >
                       <span className="flex items-center gap-2">
-                        <CategoryIcon className="h-4 w-4" />
+                        <ServiceLogo brand={brand} imageClassName="h-5 w-6" className="[&>span:first-child]:h-7 [&>span:first-child]:w-7 [&>span:first-child]:rounded-lg [&>span:first-child]:shadow-none" />
                         {category.name}
                       </span>
                       <ArrowRight className="h-4 w-4" />

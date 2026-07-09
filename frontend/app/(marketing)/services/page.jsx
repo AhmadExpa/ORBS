@@ -15,6 +15,7 @@ import {
 import { serviceCategories, serviceVerticals } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
+import { ServiceLogo, ServiceLogoCluster, ServiceVisualPanel, getCategoryBrand } from "@/components/marketing/service-branding";
 
 export const metadata = {
   title: "Services",
@@ -69,22 +70,12 @@ export default function ServicesPage() {
               ))}
             </div>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 lg:justify-self-end">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white">
-                <ShieldCheck className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Account-First Ordering</p>
-                <p className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.03em] text-slate-950">
-                  Sign up before configuration and payment.
-                </p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Paid plans continue into a protected portal flow where settings are chosen before card checkout.
-                </p>
-              </div>
-            </div>
-          </div>
+          <ServiceVisualPanel
+            title="All service lines in one managed catalog"
+            description="Customers can compare hosting, AI, call-center, storage, security, and app hosting services before entering the portal."
+            categorySlugs={serviceCategories.map((category) => category.slug)}
+            className="lg:justify-self-end"
+          />
         </div>
       </section>
 
@@ -118,6 +109,7 @@ export default function ServicesPage() {
                   </span>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-slate-600">{vertical.seoDescription}</p>
+                <ServiceLogoCluster categorySlugs={vertical.categorySlugs} max={4} className="mt-5" />
                 <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-slate-700">
                   Explore sector
                   <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
@@ -139,7 +131,7 @@ export default function ServicesPage() {
 
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {serviceCategories.map((category) => {
-          const Icon = serviceIconMap[category.slug] || Server;
+          const brand = getCategoryBrand(category.slug);
 
           return (
             <Card key={category.slug} className="transition hover:-translate-y-1 hover:shadow-panel">
@@ -149,9 +141,7 @@ export default function ServicesPage() {
                     <CardTitle>{category.name}</CardTitle>
                     <CardDescription>{category.description}</CardDescription>
                   </div>
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 shadow-sm">
-                    <Icon className="h-5 w-5" strokeWidth={2.1} />
-                  </div>
+                  <ServiceLogo brand={brand} imageClassName="h-8 w-9" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-2xl" />
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">

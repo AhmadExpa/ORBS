@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
+
+const companyServiceSlugs = ["vps", "vds", "workflows", "vicidial", "cybersecurity", "hermes-ai-hosting"];
 
 export function CompanyInfoPage({ page }) {
   return (
@@ -14,6 +17,7 @@ export function CompanyInfoPage({ page }) {
           <aside className="h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Operating View</p>
             <p className="mt-4 text-sm leading-7 text-slate-600">{page.summary}</p>
+            <ServiceLogoCluster categorySlugs={companyServiceSlugs} max={6} className="mt-5" />
           </aside>
         </div>
       </section>
@@ -32,6 +36,12 @@ export function CompanyInfoPage({ page }) {
 
       <section>
         <div className="mx-auto max-w-[1280px] px-6 py-12">
+          <ServiceVisualPanel
+            title="Public service identity"
+            description="Every company page now carries the same product logo system used across services, pricing, resources, and the portal order flow."
+            categorySlugs={companyServiceSlugs}
+            className="mb-10"
+          />
           <div className="grid gap-8">
             {page.sections.map((section) => (
               <article key={section.heading} className="grid gap-5 border-b border-slate-200 pb-8 last:border-0 last:pb-0 lg:grid-cols-[280px_minmax(0,1fr)]">

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock3, Layers3, ShieldCheck, Sparkles } from "lucide-react";
-import { featuredTechPartners } from "@/lib/marketing-content";
+import { featuredPartnerLogos } from "@/lib/marketing-content";
 import { getPurchasePath, productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
 import { Button, cn } from "@/lib/ui";
+import { ServiceLogo, TechLogoPills, getCategoryBrand } from "@/components/marketing/service-branding";
 
 export const metadata = {
   title: "Pricing | ElevenOrbits",
@@ -71,12 +72,16 @@ function getBillingLabel(plan) {
 function PlanRow({ plan }) {
   const primaryFeatures = plan.features.slice(0, 3);
   const price = plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`;
+  const brand = getCategoryBrand(plan.categorySlug);
 
   return (
     <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1.1fr)_170px_minmax(0,1.25fr)_190px] md:items-center lg:px-7">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight text-slate-950">{plan.name}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{plan.description}</p>
+      <div className="flex items-start gap-3">
+        <ServiceLogo brand={brand} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight text-slate-950">{plan.name}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{plan.description}</p>
+        </div>
       </div>
 
       <div>
@@ -92,13 +97,7 @@ function PlanRow({ plan }) {
           </div>
         ))}
         {plan.techStack?.length ? (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {plan.techStack.slice(0, 4).map((item) => (
-              <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                {item}
-              </span>
-            ))}
-          </div>
+          <TechLogoPills items={plan.techStack} limit={4} className="pt-1" />
         ) : null}
       </div>
 
@@ -179,7 +178,10 @@ export default function PricingPage() {
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-current">Service Lane {String(categoryIndex + 1).padStart(2, "0")}</p>
-                    <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">{category.name}</h2>
+                    <div className="mt-3 flex items-center gap-3">
+                      <ServiceLogo brand={getCategoryBrand(category.slug)} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
+                      <h2 className="text-2xl font-semibold tracking-tight text-white">{category.name}</h2>
+                    </div>
                     <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">{category.description}</p>
                   </div>
                   <div className="lg:text-right">
@@ -212,9 +214,12 @@ export default function PricingPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
-              {featuredTechPartners.map((partner) => (
-                <span key={partner} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                  {partner}
+              {featuredPartnerLogos.slice(0, 14).map((partner) => (
+                <span key={partner.name} className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                  {partner.logo ? (
+                    <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="h-7 w-9 object-contain" />
+                  ) : null}
+                  {partner.name}
                 </span>
               ))}
               <Link href="/tech-stack" className="inline-flex items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">

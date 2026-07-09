@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { LogIn, Menu, X } from "lucide-react";
-import { Button } from "@/lib/ui";
+import { Button, cn } from "@/lib/ui";
 import { getLoginPath, getSignupPath } from "@/lib/shared";
 import { BrandLogo } from "./brand-logo";
 
@@ -19,11 +19,28 @@ const landingNavItems = [
 export function SiteHeader() {
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const greetingName = user?.firstName || user?.fullName || user?.username || "there";
+  const elevated = hasScrolled || mobileMenuOpen;
+
+  useEffect(() => {
+    const updateScrolled = () => setHasScrolled(window.scrollY > 8);
+    updateScrolled();
+    window.addEventListener("scroll", updateScrolled, { passive: true });
+
+    return () => window.removeEventListener("scroll", updateScrolled);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/92 shadow-[0_18px_46px_-42px_rgba(15,23,42,0.45)] backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1520px] items-center gap-5 px-4 py-4 sm:px-6 lg:px-8">
+    <header
+      className={cn(
+        "sticky top-0 z-30 border-b backdrop-blur-xl transition-all duration-300",
+        elevated
+          ? "border-slate-200/80 bg-white/94 shadow-[0_18px_46px_-42px_rgba(15,23,42,0.45)]"
+          : "border-transparent bg-white/72 shadow-none",
+      )}
+    >
+      <div className={cn("mx-auto flex w-full max-w-[1520px] items-center gap-5 px-4 transition-[padding] duration-300 sm:px-6 lg:px-8", elevated ? "py-3" : "py-4")}>
         <Link href="/" className="flex shrink-0 items-center" aria-label="ElevenOrbits home">
           <BrandLogo className="h-11 w-[196px] md:h-12 md:w-[230px]" imageClassName="w-full" priority />
         </Link>

@@ -1,5 +1,33 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ServiceLogoCluster } from "./service-branding";
+
+const coreServiceSlugs = ["vps", "workflows", "vicidial", "cybersecurity", "cdn", "hermes-ai-hosting"];
+
+const recommendationSlugs = {
+  "Managed Servers": ["vps", "vds"],
+  "Cybersecurity Services": ["cybersecurity"],
+  "Workflow Automation": ["workflows"],
+  "VoIP and Vicidial Services": ["vicidial"],
+  "Development Support": ["development-support"],
+  "AI Services": ["ai-servers", "ai-solutions", "workflows"],
+  "Managed CDN": ["cdn"],
+  "Object Storage": ["object-storage"],
+  "Self-Hosted App Services": ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
+};
+
+const resourceSlugs = {
+  "managed-vps-buyers-guide": ["vps", "vds"],
+  "private-ai-deployment-checklist": ["ai-servers", "ai-solutions", "hermes-ai-hosting"],
+  "workflow-automation-readiness": ["workflows"],
+  "vicidial-operations-checklist": ["vicidial"],
+  "server-security-hardening-baseline": ["cybersecurity", "vps"],
+  "billing-renewal-guide": ["vps", "development-support"],
+};
+
+function slugsForRecommendations(items = []) {
+  return [...new Set(items.flatMap((item) => recommendationSlugs[item] || []))];
+}
 
 export function IndustryIndex({ industries }) {
   return (
@@ -13,6 +41,7 @@ export function IndustryIndex({ industries }) {
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">
             ElevenOrbits supports industries where infrastructure, support, billing, security, and automation need to stay coordinated after launch.
           </p>
+          <ServiceLogoCluster categorySlugs={coreServiceSlugs} max={6} showLabels className="mt-7" />
         </div>
       </section>
       <section>
@@ -22,6 +51,7 @@ export function IndustryIndex({ industries }) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{industry.eyebrow}</p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{industry.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">{industry.description}</p>
+              <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={4} className="mt-5" />
               <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition group-hover:text-slate-950">
                 Read details
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
@@ -44,6 +74,7 @@ export function IndustryDetail({ industry }) {
           </Link>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{industry.title}</h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{industry.description}</p>
+          <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={6} showLabels className="mt-7" />
         </div>
       </section>
       <section>
@@ -80,6 +111,7 @@ export function IndustryDetail({ industry }) {
                 <span key={item} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">{item}</span>
               ))}
             </div>
+            <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={5} className="mt-5" />
             <Link href="/services" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950">
               Compare services
               <ArrowRight className="h-4 w-4" />
@@ -103,6 +135,7 @@ export function ResourceIndex({ resources }) {
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">
             Use these guides to prepare better service requests, reduce back-and-forth, and make operational decisions before entering the portal.
           </p>
+          <ServiceLogoCluster categorySlugs={coreServiceSlugs} max={6} showLabels className="mt-7" />
         </div>
       </section>
       <section>
@@ -112,6 +145,7 @@ export function ResourceIndex({ resources }) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{resource.eyebrow}</p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{resource.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">{resource.description}</p>
+              <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={4} className="mt-5" />
               <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition group-hover:text-slate-950">
                 Open guide
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
@@ -134,6 +168,7 @@ export function ResourceDetail({ resource }) {
           </Link>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{resource.title}</h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{resource.description}</p>
+          <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={6} showLabels className="mt-7" />
         </div>
       </section>
       <section>
@@ -141,6 +176,7 @@ export function ResourceDetail({ resource }) {
           <aside className="h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Guide Summary</p>
             <p className="mt-4 text-sm leading-7 text-slate-600">{resource.intro}</p>
+            <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={5} className="mt-5" />
           </aside>
           <div className="space-y-8">
             {resource.sections.map((section) => (
