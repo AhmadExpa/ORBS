@@ -432,126 +432,126 @@ export function LandingPage() {
 
       <section id="managed" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
-        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-10 xl:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="space-y-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">
-                03 / Why ElevenOrbits
-              </p>
-              <p className="text-sm leading-7 text-slate-600">
-                The value is the operating layer around the service: provisioning, billing structure, support ownership, and controlled change execution.
-              </p>
-            </div>
+        <div className="mx-auto max-w-[1680px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-8">
+            <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-end">
+              <div className="space-y-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">
+                  03 / Why ElevenOrbits
+                </p>
+                <p className="text-sm leading-7 text-slate-600">
+                  The value is the operating layer around the service: provisioning, billing structure, support ownership, and controlled change execution.
+                </p>
+              </div>
 
-            <div className="space-y-8">
-              <h2 className="max-w-5xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-slate-950">
+              <h2 className="max-w-6xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-slate-950">
                 Why teams choose
                 <span className="block">a managed operating layer.</span>
               </h2>
+            </div>
 
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_380px]">
-                <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_34px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur">
-                  <div className="grid gap-px bg-[color:var(--marketing-line)] md:grid-cols-3">
-                    {[
-                      {
-                        title: "Structured delivery",
-                        description: "Orders and service requests turn into accountable provisioning workflows with customer notes, tracked approvals, and controlled fulfillment.",
-                        icon: ServerCog,
-                      },
-                      {
-                        title: "Unified service ownership",
-                        description: "Infrastructure, AI services, workflow systems, and support escalation remain visible under one operational umbrella.",
-                        icon: Workflow,
-                      },
-                      {
-                        title: "Professional customer handling",
-                        description: "Billing, tickets, wallet funding, and saved payment methods fit into the same customer record instead of disconnected tools.",
-                        icon: Headset,
-                      },
-                    ].map((item, index) => {
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/90 shadow-[0_34px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur">
+                <div className="grid gap-px bg-[color:var(--marketing-line)] md:grid-cols-3">
+                  {[
+                    {
+                      title: "Structured delivery",
+                      description: "Orders and service requests turn into accountable provisioning workflows with customer notes, tracked approvals, and controlled fulfillment.",
+                      icon: ServerCog,
+                    },
+                    {
+                      title: "Unified service ownership",
+                      description: "Infrastructure, AI services, workflow systems, and support escalation remain visible under one operational umbrella.",
+                      icon: Workflow,
+                    },
+                    {
+                      title: "Professional customer handling",
+                      description: "Billing, tickets, wallet funding, and saved payment methods fit into the same customer record instead of disconnected tools.",
+                      icon: Headset,
+                    },
+                  ].map((item, index) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <div key={item.title} className="bg-white px-7 py-8">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
+                        <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <h3 className="mt-6 text-xl font-semibold tracking-tight text-slate-950">{item.title}</h3>
+                        <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-7 md:p-8">
+                  <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">
+                        Customer Journey
+                      </p>
+                      <p className="mt-4 text-3xl font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950">
+                        Create the order. We take the delivery forward.
+                      </p>
+                      <p className="mt-4 text-sm leading-7 text-slate-600">
+                        Customers choose the plan, configure the monthly add-ons, review pricing, and leave final notes. ElevenOrbits handles provisioning,
+                        assigns access after setup, and keeps support tied to the active service.
+                      </p>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        "Order created with plan and add-ons",
+                        "Deployment notes captured before fulfillment",
+                        "Credentials and IP details assigned after provisioning",
+                      ].map((item) => (
+                        <div key={item} className="rounded-md border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <ServiceVisualPanel
+                  title="Partner-backed delivery"
+                  description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
+                  categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
+                  className="eo-premium-card eo-reveal-soft"
+                />
+                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]" style={{ "--eo-delay": "90ms" }}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
+                  <div className="mt-6 space-y-4">
+                    {governanceSignals.map((item) => {
                       const Icon = item.icon;
 
                       return (
-                        <div key={item.title} className="bg-white px-7 py-8">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
-                          <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
-                            <Icon className="h-5 w-5" />
-                          </span>
-                          <h3 className="mt-6 text-xl font-semibold tracking-tight text-slate-950">{item.title}</h3>
-                          <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
+                        <div key={item.label} className="rounded-md border border-slate-200 bg-white px-4 py-4">
+                          <div className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-950">{item.label}</p>
+                              <p className="mt-2 text-sm leading-7 text-slate-600">{item.value}</p>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  <div className="border-t border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-7 md:p-8">
-                    <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">
-                          Customer Journey
-                        </p>
-                        <p className="mt-4 text-3xl font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950">
-                          Create the order. We take the delivery forward.
-                        </p>
-                        <p className="mt-4 text-sm leading-7 text-slate-600">
-                          Customers choose the plan, configure the monthly add-ons, review pricing, and leave final notes. ElevenOrbits handles provisioning,
-                          assigns access after setup, and keeps support tied to the active service.
-                        </p>
-                      </div>
-                      <div className="grid gap-3">
-                        {[
-                          "Order created with plan and add-ons",
-                          "Deployment notes captured before fulfillment",
-                          "Credentials and IP details assigned after provisioning",
-                        ].map((item) => (
-                          <div key={item} className="rounded-md border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
-                <div className="space-y-6">
-                  <ServiceVisualPanel
-                    title="Partner-backed delivery"
-                    description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
-                    categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
-                    className="eo-premium-card eo-reveal-soft"
-                  />
-                  <div className="eo-premium-card eo-reveal-soft rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]" style={{ "--eo-delay": "90ms" }}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
-                    <div className="mt-6 space-y-4">
-                      {governanceSignals.map((item) => {
-                        const Icon = item.icon;
-
-                        return (
-                          <div key={item.label} className="rounded-md border border-slate-200 bg-white px-4 py-4">
-                            <div className="flex items-start gap-3">
-                              <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                                <Icon className="h-4 w-4" />
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-950">{item.label}</p>
-                                <p className="mt-2 text-sm leading-7 text-slate-600">{item.value}</p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]" style={{ "--eo-delay": "160ms" }}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">ElevenOrbits Standard</p>
-                    <p className="mt-5 text-3xl font-semibold leading-[1.05] tracking-[-0.04em]">
-                      Professional systems deserve professional operational ownership.
-                    </p>
-                    <p className="mt-4 text-sm leading-7 text-white/70">
-                      We lead with clarity, service structure, and governance because serious business systems need more than surface-level marketing.
-                    </p>
-                  </div>
+                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]" style={{ "--eo-delay": "160ms" }}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">ElevenOrbits Standard</p>
+                  <p className="mt-5 text-3xl font-semibold leading-[1.05] tracking-[-0.04em]">
+                    Professional systems deserve professional operational ownership.
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-white/70">
+                    We lead with clarity, service structure, and governance because serious business systems need more than surface-level marketing.
+                  </p>
                 </div>
               </div>
             </div>
