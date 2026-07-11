@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import {
   ArrowRight,
@@ -49,11 +50,17 @@ const utilityLinks = [
 
 export function SiteHeader() {
   const { user } = useUser();
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const greetingName = user?.firstName || user?.fullName || user?.username || "there";
   const elevated = hasScrolled || mobileMenuOpen;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const updateScrolled = () => setHasScrolled(window.scrollY > 8);
@@ -68,8 +75,10 @@ export function SiteHeader() {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
@@ -80,10 +89,27 @@ export function SiteHeader() {
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenuOpen]);
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+    setMobileServicesOpen(true);
+  }
+
+  function toggleMobileMenu() {
+    setServicesMenuOpen(false);
+    setMobileMenuOpen((current) => {
+      const next = !current;
+      if (next) {
+        setMobileServicesOpen(true);
+      }
+      return next;
+    });
+  }
 
   return (
     <header
@@ -228,54 +254,91 @@ export function SiteHeader() {
             className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950 lg:hidden"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((current) => !current)}
+            aria-controls="site-mobile-menu"
+            onClick={toggleMobileMenu}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
-      {mobileMenuOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-white lg:hidden">
-          <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-5">
+      {mounted && mobileMenuOpen
+        ? createPortal(
+            <div
+              id="site-mobile-menu"
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950 text-white lg:hidden"
+            >
+              <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-5 py-5">
             <div className="flex items-center justify-between gap-4">
-              <Link href="/" aria-label="ElevenOrbits home" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/" aria-label="ElevenOrbits home" onClick={closeMobileMenu}>
                 <BrandLogo className="h-10 w-[188px]" imageClassName="brightness-0 invert" priority />
               </Link>
               <button
                 type="button"
                 className="flex h-11 w-11 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white"
                 aria-label="Close menu"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <nav className="mt-10 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/40">Services</p>
-              <div className="mt-4 grid gap-4">
-                {serviceFamilies.map((family) => {
-                  const Icon = familyIcons[family.name] || Workflow;
-                  return (
-                    <Link
-                      key={family.name}
-                      href={`/${family.pageSlug || "services"}`}
-                      className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="flex items-start gap-4">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-950">
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-2xl font-semibold tracking-[-0.03em]">{family.name}</span>
-                          <span className="mt-2 block text-sm leading-6 text-white/60">{family.description}</span>
-                          <ServiceLogoCluster categorySlugs={family.categorySlugs} max={4} className="mt-4 [&_img]:brightness-0 [&_img]:invert" />
-                        </span>
+              <div>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-4 rounded-md py-3 text-left text-4xl font-semibold tracking-[-0.05em]"
+                  aria-expanded={mobileServicesOpen}
+                  onClick={() => setMobileServicesOpen((open) => !open)}
+                >
+                  Services
+                  <ChevronDown className={cn("h-7 w-7 shrink-0 text-white/45 transition", mobileServicesOpen && "rotate-180")} />
+                </button>
+
+                {mobileServicesOpen ? (
+                  <div className="mt-4 grid gap-4">
+                    {serviceFamilies.map((family) => {
+                      const Icon = familyIcons[family.name] || Workflow;
+                      return (
+                        <Link
+                          key={family.name}
+                          href={`/${family.pageSlug || "services"}`}
+                          className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                          onClick={closeMobileMenu}
+                        >
+                          <div className="flex items-start gap-4">
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-950">
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-2xl font-semibold tracking-[-0.03em]">{family.name}</span>
+                              <span className="mt-2 block text-sm leading-6 text-white/60">{family.description}</span>
+                              <ServiceLogoCluster categorySlugs={family.categorySlugs} max={4} className="mt-4 [&_img]:brightness-0 [&_img]:invert" />
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">Product Pages</p>
+                      <div className="mt-3 grid gap-1.5">
+                        {serviceVerticals.map((vertical) => (
+                          <Link
+                            key={vertical.slug}
+                            href={`/${vertical.slug}`}
+                            className="flex items-center justify-between rounded-md py-2.5 text-base font-semibold text-white"
+                            onClick={closeMobileMenu}
+                          >
+                            {vertical.name}
+                            <ArrowRight className="h-4 w-4 text-white/35" />
+                          </Link>
+                        ))}
                       </div>
-                    </Link>
-                  );
-                })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-9 border-t border-white/10 pt-6">
@@ -286,7 +349,7 @@ export function SiteHeader() {
                       key={item.href}
                       href={item.href}
                       className="flex items-center justify-between rounded-md py-3 text-3xl font-semibold tracking-[-0.04em] text-white"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={closeMobileMenu}
                     >
                       {item.label}
                       <ArrowRight className="h-6 w-6 text-white/35" />
@@ -301,14 +364,14 @@ export function SiteHeader() {
                 <Link
                   href={getSignupPath()}
                   className="rounded-md bg-white px-4 py-3 text-center text-base font-semibold text-slate-950"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   Get Started
                 </Link>
                 <Link
                   href={getLoginPath()}
                   className="rounded-md border border-white/15 px-4 py-3 text-center text-base font-semibold text-white"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   Log In
                 </Link>
@@ -317,15 +380,17 @@ export function SiteHeader() {
                 <Link
                   href="/portal"
                   className="rounded-md bg-white px-4 py-3 text-center text-base font-semibold text-slate-950"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   Open Portal
                 </Link>
               </SignedIn>
             </div>
-          </div>
-        </div>
-      ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </header>
   );
 }
