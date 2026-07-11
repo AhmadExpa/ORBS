@@ -142,6 +142,41 @@ select {
   }
 }
 
+@keyframes eo-reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes eo-reveal-soft {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes eo-float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
 .tech-stack-marquee {
   position: relative;
   overflow: hidden;
@@ -167,6 +202,15 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
   .tech-stack-marquee {
     mask-image: none;
     overflow-x: auto;
@@ -199,16 +243,16 @@ select {
 
   .marketing-glow {
     background:
-      radial-gradient(circle at 14% 18%, rgba(255, 122, 26, 0.22), transparent 24%),
-      radial-gradient(circle at 82% 12%, rgba(12, 108, 242, 0.14), transparent 22%),
-      radial-gradient(circle at 84% 80%, rgba(255, 162, 84, 0.12), transparent 20%);
+      linear-gradient(135deg, rgba(255, 122, 26, 0.13) 0%, transparent 34%),
+      linear-gradient(225deg, rgba(12, 108, 242, 0.1) 0%, transparent 36%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(248, 250, 252, 0.72));
   }
 
   .marketing-stage {
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.76)),
-      radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
-      radial-gradient(circle at right center, rgba(12, 108, 242, 0.08), transparent 26%);
+      linear-gradient(120deg, rgba(255, 122, 26, 0.08) 0%, transparent 36%),
+      linear-gradient(240deg, rgba(12, 108, 242, 0.08) 0%, transparent 34%);
   }
 
   .marketing-strata {
@@ -224,5 +268,45 @@ select {
         transparent 42%,
         transparent 100%
       );
+  }
+
+  .eo-reveal-up {
+    animation: eo-reveal-up 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--eo-delay, 0ms);
+  }
+
+  .eo-reveal-soft {
+    animation: eo-reveal-soft 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--eo-delay, 0ms);
+  }
+
+  .eo-float-slow {
+    animation: eo-float-slow 7s ease-in-out infinite;
+  }
+
+  .eo-premium-card {
+    transform: translateZ(0);
+    transition:
+      border-color 220ms ease,
+      box-shadow 220ms ease,
+      transform 220ms ease,
+      background-color 220ms ease;
+    will-change: transform;
+  }
+
+  .eo-premium-card:hover {
+    transform: translate3d(0, -3px, 0);
+    box-shadow: 0 30px 90px -62px rgba(15, 23, 42, 0.42);
+  }
+
+  .eo-media-grid {
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.05), transparent 38%),
+      linear-gradient(to right, rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+    background-size:
+      auto,
+      54px 54px,
+      54px 54px;
   }
 }

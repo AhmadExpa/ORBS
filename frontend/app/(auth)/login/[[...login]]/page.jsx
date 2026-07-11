@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, SignIn } from "@clerk/nextjs";
-import { ArrowRight, LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
+import { LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
-import { LogoSpinner } from "@/components/shared/logo-spinner";
-import { AccountStatusNotice } from "@/components/auth/account-status-notice";
+import { LoginModePanel } from "@/components/auth/login-mode-panel";
 
 function resolveRedirect(searchParams) {
   const value = searchParams?.redirect_url || searchParams?.redirectUrl || "/portal";
@@ -13,23 +11,6 @@ function resolveRedirect(searchParams) {
     ? redirectTo
     : "/portal";
 }
-
-const authAppearance = {
-  elements: {
-    rootBox: "w-full",
-    card: "w-full border border-slate-200/90 bg-white shadow-[0_28px_80px_-54px_rgba(15,23,42,0.55)] rounded-lg",
-    headerTitle: "text-slate-950 text-2xl font-semibold tracking-[-0.02em]",
-    headerSubtitle: "text-slate-500",
-    socialButtonsBlockButton:
-      "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300",
-    formButtonPrimary:
-      "bg-slate-950 hover:bg-black text-white shadow-[0_16px_34px_-20px_rgba(15,23,42,0.9)]",
-    formFieldInput:
-      "rounded-md border-slate-200 focus:border-slate-400 focus:ring-slate-300",
-    footer: "hidden",
-    footerPages: "hidden",
-  },
-};
 
 export default async function LoginPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
@@ -84,36 +65,7 @@ export default async function LoginPage({ searchParams }) {
             <Link href="/" className="mb-8 inline-flex lg:hidden" aria-label="ElevenOrbits home">
               <BrandLogo className="h-11 w-[210px]" priority />
             </Link>
-            <SignedOut>
-              <AccountStatusNotice />
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Customer Portal</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Log in to continue.</h2>
-              </div>
-              <SignIn
-                routing="path"
-                path="/login"
-                signUpUrl={signupUrl}
-                forceRedirectUrl={redirectTo}
-                fallbackRedirectUrl={redirectTo}
-                signUpForceRedirectUrl={redirectTo}
-                signUpFallbackRedirectUrl={redirectTo}
-                appearance={authAppearance}
-              />
-              <p className="mt-5 text-center text-sm text-slate-600">
-                Need an account?{" "}
-                <Link href={signupUrl} className="inline-flex items-center gap-1 font-semibold text-slate-950 transition hover:text-slate-700">
-                  Create one <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </p>
-            </SignedOut>
-            <SignedIn>
-              <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
-                <LogoSpinner size={60} />
-                <p className="mt-5 text-lg font-semibold tracking-tight text-slate-900">Signing you in…</p>
-                <p className="mt-2 text-sm text-slate-500">Taking you to your ElevenOrbits portal.</p>
-              </div>
-            </SignedIn>
+            <LoginModePanel redirectTo={redirectTo} signupUrl={signupUrl} />
           </div>
         </section>
       </div>

@@ -2,6 +2,7 @@ import express from "express";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
+import { requirePortalActor } from "../../middleware/require-portal-actor.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import {
@@ -80,7 +81,7 @@ const startContractSchema = z
 
 contractsRouter.get(
   "/current",
-  requireCustomer,
+  requirePortalActor,
   asyncHandler(async (req, res) => {
     const summary = await getCurrentContractSummary(req.auth.clerkId);
     res.json(summary);

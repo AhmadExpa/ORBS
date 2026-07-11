@@ -5,6 +5,7 @@ import {
   Addon,
   ActivityLog,
   AdminSetting,
+  ContactSubmission,
   Invoice,
   Order,
   PaymentSubmission,
@@ -28,6 +29,7 @@ import { env } from "../../config/env.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { sendInvoiceNotification, sendServiceAccessNotification } from "../../services/email-service.js";
 import { blockCustomer, reactivateCustomer, suspendCustomer } from "../../services/account-status-service.js";
+import { contactSubmissionUpdateSchema } from "../../services/contact-submission-service.js";
 import {
   approveContract,
   createContractDownloadUrl,
@@ -335,7 +337,17 @@ adminRouter.get(
     await processSubscriptionRenewals();
 
     const disputedStatuses = ["disputed", "charged_back"];
-    const [usersCount, subscriptions, paymentSubmissions, openTickets, allInvoices, pendingContractCount, openTicketCount, disputedPaymentCount] =
+    const [
+      usersCount,
+      subscriptions,
+      paymentSubmissions,
+      openTickets,
+      allInvoices,
+      pendingContractCount,
+      openTicketCount,
+      disputedPaymentCount,
+      newContactSubmissionCount,
+    ] =
       await Promise.all([
         User.countDocuments(),
         Subscription.find({}),
@@ -345,6 +357,7 @@ adminRouter.get(
         CustomerContract.countDocuments({ status: "SIGNED_PENDING_ADMIN" }),
         SupportTicket.countDocuments({ status: { $in: ["open", "pending"] } }),
         PaymentSubmission.countDocuments({ status: { $in: disputedStatuses } }),
+        ContactSubmission.countDocuments({ status: "new" }),
       ]);
 
     const monthlyRecurringRevenue = subscriptions
@@ -371,6 +384,7 @@ adminRouter.get(
         pendingContracts: pendingContractCount,
         openTickets: openTicketCount,
         disputedPayments: disputedPaymentCount,
+        newContactSubmissions: newContactSubmissionCount,
         unpaidInvoices: unpaidInvoices.length,
         unpaidInvoiceTotal,
       },
@@ -395,6 +409,49 @@ adminRouter.get(
         role: req.staff.role,
       },
     });
+  }),
+);
+
+adminRouter.get(
+  "/contact-submissions",
+  asyncHandler(async (req, res) => {
+    ensureRole(req, ["admin", "support_agent"]);
+    const submissions = await ContactSubmission.find({}).populate("reviewedBy").sort({ submittedAt: -1 });
+    res.json({ submissions });
+  }),
+);
+
+adminRouter.patch(
+  "/contact-submissions/:id",
+  requireAdmin,
+  requireSameOrigin,
+  asyncHandler(async (req, res) => {
+    const payload = contactSubmissionUpdateSchema.parse(req.body);
+    const update = {
+      ...payload,
+      reviewedAt: new Date(),
+      reviewedBy: req.staff._id,
+    };
+    const updatedSubmission = await ContactSubmission.findByIdAndUpdate(req.params.id, update, { new: true });
+
+    if (!updatedSubmission) {
+      throw new HttpError(404, "Contact submission not found.");
+    }
+
+    const submission = await ContactSubmission.findById(updatedSubmission._id).populate("reviewedBy");
+
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: "contact_submission.updated",
+      targetType: "contact_submission",
+      targetId: String(submission._id),
+      metadata: {
+        status: submission.status,
+      },
+    });
+
+    res.json({ submission });
   }),
 );
 

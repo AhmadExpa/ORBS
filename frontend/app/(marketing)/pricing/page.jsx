@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, Layers3, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Layers3, ShieldCheck } from "lucide-react";
 import { featuredPartnerLogos } from "@/lib/marketing-content";
 import { getPurchasePath, productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
 import { Button, cn } from "@/lib/ui";
-import { ServiceLogo, TechLogoPills, getCategoryBrand } from "@/components/marketing/service-branding";
+import { ServiceLogo, TechLogoPills, getBrandForName, getCategoryBrand } from "@/components/marketing/service-branding";
 
 export const metadata = {
   title: "Pricing | ElevenOrbits",
   description:
-    "Managed service pricing for VPS, VDS, AI servers, Vicidial, CDN, object storage, self-hosted apps, workflow automation, AI solutions, development support, and cybersecurity.",
+    "Managed service pricing for VPS, VDS, AI servers, Vicidial, CDN, O7 Bucket storage, self-hosted apps, workflow automation, AI solutions, development support, and cybersecurity.",
 };
 
 const categoryTone = {
@@ -72,7 +72,8 @@ function getBillingLabel(plan) {
 function PlanRow({ plan }) {
   const primaryFeatures = plan.features.slice(0, 3);
   const price = plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`;
-  const brand = getCategoryBrand(plan.categorySlug);
+  const planBrand = getBrandForName(plan.name);
+  const brand = planBrand.logo ? planBrand : getCategoryBrand(plan.categorySlug);
 
   return (
     <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1.1fr)_170px_minmax(0,1.25fr)_190px] md:items-center lg:px-7">
@@ -116,15 +117,16 @@ export default function PricingPage() {
   return (
     <main className="bg-slate-50">
       <section className="relative overflow-hidden bg-[#04101f] text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(14,165,233,0.28),transparent_34%),radial-gradient(circle_at_85%_0%,rgba(249,115,22,0.18),transparent_30%),linear-gradient(135deg,#020617_0%,#07192e_48%,#020617_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#020617_0%,#07192e_48%,#0f172a_100%)]" />
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-15 mix-blend-screen" />
         <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-end lg:py-20">
-          <div>
+          <div className="eo-reveal-up">
             <p className="text-xs font-semibold uppercase tracking-[0.34em] text-cyan-300">Pricing</p>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-tight md:text-6xl">
               Managed service pricing with clear delivery ownership.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300">
-              Compare managed hosting, dedicated servers, AI infrastructure, CDN, object storage, self-hosted apps, Vicidial operations, automation, support, and cybersecurity plans. Pricing can be adjusted from the admin dashboard after deployment.
+              Compare managed hosting, dedicated servers, AI infrastructure, CDN, O7 Bucket storage, self-hosted apps, Vicidial operations, automation, support, and cybersecurity plans. Pricing can be adjusted from the admin dashboard after deployment.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/contact" className="inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_16px_36px_-22px_rgba(255,255,255,0.6)] transition hover:bg-slate-100">
@@ -137,7 +139,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div className="border-l border-white/10 pl-6">
+          <div className="eo-reveal-soft border-l border-white/10 pl-6" style={{ "--eo-delay": "110ms" }}>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">What is included</p>
             <div className="mt-5 grid gap-5">
               {confidenceItems.map((item) => {
@@ -145,7 +147,7 @@ export default function PricingPage() {
 
                 return (
                   <div key={item.label} className="flex gap-4">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-cyan-200">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-cyan-200">
                       <Icon className="h-5 w-5" />
                     </span>
                     <div>
@@ -173,7 +175,11 @@ export default function PricingPage() {
 
         <div className="mt-9 space-y-8">
           {activeCategories.map(({ category, plans }, categoryIndex) => (
-            <section key={category.slug} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-52px_rgba(15,23,42,0.75)]">
+            <section
+              key={category.slug}
+              className="eo-premium-card eo-reveal-soft overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_70px_-52px_rgba(15,23,42,0.75)]"
+              style={{ "--eo-delay": `${Math.min(categoryIndex * 45, 260)}ms` }}
+            >
               <div className={cn("border-b bg-gradient-to-br from-slate-950 to-slate-900 px-5 py-6 text-white lg:px-7", categoryTone[category.slug])}>
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
                   <div>
@@ -205,7 +211,7 @@ export default function PricingPage() {
           <div className="grid gap-8 border-y border-slate-200 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.26em] text-sky-600">
-                <Sparkles className="h-4 w-4" />
+                <Layers3 className="h-4 w-4" />
                 Partner-backed operations
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Built around a practical technology ecosystem.</h2>
@@ -215,11 +221,16 @@ export default function PricingPage() {
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
               {featuredPartnerLogos.slice(0, 14).map((partner) => (
-                <span key={partner.name} className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                <span
+                  key={partner.name}
+                  aria-label={partner.logo ? partner.name : undefined}
+                  className="inline-flex h-14 min-w-24 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-5 py-2 text-sm font-semibold text-slate-700"
+                >
                   {partner.logo ? (
-                    <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="h-7 w-9 object-contain" />
-                  ) : null}
-                  {partner.name}
+                    <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="h-9 w-20 object-contain" />
+                  ) : (
+                    partner.name
+                  )}
                 </span>
               ))}
               <Link href="/tech-stack" className="inline-flex items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">

@@ -479,9 +479,8 @@ export const techStackGroups = [
     subtitle: "Cloud infrastructure, backup, continuity planning, and resilient workload delivery.",
     icon: "cloud",
     partners: [
-      { name: "Contabo", logo: "/partners/contabo.svg", descriptor: "Cloud VPS, object storage, and CDN foundation" },
       { name: "Managed CDN", logo: "/partners/managed-cdn.svg", descriptor: "Edge delivery and image optimization" },
-      { name: "Object Storage", logo: "/partners/object-storage.svg", descriptor: "S3-compatible storage" },
+      { name: "O7 Bucket", logo: "/partners/object-storage.svg", descriptor: "S3-compatible bucket storage" },
       { name: "Nextcloud", logo: "/partners/nextcloud.svg", descriptor: "Private cloud collaboration" },
       { name: "Microsoft Azure", logo: "/partners/azure.svg", descriptor: "Cloud infrastructure" },
       { name: "Veeam", logo: "/partners/veeam.svg", descriptor: "Backup and recovery" },
@@ -560,7 +559,6 @@ export const techStackHighlights = [
 
 export const featuredTechPartners = [
   "Microsoft Azure",
-  "Contabo",
   "Datto",
   "Veeam",
   "HP",
@@ -579,7 +577,6 @@ export const featuredTechPartners = [
 ];
 
 export const featuredPartnerLogos = [
-  { name: "Contabo", logo: "/partners/contabo.svg" },
   { name: "Microsoft Azure", logo: "/partners/azure.svg" },
   { name: "Datto", logo: "/partners/datto.svg" },
   { name: "Veeam", logo: "/partners/veeam.svg" },

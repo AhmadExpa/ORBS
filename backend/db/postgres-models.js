@@ -55,6 +55,29 @@ export const User = createPostgresModel("User", {
   numericFields: ["accountBalance"],
 });
 
+export const CustomerDelegate = createPostgresModel("CustomerDelegate", {
+  collection: "customer_delegates",
+  defaults: {
+    username: "",
+    usernameNormalized: "",
+    displayName: "",
+    passwordHash: "",
+    subscriptionIds: [],
+    isActive: true,
+    lastLoginAt: null,
+    deactivatedAt: null,
+    createdBy: "",
+    metadata: {},
+  },
+  refs: {
+    userId: "User",
+    subscriptionIds: "Subscription",
+  },
+  arrayFields: ["subscriptionIds"],
+  booleanFields: ["isActive"],
+  dateFields: ["lastLoginAt", "deactivatedAt"],
+});
+
 export const StaffUser = createPostgresModel("StaffUser", {
   collection: "staff_users",
   defaults: {
@@ -286,6 +309,30 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
   arrayFields: ["documensoFieldValues"],
 });
 
+export const ContactSubmission = createPostgresModel("ContactSubmission", {
+  collection: "contact_submissions",
+  defaults: {
+    company: "",
+    phone: "",
+    department: "general",
+    serviceInterest: "",
+    status: "new",
+    adminNotes: "",
+    ipAddress: "",
+    userAgent: "",
+    turnstileHostname: "",
+    turnstileAction: "",
+    metadata: {},
+    submittedAt: dateNow,
+    reviewedAt: null,
+    reviewedBy: null,
+  },
+  refs: {
+    reviewedBy: "StaffUser",
+  },
+  dateFields: ["submittedAt", "reviewedAt", "turnstileVerifiedAt"],
+});
+
 export const ContractCounter = createPostgresModel("ContractCounter", {
   collection: "contract_counters",
   defaults: {
@@ -325,12 +372,14 @@ export const SupportTicket = createPostgresModel("SupportTicket", {
     status: "open",
     serviceId: "",
     subscriptionId: null,
+    createdByDelegateId: null,
     assignedTo: null,
     lastReplyAt: null,
   },
   refs: {
     userId: "User",
     subscriptionId: "Subscription",
+    createdByDelegateId: "CustomerDelegate",
     assignedTo: "StaffUser",
   },
   dateFields: ["lastReplyAt"],

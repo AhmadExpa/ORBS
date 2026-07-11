@@ -4,3 +4,4 @@ export * from "./navigation.js";
 export * from "./statuses.js";
 export * from "./pricing.js";
 export * from "./purchase.js";
+export * from "./service-intake.js";

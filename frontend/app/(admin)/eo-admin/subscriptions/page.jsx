@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Cloud, KeyRound, Search, Server, ShieldCheck } from "lucide-react";
+import { ClipboardList, Cloud, KeyRound, Search, Server, ShieldCheck } from "lucide-react";
 import {
   Button,
   Card,
@@ -68,6 +68,55 @@ function mapDetailsForForm(sharedDetails = []) {
     value: item.value || "",
   }));
   return rows.length ? rows : [createDetailRow()];
+}
+
+function CustomerIntakePanel({ configuration }) {
+  const sections = Array.isArray(configuration?.sections) ? configuration.sections : [];
+
+  if (!sections.length) {
+    return (
+      <div className="rounded-lg border border-line bg-white p-4">
+        <div className="flex items-start gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+            <ClipboardList className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Customer intake</h3>
+            <p className="mt-1.5 text-sm leading-6 text-slate-600">No structured requirements were captured for this subscription.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-line bg-white p-4">
+      <div className="flex items-start gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
+          <ClipboardList className="h-4 w-4" />
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Customer intake</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{configuration.title || "Structured service requirements"}</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-4">
+        {sections.map((section) => (
+          <div key={section.id || section.title} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{section.title}</p>
+            <div className="mt-3 space-y-2">
+              {(section.fields || []).map((field) => (
+                <div key={field.key} className="grid gap-1 rounded-md bg-white px-3 py-2 text-sm sm:grid-cols-[140px_minmax(0,1fr)]">
+                  <span className="font-semibold text-slate-500">{field.label}</span>
+                  <span className="break-words text-slate-900">{field.displayValue || String(field.value || "")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminSubscriptionsPage() {
@@ -175,6 +224,7 @@ export default function AdminSubscriptionsPage() {
   const selectedIsAppHosting = isAppHostingSubscription(selectedSubscription);
   const selectedUsesAccess = selectedIsServer || selectedIsAppHosting;
   const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
+  const selectedServiceConfiguration = selectedSubscription?.metadata?.serviceConfiguration || null;
   const detailLabelPlaceholder = selectedIsAppHosting
     ? "App URL / SSH host / Setup status"
     : selectedIsEdgeStorage
@@ -322,6 +372,8 @@ export default function AdminSubscriptionsPage() {
                       {selectedCustomerNote || "No provisioning note was included with this order."}
                     </p>
                   </div>
+
+                  <CustomerIntakePanel configuration={selectedServiceConfiguration} />
 
                   {selectedUsesAccess ? (
                     <div className="space-y-4 rounded-lg border border-line p-4">

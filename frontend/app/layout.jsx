@@ -1,5 +1,6 @@
 import "./globals.css";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { GeistSans } from "geist/font/sans";
 import { Providers } from "@/components/shared/providers";
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }) {
           }}
         />
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

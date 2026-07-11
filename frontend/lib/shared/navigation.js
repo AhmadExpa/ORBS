@@ -119,6 +119,7 @@ export const adminNavigation = [
   { href: "/eo-admin/disputes", label: "Disputes", icon: "alert-triangle" },
   { href: "/eo-admin/contracts", label: "Contracts", icon: "file-signature" },
   { href: "/eo-admin/tickets", label: "Tickets", icon: "tickets" },
+  { href: "/eo-admin/contact-submissions", label: "Contact Leads", icon: "mail" },
   { href: "/eo-admin/settings", label: "Settings", icon: "settings-2" },
   { href: "/eo-admin/activity", label: "Activity", icon: "activity" },
 ];
@@ -147,7 +148,10 @@ export const adminNavGroups = [
   },
   {
     label: "Support",
-    items: [{ href: "/eo-admin/tickets", label: "Tickets", icon: "tickets" }],
+    items: [
+      { href: "/eo-admin/tickets", label: "Tickets", icon: "tickets" },
+      { href: "/eo-admin/contact-submissions", label: "Contact Leads", icon: "mail" },
+    ],
   },
   {
     label: "System",

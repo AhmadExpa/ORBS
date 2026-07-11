@@ -68,12 +68,65 @@ export default function PortalSubscriptionsPage() {
     queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-profile"],
+    path: "/profile/me",
+  });
   const [actionState, setActionState] = useState({ loadingId: "", type: "", error: "" });
   const [pendingAction, setPendingAction] = useState(null);
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status") || "";
   const allSubscriptions = data?.subscriptions || [];
   const subscriptions = statusFilter ? allSubscriptions.filter((item) => (item.status || "") === statusFilter) : allSubscriptions;
+  const isDelegate = profileQuery.data?.actorType === "delegate";
+  const columns = [
+    {
+      key: "plan",
+      label: "Plan",
+      render: (row) => (
+        <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/services/${row._id}`}>
+          {row.productPlanId?.name || "Managed Service"}
+        </Link>
+      ),
+    },
+    { key: "billingCycle", label: "Cycle" },
+    { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
+    {
+      key: "renewalDate",
+      label: "Renewal",
+      render: (row) => (row.renewalDate ? new Date(row.renewalDate).toLocaleDateString() : "Pending"),
+    },
+    !isDelegate
+      ? {
+          key: "actions",
+          label: "Actions",
+          render: (row) =>
+            canUnsubscribe(row) ? (
+              <Button
+                className="whitespace-nowrap"
+                type="button"
+                variant="ghost"
+                disabled={actionState.loadingId === row._id}
+                onClick={() => openActionDialog("unsubscribe", row)}
+              >
+                {actionState.loadingId === row._id && actionState.type === "unsubscribe" ? "Cancelling..." : "Unsubscribe"}
+              </Button>
+            ) : canDeleteFromPortal(row) ? (
+              <Button
+                className="whitespace-nowrap"
+                type="button"
+                variant="ghost"
+                disabled={actionState.loadingId === row._id}
+                onClick={() => openActionDialog("delete", row)}
+              >
+                {actionState.loadingId === row._id && actionState.type === "delete" ? "Removing..." : "Delete from Portal"}
+              </Button>
+            ) : (
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Unavailable</span>
+            ),
+        }
+      : null,
+  ].filter(Boolean);
 
   function openActionDialog(type, subscription) {
     if (type === "unsubscribe" && !canUnsubscribe(subscription)) {
@@ -153,14 +206,16 @@ export default function PortalSubscriptionsPage() {
         subtitle="Track billing cycle, renewal dates, and the wallet-driven automatic deduction status for all subscriptions."
       />
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/portal/services">
-            <Button>Order Another Service</Button>
-          </Link>
-          <Link href="/portal/payments">
-            <Button variant="ghost">Top Up Wallet</Button>
-          </Link>
-        </div>
+        {!isDelegate ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/portal/services">
+              <Button>Order Another Service</Button>
+            </Link>
+            <Link href="/portal/payments">
+              <Button variant="ghost">Top Up Wallet</Button>
+            </Link>
+          </div>
+        ) : null}
 
         {actionState.error ? <p className="text-sm font-medium text-rose-600">{actionState.error}</p> : null}
 
@@ -174,52 +229,7 @@ export default function PortalSubscriptionsPage() {
             </CardHeader>
             <CardContent>
               <DataTable
-                columns={[
-                  {
-                    key: "plan",
-                    label: "Plan",
-                    render: (row) => (
-                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/services/${row._id}`}>
-                        {row.productPlanId?.name || "Managed Service"}
-                      </Link>
-                    ),
-                  },
-                  { key: "billingCycle", label: "Cycle" },
-                  { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
-                  {
-                    key: "renewalDate",
-                    label: "Renewal",
-                    render: (row) => (row.renewalDate ? new Date(row.renewalDate).toLocaleDateString() : "Pending"),
-                  },
-                  {
-                    key: "actions",
-                    label: "Actions",
-                    render: (row) =>
-                      canUnsubscribe(row) ? (
-                        <Button
-                          className="whitespace-nowrap"
-                          type="button"
-                          variant="ghost"
-                          disabled={actionState.loadingId === row._id}
-                          onClick={() => openActionDialog("unsubscribe", row)}
-                        >
-                          {actionState.loadingId === row._id && actionState.type === "unsubscribe" ? "Cancelling..." : "Unsubscribe"}
-                        </Button>
-                      ) : canDeleteFromPortal(row) ? (
-                        <Button
-                          className="whitespace-nowrap"
-                          type="button"
-                          variant="ghost"
-                          disabled={actionState.loadingId === row._id}
-                          onClick={() => openActionDialog("delete", row)}
-                        >
-                          {actionState.loadingId === row._id && actionState.type === "delete" ? "Removing..." : "Delete from Portal"}
-                        </Button>
-                      ) : (
-                        <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Unavailable</span>
-                      ),
-                  },
-                ]}
+                columns={columns}
                 rows={subscriptions}
                 emptyMessage={statusFilter ? "No subscriptions match this filter." : "No subscriptions found."}
               />
@@ -230,6 +240,7 @@ export default function PortalSubscriptionsPage() {
             title="No subscriptions found"
             description="Subscriptions appear after you create an order."
             action={
+              !isDelegate ? (
               <div className="flex flex-wrap items-center gap-3">
                 <Link href="/portal/services">
                   <Button>Order Another Service</Button>
@@ -238,6 +249,7 @@ export default function PortalSubscriptionsPage() {
                   <Button variant="ghost">Top Up Wallet</Button>
                 </Link>
               </div>
+              ) : null
             }
           />
         )}

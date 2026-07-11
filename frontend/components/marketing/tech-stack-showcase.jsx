@@ -53,7 +53,7 @@ function CarouselPartnerCard({ partner }) {
   return (
     <article
       aria-label={partner.name}
-      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white/94 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
+      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/94 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
     >
       <LogoMark partner={partner} />
     </article>
@@ -69,7 +69,7 @@ function CarouselLane({ group, index, compact = false }) {
     <div id={group.slug} className="min-w-0 scroll-mt-28 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
       <div className="mb-3 flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.75)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.75)]">
             <Icon className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -82,7 +82,7 @@ function CarouselLane({ group, index, compact = false }) {
         </span>
       </div>
 
-      <div className="tech-stack-marquee max-w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5 shadow-[0_22px_60px_-54px_rgba(15,23,42,0.55)]">
+      <div className="tech-stack-marquee max-w-full rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 shadow-[0_22px_60px_-54px_rgba(15,23,42,0.55)]">
         <div
           className="tech-stack-marquee-track"
           style={{
@@ -108,10 +108,10 @@ export function TechStackShowcase({ compact = false }) {
 
   return (
     <section id="tech-stack" className="relative overflow-hidden bg-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(14,165,233,0.11),transparent_28%),radial-gradient(circle_at_94%_20%,rgba(255,122,26,0.1),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-45" />
       <div className={cn("relative mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8", compact ? "py-14 lg:py-16" : "py-16 lg:py-20")}>
         <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-stretch">
-          <div className="flex h-full min-w-0 flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8">
+          <div className="eo-reveal-up flex h-full min-w-0 flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">Technology Partners</p>
               <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
@@ -122,7 +122,7 @@ export function TechStackShowcase({ compact = false }) {
               </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
+            <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
               {stackMetrics.map((metric) => (
                 <div key={metric.label} className="border-r border-slate-200 px-4 py-5 last:border-r-0">
                   <p className="text-2xl font-semibold tracking-tight text-slate-950">{metric.value}</p>
@@ -140,7 +140,7 @@ export function TechStackShowcase({ compact = false }) {
               ))}
             </div>
 
-            <div className={cn("mt-7 rounded-2xl bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]", compact && "lg:hidden xl:block")}>
+            <div className={cn("mt-7 rounded-lg bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]", compact && "lg:hidden xl:block")}>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Operating model</p>
               <p className="mt-3 text-xl font-semibold tracking-tight">Partners are selected for delivery, not decoration.</p>
               <div className="mt-5 grid gap-3">
@@ -190,7 +190,9 @@ export function TechStackShowcase({ compact = false }) {
 
           <div className="grid min-w-0 content-start gap-7">
             {visibleGroups.map((group, index) => (
-              <CarouselLane key={group.slug} group={group} index={index} compact={compact} />
+              <div key={group.slug} className="eo-reveal-soft" style={{ "--eo-delay": `${Math.min(index * 55, 260)}ms` }}>
+                <CarouselLane group={group} index={index} compact={compact} />
+              </div>
             ))}
           </div>
         </div>

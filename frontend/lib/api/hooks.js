@@ -2,17 +2,28 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { getDelegateSessionToken } from "../auth/delegate-client-session";
 import { apiFetch } from "./client";
 
 export function useCustomerQuery({ queryKey, path, enabled = true }) {
   const { getToken, isLoaded, userId } = useAuth();
+  const [hasDelegateSession, setHasDelegateSession] = useState(false);
+
+  useEffect(() => {
+    setHasDelegateSession(Boolean(getDelegateSessionToken()));
+  }, []);
 
   return useQuery({
     queryKey,
-    enabled: isLoaded && Boolean(userId) && enabled,
+    enabled: isLoaded && (Boolean(userId) || hasDelegateSession) && enabled,
     queryFn: async () => {
-      const token = await getToken();
-      return apiFetch(path, { token, authMode: "customer" });
+      if (userId) {
+        const token = await getToken();
+        return apiFetch(path, { token, authMode: "customer" });
+      }
+
+      return apiFetch(path, { authMode: "delegate" });
     },
   });
 }

@@ -2,16 +2,71 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Activity,
+  AlertTriangle,
+  Archive,
+  BarChart3,
+  Bot,
+  Brain,
+  Briefcase,
+  Calendar,
   CheckCircle2,
+  CheckSquare,
+  ClipboardList,
+  Code2,
+  Database,
+  DownloadCloud,
+  FileCheck,
+  FileText,
+  FlaskConical,
+  Gauge,
+  GitBranch,
   Globe2,
   HardDrive,
+  Headphones,
+  HelpCircle,
+  Image as ImageIcon,
+  KeyRound,
+  LifeBuoy,
+  List,
+  ListChecks,
+  LockKeyhole,
+  Mail,
+  Monitor,
+  MousePointer2,
+  Network,
+  Package,
+  Phone,
+  PhoneCall,
+  PhoneIncoming,
+  PhoneOutgoing,
   PlusCircle,
+  Radio,
+  RefreshCw,
+  Repeat2,
+  Route,
   Settings2,
+  Shield,
+  SlidersHorizontal,
+  StepForward,
+  Target,
+  Terminal,
+  Timer,
+  Trash2,
+  UploadCloud,
+  UserRound,
+  UsersRound,
+  Voicemail,
+  Webhook,
+  Workflow,
+  Wrench,
+  X,
+  Zap,
 } from "lucide-react";
 import {
   Button,
@@ -20,6 +75,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FieldLabel,
+  Select,
   TextArea,
   TextInput,
   cn,
@@ -28,9 +85,11 @@ import {
   calculatePlanPrice,
   calculateStoragePrice,
   formatCurrency,
+  getServiceIntakeConfig,
   getAddonPrice,
   getAddonUnitPrice,
   getStorageMinimumQuantity,
+  validateServiceIntakeAnswers,
 } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -83,6 +142,77 @@ const imageAddonArtwork = {
     shellClassName: "bg-cyan-50 ring-cyan-200",
   },
 };
+
+const requirementIconMap = {
+  activity: Activity,
+  "alert-triangle": AlertTriangle,
+  archive: Archive,
+  "bar-chart": BarChart3,
+  bot: Bot,
+  brain: Brain,
+  briefcase: Briefcase,
+  calendar: Calendar,
+  check: CheckCircle2,
+  "check-circle": CheckCircle2,
+  "check-square": CheckSquare,
+  "clipboard-list": ClipboardList,
+  cloud: Globe2,
+  code: Code2,
+  database: Database,
+  "download-cloud": DownloadCloud,
+  "file-check": FileCheck,
+  "file-text": FileText,
+  flask: FlaskConical,
+  gauge: Gauge,
+  "git-branch": GitBranch,
+  globe: Globe2,
+  "hard-drive": HardDrive,
+  hash: List,
+  headphones: Headphones,
+  "help-circle": HelpCircle,
+  image: ImageIcon,
+  key: KeyRound,
+  "life-buoy": LifeBuoy,
+  list: List,
+  "list-checks": ListChecks,
+  lock: LockKeyhole,
+  mail: Mail,
+  monitor: Monitor,
+  "mouse-pointer": MousePointer2,
+  network: Network,
+  package: Package,
+  phone: Phone,
+  "phone-call": PhoneCall,
+  "phone-incoming": PhoneIncoming,
+  "phone-outgoing": PhoneOutgoing,
+  plus: PlusCircle,
+  radio: Radio,
+  refresh: RefreshCw,
+  repeat: Repeat2,
+  route: Route,
+  server: Settings2,
+  settings: Settings2,
+  shield: Shield,
+  sliders: SlidersHorizontal,
+  "step-forward": StepForward,
+  target: Target,
+  terminal: Terminal,
+  timer: Timer,
+  trash: Trash2,
+  "upload-cloud": UploadCloud,
+  user: UserRound,
+  users: UsersRound,
+  voicemail: Voicemail,
+  webhook: Webhook,
+  workflow: Workflow,
+  wrench: Wrench,
+  x: X,
+  zap: Zap,
+};
+
+function getRequirementIcon(name, fallback = Settings2) {
+  return requirementIconMap[name] || fallback;
+}
 
 function getImageArtwork(addon) {
   return imageAddonArtwork[addon?.optionCode] || defaultImageArtwork;
@@ -177,6 +307,209 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
   );
 }
 
+function RequirementLogo({ src, alt, selected = false, compact = false }) {
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-2xl bg-white ring-1 transition",
+        compact ? "h-10 w-10 p-2" : "h-12 w-12 p-2.5",
+        selected ? "ring-brand-300" : "ring-slate-200",
+      )}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={compact ? 24 : 30}
+        height={compact ? 24 : 30}
+        unoptimized
+        loading="lazy"
+        draggable={false}
+        className="h-full w-full object-contain"
+      />
+    </span>
+  );
+}
+
+function RequirementIcon({ icon, logo, label, selected = false, compact = false }) {
+  if (logo) {
+    return <RequirementLogo src={logo} alt={`${label} logo`} selected={selected} compact={compact} />;
+  }
+
+  const Icon = getRequirementIcon(icon);
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-2xl transition",
+        compact ? "h-10 w-10" : "h-12 w-12",
+        selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-600",
+      )}
+    >
+      <Icon className={compact ? "h-4 w-4" : "h-5 w-5"} />
+    </span>
+  );
+}
+
+function toggleArrayValue(values, value) {
+  const current = Array.isArray(values) ? values : [];
+  return current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+}
+
+function IntakeOptionButton({ option, selected, onClick, multi = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-h-[84px] items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+        selected ? "border-brand-500 bg-brand-50 ring-1 ring-brand-200" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+      )}
+    >
+      <RequirementIcon icon={option.icon} logo={option.logo} label={option.label} selected={selected} compact />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-slate-950">{option.label}</span>
+        {option.description ? <span className="mt-1 block text-xs leading-5 text-slate-500">{option.description}</span> : null}
+      </span>
+      {selected ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-brand-600" /> : multi ? <span className="mt-1 h-4 w-4 shrink-0 rounded border border-slate-300" /> : null}
+    </button>
+  );
+}
+
+function IntakeField({ field, value, error, onChange }) {
+  const requiredMark = field.required ? <span className="text-rose-500">*</span> : null;
+
+  if (field.type === "select") {
+    return (
+      <div>
+        <FieldLabel>
+          {field.label} {requiredMark}
+        </FieldLabel>
+        <Select value={value || ""} onChange={(event) => onChange(event.target.value)}>
+          <option value="">Select one</option>
+          {(field.options || []).map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+        {error ? <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p> : null}
+      </div>
+    );
+  }
+
+  if (field.type === "segmented" || field.type === "multiselect") {
+    const multi = field.type === "multiselect";
+    const selectedValues = multi ? (Array.isArray(value) ? value : []) : [];
+    return (
+      <div>
+        <FieldLabel>
+          {field.label} {requiredMark}
+        </FieldLabel>
+        <div className="grid gap-3 md:grid-cols-2">
+          {(field.options || []).map((option) => {
+            const selected = multi ? selectedValues.includes(option.value) : value === option.value;
+            return (
+              <IntakeOptionButton
+                key={option.value}
+                option={option}
+                selected={selected}
+                multi={multi}
+                onClick={() => onChange(multi ? toggleArrayValue(selectedValues, option.value) : option.value)}
+              />
+            );
+          })}
+        </div>
+        {error ? <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p> : null}
+      </div>
+    );
+  }
+
+  if (field.type === "textarea") {
+    return (
+      <div>
+        <FieldLabel>
+          {field.label} {requiredMark}
+        </FieldLabel>
+        <TextArea
+          value={value || ""}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={field.placeholder}
+          className="min-h-28"
+        />
+        {error ? <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <FieldLabel>
+        {field.label} {requiredMark}
+      </FieldLabel>
+      <TextInput
+        type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
+        min={field.min}
+        max={field.max}
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={field.placeholder}
+      />
+      {field.suffix ? <p className="mt-1.5 text-xs text-slate-500">Unit: {field.suffix}</p> : null}
+      {error ? <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p> : null}
+    </div>
+  );
+}
+
+function ServiceRequirementsSection({ config, answers, errors, onChange }) {
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="flex items-start gap-3">
+        <RequirementIcon icon="clipboard-list" logo={config.logo} label={config.title} />
+        <div>
+          <p className="text-lg font-semibold text-slate-950">Service Requirements</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">{config.description}</p>
+        </div>
+      </div>
+      <div className="mt-6 space-y-6">
+        {config.sections.map((section) => {
+          const SectionIcon = getRequirementIcon(section.icon);
+          return (
+            <section key={section.id} className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 ring-1 ring-slate-200">
+                  <SectionIcon className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-950">{section.title}</h3>
+                  {section.description ? <p className="mt-1 text-sm leading-6 text-slate-500">{section.description}</p> : null}
+                </div>
+              </div>
+              <div className="mt-5 grid gap-4">
+                {section.fields.map((field) => (
+                  <IntakeField
+                    key={field.key}
+                    field={field}
+                    value={answers[field.key]}
+                    error={errors[field.key]}
+                    onChange={(value) => onChange(field.key, value)}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SummaryRow({ label, value, emphasized = false }) {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -241,6 +574,8 @@ export function OrderConfigurator({ slug }) {
   const [selectedImageId, setSelectedImageId] = useState("");
   const [selectedStorageId, setSelectedStorageId] = useState("");
   const [storageQuantity, setStorageQuantity] = useState("");
+  const [serviceAnswers, setServiceAnswers] = useState({});
+  const [serviceAnswerErrors, setServiceAnswerErrors] = useState({});
   const [finalNote, setFinalNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -251,6 +586,8 @@ export function OrderConfigurator({ slug }) {
   });
 
   const plan = data?.plan;
+  const categorySlug = plan?.categoryId?.slug || "";
+  const serviceIntakeConfig = getServiceIntakeConfig(categorySlug);
   const addonsQuery = useQuery({
     queryKey: ["catalog-addons", plan?.categoryId?.slug, plan?._id],
     queryFn: () => apiFetch(`/catalog/addons?category=${plan.categoryId.slug}&plan=${plan._id}`),
@@ -309,6 +646,15 @@ export function OrderConfigurator({ slug }) {
   const selectedStorage = storageOptions.find((addon) => addon._id === activeStorageId) || null;
   const selectedFeatures = featureAddons.filter((addon) => activeFeatureIds.includes(addon._id));
   const selectedImageArtwork = getImageArtwork(selectedImage || imageOptions[0]);
+  const serviceIntakeValidation = useMemo(
+    () => validateServiceIntakeAnswers(categorySlug, serviceAnswers, { categoryName: plan?.categoryId?.name || plan?.name || "" }),
+    [categorySlug, plan?.categoryId?.name, plan?.name, serviceAnswers],
+  );
+
+  useEffect(() => {
+    setServiceAnswers({});
+    setServiceAnswerErrors({});
+  }, [categorySlug]);
 
   const minimumStorageQuantity = selectedStorage ? getStorageMinimumQuantity(selectedStorage) : 0;
   const storageQuantityInput = selectedStorage
@@ -361,6 +707,21 @@ export function OrderConfigurator({ slug }) {
     });
   }
 
+  function updateServiceAnswer(key, value) {
+    setServiceAnswers((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    setServiceAnswerErrors((current) => {
+      if (!current[key]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
+
   function handleStorageSelection(addon) {
     setSelectedStorageId(addon._id);
 
@@ -381,6 +742,14 @@ export function OrderConfigurator({ slug }) {
     setError("");
 
     try {
+      const intakeValidation = validateServiceIntakeAnswers(categorySlug, serviceAnswers, {
+        categoryName: plan?.categoryId?.name || plan?.name || "",
+      });
+      if (!intakeValidation.ok) {
+        setServiceAnswerErrors(intakeValidation.errors);
+        throw new Error("Please complete the required service requirements before creating the order.");
+      }
+
       const token = await getToken();
       const data = await apiFetch("/orders", {
         method: "POST",
@@ -393,6 +762,9 @@ export function OrderConfigurator({ slug }) {
           selectedImageId: activeImageId || undefined,
           selectedStorageId: activeStorageId || undefined,
           storageQuantity: normalizedStorageQuantity || undefined,
+          serviceConfiguration: {
+            answers: serviceAnswers,
+          },
           finalNote: finalNote.trim() || undefined,
         },
       });
@@ -406,6 +778,9 @@ export function OrderConfigurator({ slug }) {
     } catch (requestError) {
       if (requestError.redirectUrl) {
         router.push(requestError.redirectUrl);
+      }
+      if (requestError.details?.fields) {
+        setServiceAnswerErrors(requestError.details.fields);
       }
       setError(requestError.message);
       showToast({
@@ -500,6 +875,13 @@ export function OrderConfigurator({ slug }) {
                 </div>
               </div>
             ) : null}
+
+            <ServiceRequirementsSection
+              config={serviceIntakeConfig}
+              answers={serviceAnswers}
+              errors={serviceAnswerErrors}
+              onChange={updateServiceAnswer}
+            />
 
             {regionOptions.length ? (
               <div className="rounded-3xl border border-slate-200 bg-white p-5">
@@ -764,6 +1146,9 @@ export function OrderConfigurator({ slug }) {
             {selectedFeatures.map((addon) => (
               <SummaryRow key={addon._id} label="Add-on" value={addon.name} />
             ))}
+            {serviceIntakeValidation.configuration?.summary?.length ? (
+              <SummaryRow label="Service Requirements" value={`${serviceIntakeValidation.configuration.summary.length} answers included`} />
+            ) : null}
             {finalNote.trim() ? <SummaryRow label="Team Note" value="Included with order" /> : null}
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">

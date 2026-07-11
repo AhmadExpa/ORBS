@@ -43,7 +43,7 @@ function isActiveSubscription(item) {
   return !["cancelled", "expired"].includes(item?.status);
 }
 
-export function PortalSectionNav({ section }) {
+export function PortalSectionNav({ section, isDelegate = false }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -76,6 +76,12 @@ export function PortalSectionNav({ section }) {
   const invoices = invoicesQuery.data?.invoices || [];
   const tickets = ticketsQuery.data?.tickets || [];
   const walletBalance = Number(profileQuery.data?.user?.accountBalance || 0);
+  const sectionLinks = isDelegate
+    ? (section.links || []).filter((link) => !["/portal/invoices", "/portal/payments", "/portal/contracts"].includes(link.href))
+    : section.links || [];
+  const quickActions = isDelegate
+    ? (section.quickActions || []).filter((action) => action.href === "/portal/support")
+    : section.quickActions || [];
 
   const filter = portalFilters[pathname];
   const activeFilter = filter ? searchParams.get(filter.param) || "" : "";
@@ -142,7 +148,7 @@ export function PortalSectionNav({ section }) {
         <div>
           <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Views</p>
           <nav className="mt-2 space-y-0.5">
-            {section.links.map((link) => {
+            {sectionLinks.map((link) => {
               const Icon = iconMap[link.icon] || LayoutDashboard;
               const active = isLinkActive(pathname, link.href);
               return (
@@ -218,11 +224,11 @@ export function PortalSectionNav({ section }) {
         ) : null}
 
         {/* Quick actions */}
-        {section.quickActions?.length ? (
+        {quickActions.length ? (
           <div className="border-t border-white/10 pt-4">
             <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Quick actions</p>
             <nav className="mt-2 space-y-0.5">
-              {section.quickActions.map((action) => {
+              {quickActions.map((action) => {
                 const Icon = iconMap[action.icon] || Zap;
                 return (
                   <Link

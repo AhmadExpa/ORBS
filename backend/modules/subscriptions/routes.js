@@ -1,6 +1,7 @@
 import express from "express";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
+import { isDelegateActor, requirePortalActor } from "../../middleware/require-portal-actor.js";
 import { Subscription } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
@@ -10,14 +11,24 @@ export const subscriptionsRouter = express.Router();
 
 subscriptionsRouter.get(
   "/",
-  requireCustomer,
+  requirePortalActor,
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
 
-    const subscriptions = await Subscription.find({
+    const filter = {
       userId: req.auth.user._id,
       customerDeletedAt: null,
-    })
+    };
+
+    if (isDelegateActor(req)) {
+      if (!req.auth.allowedSubscriptionIds?.length) {
+        res.json({ subscriptions: [] });
+        return;
+      }
+      filter._id = { $in: req.auth.allowedSubscriptionIds };
+    }
+
+    const subscriptions = await Subscription.find(filter)
       .populate({
         path: "productPlanId",
         populate: {

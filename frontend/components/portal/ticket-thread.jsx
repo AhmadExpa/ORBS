@@ -10,7 +10,7 @@ import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 
 export function TicketThread({ ticketId }) {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const { showToast } = useActionToast();
   const { data, refetch, isLoading } = useCustomerQuery({
     queryKey: ["portal-ticket-thread", ticketId],
@@ -24,10 +24,11 @@ export function TicketThread({ ticketId }) {
     setState({ sending: true, error: "" });
 
     try {
-      const token = await getToken();
+      const token = userId ? await getToken() : undefined;
       await apiFetch(`/tickets/${ticketId}/messages`, {
         method: "POST",
         token,
+        authMode: userId ? "customer" : "delegate",
         body: { message },
       });
       setMessage("");

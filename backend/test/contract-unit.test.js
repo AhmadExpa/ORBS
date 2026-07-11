@@ -88,6 +88,21 @@ test("Turnstile token reuse is rejected", async () => {
   await assert.rejects(() => verifyTurnstileToken({ token: "token_4" }), /Turnstile verification failed/);
 });
 
+test("Turnstile accepts a per-request expected action override", async () => {
+  env.turnstileSecretKey = "test_secret";
+  env.turnstileAllowedHostnames = ["elevenorbits.com"];
+  env.turnstileExpectedAction = "contract_start";
+  mockTurnstileResponse({
+    success: true,
+    hostname: "elevenorbits.com",
+    action: "contact_form",
+    challenge_ts: new Date().toISOString(),
+  });
+
+  const result = await verifyTurnstileToken({ token: "token_5", expectedAction: "contact_form" });
+  assert.equal(result.action, "contact_form");
+});
+
 test("SHA-256 generation is deterministic", () => {
   assert.equal(
     calculateSha256(Buffer.from("elevenorbits")),

@@ -1,5 +1,5 @@
 import express from "express";
-import { orderQuoteSchema } from "../../lib/shared/index.js";
+import { orderQuoteSchema, validateServiceIntakeAnswers } from "../../lib/shared/index.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { Invoice, Order, ProductPlan, Subscription, Addon } from "../../db/models/index.js";
@@ -56,11 +56,30 @@ function buildConfigurationDetails({ regionAddon, imageAddon, storageAddon, stor
   return details;
 }
 
+function buildServiceIntakeDetails(serviceConfiguration) {
+  return (serviceConfiguration?.summary || []).map((item) => ({
+    label: item.label,
+    value: item.value,
+  }));
+}
+
 async function buildQuote(body) {
   const payload = orderQuoteSchema.parse(body);
   const plan = await ProductPlan.findById(payload.productPlanId).populate("categoryId");
   if (!plan || !plan.isActive) {
     throw new HttpError(404, "Selected plan is unavailable.");
+  }
+
+  const categorySlug = plan.categoryId?.slug || "";
+  const serviceIntake = validateServiceIntakeAnswers(categorySlug, payload.serviceConfiguration?.answers || {}, {
+    categoryName: plan.categoryId?.name || plan.name,
+  });
+
+  if (!serviceIntake.ok) {
+    throw new HttpError(400, "Please complete the required service requirements before creating the order.", {
+      code: "SERVICE_INTAKE_INVALID",
+      fields: serviceIntake.errors,
+    });
   }
 
   if (plan.contactSalesOnly) {
@@ -157,6 +176,8 @@ async function buildQuote(body) {
       storageAddon,
       storageQuantity,
     }),
+    serviceConfiguration: serviceIntake.configuration,
+    serviceIntakeDetails: buildServiceIntakeDetails(serviceIntake.configuration),
     finalNote,
     billingCycle: payload.billingCycle,
     lineItems,
@@ -200,6 +221,7 @@ ordersRouter.post(
           storageAddonId: quote.storageAddon?._id || null,
           storageQuantity: quote.storageQuantity || 0,
           configurationDetails: quote.configurationDetails,
+          serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
         },
       });
@@ -211,13 +233,14 @@ ordersRouter.post(
         addons: quote.addons.map((addon) => addon._id),
         billingCycle: quote.billingCycle,
         status: "pending_verification",
-        sharedDetails: quote.configurationDetails,
+        sharedDetails: [...quote.configurationDetails, ...quote.serviceIntakeDetails],
         metadata: {
           managedBy: "ElevenOrbits Team",
           regionAddonId: quote.regionAddon?._id || null,
           imageAddonId: quote.imageAddon?._id || null,
           storageAddonId: quote.storageAddon?._id || null,
           storageQuantity: quote.storageQuantity || 0,
+          serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
         },
       });

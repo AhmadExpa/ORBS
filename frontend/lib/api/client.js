@@ -1,6 +1,7 @@
 "use client";
 
 import { siteConfig } from "../constants/site";
+import { clearDelegateSessionToken, getDelegateSessionToken } from "../auth/delegate-client-session";
 import { clearStaffSessionToken, getStaffSessionToken } from "../auth/staff-client-session";
 
 let pendingRequestCount = 0;
@@ -31,7 +32,10 @@ function endApiActivity() {
 
 export async function apiFetch(path, { method = "GET", body, token, isMultipart = false, authMode = "none", trackActivity } = {}) {
   const headers = {};
-  const resolvedToken = token || (authMode === "staff" ? getStaffSessionToken() : "");
+  const resolvedToken =
+    token ||
+    (authMode === "staff" ? getStaffSessionToken() : "") ||
+    (authMode === "delegate" ? getDelegateSessionToken() : "");
   const resolvedMethod = method.toUpperCase();
   const shouldTrackActivity = trackActivity ?? resolvedMethod !== "GET";
 
@@ -71,6 +75,23 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
         }
 
         throw new Error("Your admin session expired. Please sign in again.");
+      }
+
+      if (
+        authMode === "delegate" &&
+        response.status === 401 &&
+        typeof window !== "undefined" &&
+        (data.message === "Agent session is invalid." ||
+          data.message === "Agent authentication required." ||
+          data.message === "Portal authentication required.")
+      ) {
+        clearDelegateSessionToken();
+
+        if (window.location.pathname.startsWith("/portal")) {
+          window.location.replace("/login");
+        }
+
+        throw new Error("Your agent session expired. Please sign in again.");
       }
 
       const error = new Error(data.message || "Request failed");

@@ -1,11 +1,12 @@
 import express from "express";
 import { supportReplySchema, supportTicketSchema } from "../../lib/shared/index.js";
 import { asyncHandler } from "../../utils/async-handler.js";
-import { attachCustomer, requireCustomer } from "../../middleware/require-customer.js";
+import { attachCustomer } from "../../middleware/require-customer.js";
+import { isDelegateActor, isSubscriptionAssignedToDelegate, requirePortalActor } from "../../middleware/require-portal-actor.js";
 import { attachStaff } from "../../middleware/require-staff.js";
 import { uploadSupportAttachment } from "../../middleware/uploads.js";
 import { HttpError } from "../../utils/http-error.js";
-import { StaffUser, SupportMessage, SupportTicket, User } from "../../db/models/index.js";
+import { CustomerDelegate, StaffUser, Subscription, SupportMessage, SupportTicket, User } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { persistUploadedFile } from "../../services/storage-service.js";
 
@@ -24,6 +25,14 @@ function getSenderContext(req) {
   }
 
   if (req.auth?.user) {
+    if (isDelegateActor(req)) {
+      return {
+        senderType: "customer_delegate",
+        senderId: req.auth.delegate._id,
+        actorRole: "customer_delegate",
+      };
+    }
+
     return {
       senderType: "customer",
       senderId: req.auth.user._id,
@@ -43,6 +52,7 @@ function serializeTicketForCustomer(ticket) {
     status: ticket.status,
     serviceId: ticket.serviceId,
     subscriptionId: ticket.subscriptionId?._id || ticket.subscriptionId || null,
+    createdByDelegateId: ticket.createdByDelegateId?._id || ticket.createdByDelegateId || null,
     lastReplyAt: ticket.lastReplyAt,
     createdAt: ticket.createdAt,
     updatedAt: ticket.updatedAt,
@@ -51,31 +61,40 @@ function serializeTicketForCustomer(ticket) {
 
 async function loadMessageActors(messages) {
   const customerIds = [...new Set(messages.filter((item) => item.senderType === "customer").map((item) => String(item.senderId)))];
-  const staffIds = [...new Set(messages.filter((item) => item.senderType !== "customer").map((item) => String(item.senderId)))];
+  const delegateIds = [...new Set(messages.filter((item) => item.senderType === "customer_delegate").map((item) => String(item.senderId)))];
+  const staffIds = [...new Set(messages.filter((item) => !["customer", "customer_delegate"].includes(item.senderType)).map((item) => String(item.senderId)))];
 
-  const [customers, staffUsers] = await Promise.all([
+  const [customers, delegates, staffUsers] = await Promise.all([
     customerIds.length ? User.find({ _id: { $in: customerIds } }).select("name email") : [],
+    delegateIds.length ? CustomerDelegate.find({ _id: { $in: delegateIds } }).select("displayName username") : [],
     staffIds.length ? StaffUser.find({ _id: { $in: staffIds } }).select("name role isActive") : [],
   ]);
 
   return {
     customerMap: new Map(customers.map((item) => [String(item._id), item])),
+    delegateMap: new Map(delegates.map((item) => [String(item._id), item])),
     staffMap: new Map(staffUsers.map((item) => [String(item._id), item])),
   };
 }
 
 async function serializeMessages(messages, req) {
-  const { customerMap, staffMap } = await loadMessageActors(messages);
+  const { customerMap, delegateMap, staffMap } = await loadMessageActors(messages);
 
   return messages.map((message) => {
-    const record = message.toObject();
+    const record = message.toObject?.() || message.toJSON?.() || message;
     const customer = customerMap.get(String(message.senderId));
+    const delegate = delegateMap.get(String(message.senderId));
     const staffUser = staffMap.get(String(message.senderId));
-    const senderName = message.senderType === "customer" ? customer?.name || customer?.email || "Customer" : staffUser?.name || "Support Team";
-    const publicSenderName =
+    const isCustomerSide = ["customer", "customer_delegate"].includes(message.senderType);
+    const senderName =
       message.senderType === "customer"
         ? customer?.name || customer?.email || "Customer"
-        : record.publicSenderName || (message.senderType === "support_agent" ? senderName : "Support Team");
+        : message.senderType === "customer_delegate"
+          ? delegate?.displayName || delegate?.username || record.publicSenderName || "Account agent"
+          : staffUser?.name || "Support Team";
+    const publicSenderName = isCustomerSide
+      ? record.publicSenderName || senderName
+      : record.publicSenderName || (message.senderType === "support_agent" ? senderName : "Support Team");
 
     if (req.staff) {
       return {
@@ -85,10 +104,14 @@ async function serializeMessages(messages, req) {
       };
     }
 
+    const isCurrentOwnerMessage = message.senderType === "customer" && !isDelegateActor(req);
+    const isCurrentDelegateMessage =
+      message.senderType === "customer_delegate" && isDelegateActor(req) && String(message.senderId) === String(req.auth.delegate._id);
+
     return {
       _id: record._id,
-      senderType: message.senderType === "customer" ? "customer" : "support",
-      displayName: message.senderType === "customer" ? "You" : publicSenderName,
+      senderType: isCustomerSide ? "customer" : "support",
+      displayName: isCurrentOwnerMessage || isCurrentDelegateMessage ? "You" : publicSenderName,
       publicSenderName,
       message: record.message,
       attachments: record.attachments,
@@ -99,6 +122,10 @@ async function serializeMessages(messages, req) {
 }
 
 async function resolvePublicSenderName({ req, ticket, payload }) {
+  if (isDelegateActor(req)) {
+    return req.auth.delegate.displayName || req.auth.delegate.username || "Account agent";
+  }
+
   if (req.auth?.user) {
     return req.auth.user.name || req.auth.user.email || "Customer";
   }
@@ -143,7 +170,17 @@ async function ensureTicketAccess(ticket, req) {
     return true;
   }
 
-  if (req.auth?.user && String(ticket.userId?._id || ticket.userId) === String(req.auth.user._id)) {
+  if (isDelegateActor(req)) {
+    const ownsTicket = String(ticket.userId?._id || ticket.userId) === String(req.auth.user._id);
+    const ticketSubscriptionId = ticket.subscriptionId?._id || ticket.subscriptionId;
+    const createdByDelegateId = ticket.createdByDelegateId?._id || ticket.createdByDelegateId;
+    const allowedByService = ticketSubscriptionId && isSubscriptionAssignedToDelegate(req, ticketSubscriptionId);
+    const allowedByCreator = createdByDelegateId && String(createdByDelegateId) === String(req.auth.delegate._id);
+
+    if (ownsTicket && (allowedByService || allowedByCreator)) {
+      return true;
+    }
+  } else if (req.auth?.user && String(ticket.userId?._id || ticket.userId) === String(req.auth.user._id)) {
     return true;
   }
 
@@ -157,7 +194,17 @@ ticketsRouter.get(
       throw new HttpError(401, "Authentication required.");
     }
 
-    const filter = req.staff ? {} : { userId: req.auth.user._id };
+    let filter = req.staff ? {} : { userId: req.auth.user._id };
+    if (!req.staff && isDelegateActor(req)) {
+      const scopedFilters = [{ createdByDelegateId: req.auth.delegate._id }];
+      if (req.auth.allowedSubscriptionIds?.length) {
+        scopedFilters.push({ subscriptionId: { $in: req.auth.allowedSubscriptionIds } });
+      }
+      filter = {
+        userId: req.auth.user._id,
+        $or: scopedFilters,
+      };
+    }
     if (req.query.status) {
       filter.status = req.query.status;
     }
@@ -168,10 +215,31 @@ ticketsRouter.get(
 
 ticketsRouter.post(
   "/",
-  requireCustomer,
+  requirePortalActor,
   uploadSupportAttachment.array("attachments", 3),
   asyncHandler(async (req, res) => {
     const payload = supportTicketSchema.parse(req.body);
+    let subscriptionId = payload.subscriptionId || null;
+    if (isDelegateActor(req) && !subscriptionId) {
+      throw new HttpError(400, "Choose an assigned service before creating an agent ticket.");
+    }
+
+    if (subscriptionId) {
+      if (isDelegateActor(req) && !isSubscriptionAssignedToDelegate(req, subscriptionId)) {
+        throw new HttpError(403, "This service is not assigned to your agent access.");
+      }
+
+      const subscription = await Subscription.findOne({
+        _id: subscriptionId,
+        userId: req.auth.user._id,
+        customerDeletedAt: null,
+      });
+      if (!subscription) {
+        throw new HttpError(400, "Selected service is not available on this account.");
+      }
+      subscriptionId = subscription._id;
+    }
+
     const attachments = await Promise.all(
       (req.files || []).map((file) => persistUploadedFile({ file, directory: "support-attachments" })),
     );
@@ -182,22 +250,23 @@ ticketsRouter.post(
       priority: payload.priority,
       status: "open",
       serviceId: payload.serviceId,
-      subscriptionId: payload.subscriptionId,
+      subscriptionId,
+      createdByDelegateId: isDelegateActor(req) ? req.auth.delegate._id : null,
       lastReplyAt: new Date(),
     });
 
     await SupportMessage.create({
       ticketId: ticket._id,
-      senderType: "customer",
-      senderId: req.auth.user._id,
-      publicSenderName: req.auth.user.name || req.auth.user.email || "Customer",
+      senderType: isDelegateActor(req) ? "customer_delegate" : "customer",
+      senderId: isDelegateActor(req) ? req.auth.delegate._id : req.auth.user._id,
+      publicSenderName: await resolvePublicSenderName({ req, ticket, payload }),
       message: payload.message,
       attachments,
     });
 
     await recordActivity({
-      actorId: req.auth.user._id,
-      actorRole: "customer",
+      actorId: isDelegateActor(req) ? req.auth.delegate._id : req.auth.user._id,
+      actorRole: isDelegateActor(req) ? "customer_delegate" : "customer",
       action: "ticket.created",
       targetType: "support_ticket",
       targetId: String(ticket._id),
@@ -219,7 +288,7 @@ ticketsRouter.get(
 
     const messages = await SupportMessage.find({ ticketId: ticket._id }).sort({ createdAt: 1 });
     res.json({
-      ticket: req.staff ? ticket.toObject() : serializeTicketForCustomer(ticket),
+      ticket: req.staff ? ticket.toObject?.() || ticket.toJSON?.() || ticket : serializeTicketForCustomer(ticket),
       messages: await serializeMessages(messages, req),
     });
   }),

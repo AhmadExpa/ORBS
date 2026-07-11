@@ -17,9 +17,10 @@ export const metadata = {
 export default function LegalCenterPage() {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:py-16">
-          <div>
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
+        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:py-16">
+          <div className="eo-reveal-up">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Legal Center</p>
             <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
               Policies for ElevenOrbits customers, visitors, and managed service users.
@@ -34,17 +35,19 @@ export default function LegalCenterPage() {
             title="Policy coverage for managed operations"
             description="The legal center covers ordering, portal access, service delivery, billing, acceptable use, privacy, and operational support."
             categorySlugs={legalServiceSlugs}
+            className="eo-premium-card eo-reveal-soft"
           />
         </div>
       </section>
 
       <section>
         <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
-          {legalPages.map((page) => (
+          {legalPages.map((page, index) => (
             <Link
               key={page.slug}
               href={`/legal/${page.slug}`}
-              className="group rounded-lg border border-slate-200 bg-white p-6 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]"
+              className="eo-premium-card eo-reveal-soft group rounded-lg border border-slate-200 bg-white p-6 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]"
+              style={{ "--eo-delay": `${Math.min(index * 35, 260)}ms` }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{page.navLabel}</p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{page.title}</h2>

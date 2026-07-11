@@ -30,8 +30,13 @@ export function ServiceDetail({ serviceId }) {
     queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-profile"],
+    path: "/profile/me",
+  });
 
   const subscription = (data?.subscriptions || []).find((item) => item._id === serviceId);
+  const isDelegate = profileQuery.data?.actorType === "delegate";
   const billingAmount = Number(subscription?.metadata?.billingAmount || 0);
   const techStack = subscription?.productPlanId?.techStack || [];
   const categoryName = subscription?.productPlanId?.categoryId?.name || "Managed Service";
@@ -76,16 +81,20 @@ export function ServiceDetail({ serviceId }) {
                 <span>Category</span>
                 <span className="font-semibold text-slate-900">{categoryName}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Billing Cycle</span>
-                <span className="font-semibold capitalize text-slate-900">{subscription.billingCycle}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Renewal Date</span>
-                <span className="font-semibold text-slate-900">
-                  {subscription.renewalDate ? new Date(subscription.renewalDate).toLocaleDateString() : "Pending verification"}
-                </span>
-              </div>
+              {!isDelegate ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span>Billing Cycle</span>
+                    <span className="font-semibold capitalize text-slate-900">{subscription.billingCycle}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Renewal Date</span>
+                    <span className="font-semibold text-slate-900">
+                      {subscription.renewalDate ? new Date(subscription.renewalDate).toLocaleDateString() : "Pending verification"}
+                    </span>
+                  </div>
+                </>
+              ) : null}
             </CardContent>
           </Card>
           {showsAccess ? (
@@ -153,7 +162,7 @@ export function ServiceDetail({ serviceId }) {
           <Card>
             <CardHeader>
               <CardTitle>Plan Features</CardTitle>
-              <CardDescription>{formatCurrency(billingAmount)} current billing amount</CardDescription>
+              <CardDescription>{isDelegate ? "Included capabilities for this assigned service." : `${formatCurrency(billingAmount)} current billing amount`}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-slate-600">
               {(subscription.productPlanId?.features || []).map((feature) => (
@@ -164,14 +173,20 @@ export function ServiceDetail({ serviceId }) {
         </div>
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle>{showsAccess ? "Deployment Details & Renewal Wallet" : "Tech Stack & Renewal Wallet"}</CardTitle>
-            <CardDescription>Renewals use wallet balance first and saved-card fallback second when card billing is available.</CardDescription>
+              <CardTitle>{showsAccess ? "Deployment Details" : "Tech Stack"}</CardTitle>
+            <CardDescription>
+              {isDelegate
+                ? "Operational details assigned to this service."
+                : "Renewals use wallet balance first and saved-card fallback second when card billing is available."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Renewal Amount</span>
-              <span className="font-semibold text-slate-900">{formatCurrency(billingAmount)}</span>
-            </div>
+            {!isDelegate ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Renewal Amount</span>
+                <span className="font-semibold text-slate-900">{formatCurrency(billingAmount)}</span>
+              </div>
+            ) : null}
             {techStack.length ? (
               <div>
                 <p className="text-sm font-semibold text-slate-500">Managed Tech Stack</p>
@@ -184,12 +199,16 @@ export function ServiceDetail({ serviceId }) {
                 </div>
               </div>
             ) : null}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              If the wallet does not fully cover the renewal on its due date, the system uses your saved card for the remaining amount. If no card is saved or the charge fails, the subscription is flagged for follow-up.
-            </div>
-            <Link href="/portal/payments">
-              <Button variant="ghost">Top Up Wallet</Button>
-            </Link>
+            {!isDelegate ? (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+                  If the wallet does not fully cover the renewal on its due date, the system uses your saved card for the remaining amount. If no card is saved or the charge fails, the subscription is flagged for follow-up.
+                </div>
+                <Link href="/portal/payments">
+                  <Button variant="ghost">Top Up Wallet</Button>
+                </Link>
+              </>
+            ) : null}
           </CardContent>
         </Card>
       </div>

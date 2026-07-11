@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { attachCustomer } from "./middleware/require-customer.js";
+import { attachDelegate } from "./middleware/require-portal-actor.js";
 import { attachStaff } from "./middleware/require-staff.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { profilesRouter } from "./modules/profiles/routes.js";
@@ -17,7 +18,9 @@ import { stripeRouter, stripeWebhookRouter } from "./modules/stripe/routes.js";
 import { ticketsRouter } from "./modules/tickets/routes.js";
 import { staffAuthRouter } from "./modules/staffAuth/routes.js";
 import { adminRouter } from "./modules/admin/routes.js";
+import { contactSubmissionsRouter } from "./modules/contact-submissions/routes.js";
 import { contractsRouter } from "./modules/contracts/routes.js";
+import { delegateAuthRouter, delegatesRouter } from "./modules/delegates/routes.js";
 import { documensoWebhookRouter } from "./modules/webhooks/documenso-routes.js";
 import { internalRouter } from "./modules/internal/routes.js";
 import {
@@ -49,6 +52,7 @@ app.use("/api/v1/webhooks/documenso", express.raw({ type: "*/*" }), documensoWeb
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(attachCustomer);
+app.use(attachDelegate);
 app.use(attachStaff);
 
 app.use("/files/uploads", express.static(env.uploadDir));
@@ -120,6 +124,9 @@ app.use("/api/v1/payments", paymentsRouter);
 app.use("/api/v1/stripe", stripeRouter);
 app.use("/api/v1/tickets", ticketsRouter);
 app.use("/api/v1/contracts", contractsRouter);
+app.use("/api/v1/delegate/auth", delegateAuthRouter);
+app.use("/api/v1/delegates", delegatesRouter);
+app.use("/api/v1/contact-submissions", contactSubmissionsRouter);
 app.use("/api/v1/staff/auth", staffAuthRouter);
 app.use("/api/v1/internal", internalRouter);
 app.use("/api/v1/admin", adminRouter);

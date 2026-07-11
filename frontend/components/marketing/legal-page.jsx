@@ -9,9 +9,10 @@ const legalServiceSlugs = ["vps", "vds", "workflows", "cybersecurity", "object-s
 export function LegalPageShell({ page }) {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[280px_minmax(0,1fr)] lg:py-16">
-          <aside className="lg:sticky lg:top-28 lg:h-fit">
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-25" />
+        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[280px_minmax(0,1fr)] lg:py-16">
+          <aside className="eo-reveal-soft lg:sticky lg:top-28 lg:h-fit">
             <Link href="/legal" className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
               Legal
             </Link>
@@ -34,7 +35,7 @@ export function LegalPageShell({ page }) {
             </nav>
           </aside>
 
-          <article>
+          <article className="eo-reveal-up">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Last updated {legalLastUpdated}</p>
             <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{page.description}</p>
@@ -42,12 +43,16 @@ export function LegalPageShell({ page }) {
               title="Managed service policy scope"
               description="These policies apply across the website, customer portal, managed infrastructure, AI systems, workflow automation, storage, security, support, billing, and service handoff."
               categorySlugs={legalServiceSlugs}
-              className="mt-8"
+              className="eo-premium-card mt-8"
             />
 
             <div className="mt-10 space-y-10 border-t border-slate-200 pt-10">
-              {page.sections.map((section) => (
-                <section key={section.heading} className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              {page.sections.map((section, index) => (
+                <section
+                  key={section.heading}
+                  className="eo-reveal-soft grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]"
+                  style={{ "--eo-delay": `${Math.min(index * 45, 240)}ms` }}
+                >
                   <h2 className="text-lg font-semibold tracking-tight text-slate-950">{section.heading}</h2>
                   <div className="space-y-4 text-sm leading-7 text-slate-600">
                     {section.paragraphs?.map((paragraph) => (

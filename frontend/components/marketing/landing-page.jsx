@@ -202,7 +202,7 @@ export function LandingPage() {
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-80" />
         <div className="mx-auto max-w-[1520px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.18fr)_420px]">
-            <div className="relative overflow-hidden rounded-[2.8rem] border border-[color:var(--marketing-line)] bg-white/82 shadow-[0_36px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+            <div className="eo-premium-card eo-reveal-up relative overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/82 shadow-[0_36px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur-xl">
               <div className="pointer-events-none absolute inset-0 marketing-stage" />
               <div className="pointer-events-none absolute inset-y-0 right-[18%] hidden w-px bg-[color:var(--marketing-line)] xl:block" />
               <div className="relative p-8 md:p-10 xl:p-12">
@@ -235,7 +235,7 @@ export function LandingPage() {
                         </h1>
                       </div>
 
-                      <div className="max-w-xs rounded-[2rem] border border-slate-200/90 bg-white/88 p-5 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]">
+                      <div className="eo-reveal-soft max-w-xs rounded-lg border border-slate-200/90 bg-white/88 p-5 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]" style={{ "--eo-delay": "120ms" }}>
                         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                           Portal-Driven Service Model
                         </p>
@@ -277,7 +277,7 @@ export function LandingPage() {
             </div>
 
             <div className="grid gap-6">
-              <div className="relative overflow-hidden rounded-[2.8rem] border border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)] shadow-[0_28px_80px_-52px_rgba(255,122,26,0.3)]">
+              <div className="eo-premium-card eo-reveal-soft relative overflow-hidden rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)] shadow-[0_28px_80px_-52px_rgba(255,122,26,0.3)]" style={{ "--eo-delay": "140ms" }}>
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,122,26,0.12),transparent_58%)]" />
                 <div className="relative border-b border-orange-200 px-7 py-6">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">
@@ -296,12 +296,12 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2.8rem] border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.26)] backdrop-blur">
+              <div className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.26)] backdrop-blur" style={{ "--eo-delay": "220ms" }}>
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Operating Signals</p>
                   <ShieldCheck className="h-5 w-5 text-[color:var(--marketing-accent)]" />
                 </div>
-                <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#fff6ef_100%)] p-5">
+                <div className="mt-5 rounded-lg border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#fff6ef_100%)] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Service Standard</p>
                   <p className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.03em] text-slate-950">
                     Clear ownership from selection to handoff.
@@ -311,8 +311,12 @@ export function LandingPage() {
                   </p>
                 </div>
                 <div className="mt-5 space-y-3">
-                  {heroSignals.map((item) => (
-                    <div key={item.label} className="rounded-[1.4rem] border border-slate-200 bg-slate-50/90 px-4 py-4">
+                  {heroSignals.map((item, index) => (
+                    <div
+                      key={item.label}
+                      className="eo-reveal-soft rounded-md border border-slate-200 bg-slate-50/90 px-4 py-4"
+                      style={{ "--eo-delay": `${260 + index * 45}ms` }}
+                    >
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
                       <p className="mt-3 text-sm leading-7 text-slate-700">{item.value}</p>
                     </div>
@@ -326,13 +330,13 @@ export function LandingPage() {
         <div className="border-t border-[color:var(--marketing-line)]">
           <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
             <div className="grid gap-px border-x border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] md:grid-cols-2 xl:grid-cols-4">
-              {operatingHighlights.map((item) => {
+              {operatingHighlights.map((item, index) => {
                 const Icon = item.icon;
 
                 return (
-                  <div key={item.title} className="bg-white/80 px-6 py-7 backdrop-blur">
+                  <div key={item.title} className="eo-reveal-soft bg-white/80 px-6 py-7 backdrop-blur" style={{ "--eo-delay": `${index * 55}ms` }}>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--marketing-panel-warm)] text-[color:var(--marketing-accent)]">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[color:var(--marketing-panel-warm)] text-[color:var(--marketing-accent)]">
                         <Icon className="h-5 w-5" />
                       </span>
                       <p className="text-base font-semibold text-slate-950">{item.title}</p>
@@ -361,8 +365,8 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="grid gap-px overflow-hidden rounded-[2.6rem] border border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] xl:grid-cols-4">
-              {serviceFamilies.map((family) => {
+            <div className="grid gap-px overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] xl:grid-cols-4">
+              {serviceFamilies.map((family, index) => {
                 const theme = familyThemes[family.name];
                 const Icon = theme.icon;
 
@@ -371,9 +375,10 @@ export function LandingPage() {
                     key={family.name}
                     href={`/${family.pageSlug || `services/${family.categorySlugs[0]}`}`}
                     className={cn(
-                      "group relative flex min-h-[470px] flex-col overflow-hidden px-7 py-8 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-54px_rgba(15,23,42,0.28)]",
+                      "eo-premium-card eo-reveal-soft group relative flex min-h-[470px] flex-col overflow-hidden px-7 py-8 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-54px_rgba(15,23,42,0.28)]",
                       theme.cardClassName,
                     )}
+                    style={{ "--eo-delay": `${index * 70}ms` }}
                   >
                     <div className={cn("pointer-events-none absolute inset-0 opacity-70 transition duration-300 group-hover:opacity-100", theme.overlayClassName)} />
                     <div className="relative flex h-full flex-col">
@@ -445,7 +450,7 @@ export function LandingPage() {
               </h2>
 
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_380px]">
-                <div className="overflow-hidden rounded-[2.6rem] border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_34px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur">
+                <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_34px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur">
                   <div className="grid gap-px bg-[color:var(--marketing-line)] md:grid-cols-3">
                     {[
                       {
@@ -469,7 +474,7 @@ export function LandingPage() {
                       return (
                         <div key={item.title} className="bg-white px-7 py-8">
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
-                          <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900">
+                          <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
                             <Icon className="h-5 w-5" />
                           </span>
                           <h3 className="mt-6 text-xl font-semibold tracking-tight text-slate-950">{item.title}</h3>
@@ -499,7 +504,7 @@ export function LandingPage() {
                           "Deployment notes captured before fulfillment",
                           "Credentials and IP details assigned after provisioning",
                         ].map((item) => (
-                          <div key={item} className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
+                          <div key={item} className="rounded-md border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
                             {item}
                           </div>
                         ))}
@@ -513,17 +518,18 @@ export function LandingPage() {
                     title="Partner-backed delivery"
                     description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
                     categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
+                    className="eo-premium-card eo-reveal-soft"
                   />
-                  <div className="rounded-[2.4rem] border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]">
+                  <div className="eo-premium-card eo-reveal-soft rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]" style={{ "--eo-delay": "90ms" }}>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
                     <div className="mt-6 space-y-4">
                       {governanceSignals.map((item) => {
                         const Icon = item.icon;
 
                         return (
-                          <div key={item.label} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
+                          <div key={item.label} className="rounded-md border border-slate-200 bg-white px-4 py-4">
                             <div className="flex items-start gap-3">
-                              <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                              <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                                 <Icon className="h-4 w-4" />
                               </span>
                               <div>
@@ -537,7 +543,7 @@ export function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-[2.4rem] border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]">
+                  <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]" style={{ "--eo-delay": "160ms" }}>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">ElevenOrbits Standard</p>
                     <p className="mt-5 text-3xl font-semibold leading-[1.05] tracking-[-0.04em]">
                       Professional systems deserve professional operational ownership.
@@ -559,7 +565,7 @@ export function LandingPage() {
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
         <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-            <div className="rounded-[2.6rem] border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
+            <div className="eo-premium-card eo-reveal-up rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--marketing-accent)]">04 / Customer Guidance</p>
               <h2 className="mt-5 text-4xl font-semibold leading-[0.98] tracking-[-0.05em] text-slate-950 md:text-5xl">
                 Direct answers before a customer opens the portal.
@@ -578,7 +584,11 @@ export function LandingPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               {faqItems.map((item, index) => (
-                <div key={item.question} className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]">
+                <div
+                  key={item.question}
+                  className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]"
+                  style={{ "--eo-delay": `${index * 45}ms` }}
+                >
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
                   <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950">{item.question}</h3>
                   <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
@@ -613,11 +623,12 @@ export function LandingPage() {
                   <div
                     key={plan.slug}
                     className={cn(
-                      "rounded-[2.4rem] border border-[color:var(--marketing-line)] p-7 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.22)]",
+                      "eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] p-7 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.22)]",
                       index === 0 && "border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)]",
                       index === 1 && "border-slate-200 bg-white/90",
                       index === 2 && "border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)]",
                     )}
+                    style={{ "--eo-delay": `${index * 65}ms` }}
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{categoryNameFor(plan.categorySlug)}</p>
                     <h3 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-slate-950">{plan.name}</h3>
@@ -636,7 +647,7 @@ export function LandingPage() {
 
                     <div className="mt-7 space-y-3">
                       {plan.features.slice(0, 3).map((feature) => (
-                        <div key={feature} className="rounded-[1.2rem] border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700">
+                        <div key={feature} className="rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700">
                           {feature}
                         </div>
                       ))}
@@ -649,7 +660,7 @@ export function LandingPage() {
                 {supportingPlans.map((plan) => (
                   <div
                     key={plan.slug}
-                    className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/88 p-5 shadow-[0_20px_60px_-52px_rgba(15,23,42,0.22)]"
+                    className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/88 p-5 shadow-[0_20px_60px_-52px_rgba(15,23,42,0.22)]"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -677,7 +688,7 @@ export function LandingPage() {
       <section id="contact" className="relative scroll-mt-28">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
         <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="overflow-hidden rounded-[2.8rem] border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
+          <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
             <div className="grid gap-px bg-[color:var(--marketing-line)] xl:grid-cols-[1.08fr_0.92fr]">
               <div className="bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-8 md:p-10 xl:p-12">
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">06 / Contact</p>
@@ -690,7 +701,7 @@ export function LandingPage() {
                   point that fits the work.
                 </p>
 
-                <div className="mt-8 rounded-[1.9rem] border border-slate-200 bg-white/90 p-5">
+                <div className="mt-8 rounded-lg border border-slate-200 bg-white/90 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Routing Standard</p>
                   <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950">Start with the right team.</p>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
@@ -710,17 +721,17 @@ export function LandingPage() {
                 </div>
 
                 <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-[1.8rem] border border-slate-200 bg-white/88 p-5">
+                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">General Inquiries</p>
                     <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.generalEmail}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For broad questions, introductions, and company-level conversations.</p>
                   </div>
-                  <div className="rounded-[1.8rem] border border-slate-200 bg-white/88 p-5">
+                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Support Desk</p>
                     <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.supportEmail}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For customer help, service follow-up, and operational issue escalation.</p>
                   </div>
-                  <div className="rounded-[1.8rem] border border-slate-200 bg-white/88 p-5 sm:col-span-2 xl:col-span-1">
+                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5 sm:col-span-2 xl:col-span-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Company Address</p>
                     <address className="mt-3 text-lg font-semibold not-italic leading-7 text-slate-950">{siteConfig.companyAddress}</address>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For company records and formal correspondence.</p>

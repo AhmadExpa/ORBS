@@ -13,6 +13,7 @@ const recommendationSlugs = {
   "AI Services": ["ai-servers", "ai-solutions", "workflows"],
   "Managed CDN": ["cdn"],
   "Object Storage": ["object-storage"],
+  "O7 Bucket": ["object-storage"],
   "Self-Hosted App Services": ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
 };
 
@@ -32,8 +33,9 @@ function slugsForRecommendations(items = []) {
 export function IndustryIndex({ industries }) {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Industries</p>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
             Managed operations for teams that depend on hosted systems.
@@ -46,8 +48,13 @@ export function IndustryIndex({ industries }) {
       </section>
       <section>
         <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
-          {industries.map((industry) => (
-            <Link key={industry.slug} href={`/industries/${industry.slug}`} className="group rounded-lg border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]">
+          {industries.map((industry, index) => (
+            <Link
+              key={industry.slug}
+              href={`/industries/${industry.slug}`}
+              className="eo-premium-card eo-reveal-soft group rounded-lg border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]"
+              style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
+            >
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{industry.eyebrow}</p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{industry.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">{industry.description}</p>
@@ -67,8 +74,9 @@ export function IndustryIndex({ industries }) {
 export function IndustryDetail({ industry }) {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-30" />
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
           <Link href="/industries" className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">
             Industries
           </Link>
@@ -80,23 +88,33 @@ export function IndustryDetail({ industry }) {
       <section>
         <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-10">
-            <section>
+            <section className="eo-reveal-up">
               <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Why It Fits</h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">{industry.fit}</p>
             </section>
             <section>
               <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Common Challenges</h2>
               <div className="mt-5 grid gap-3">
-                {industry.challenges.map((item) => (
-                  <div key={item} className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">{item}</div>
+                {industry.challenges.map((item, index) => (
+                  <div
+                    key={item}
+                    className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700"
+                    style={{ "--eo-delay": `${index * 40}ms` }}
+                  >
+                    {item}
+                  </div>
                 ))}
               </div>
             </section>
             <section>
               <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Expected Outcomes</h2>
               <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {industry.outcomes.map((item) => (
-                  <div key={item} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-4">
+                {industry.outcomes.map((item, index) => (
+                  <div
+                    key={item}
+                    className="eo-premium-card eo-reveal-soft flex gap-3 rounded-lg border border-slate-200 bg-white p-4"
+                    style={{ "--eo-delay": `${index * 40}ms` }}
+                  >
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" />
                     <p className="text-sm leading-6 text-slate-700">{item}</p>
                   </div>
@@ -104,7 +122,7 @@ export function IndustryDetail({ industry }) {
               </div>
             </section>
           </div>
-          <aside className="h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
+          <aside className="eo-premium-card eo-reveal-soft h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Recommended Services</p>
             <div className="mt-4 grid gap-2">
               {industry.recommended.map((item) => (
@@ -126,8 +144,9 @@ export function IndustryDetail({ industry }) {
 export function ResourceIndex({ resources }) {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Resources</p>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
             Practical guides for managed infrastructure, AI, automation, security, VoIP, and billing.
@@ -140,8 +159,13 @@ export function ResourceIndex({ resources }) {
       </section>
       <section>
         <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
-          {resources.map((resource) => (
-            <Link key={resource.slug} href={`/resources/${resource.slug}`} className="group rounded-lg border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]">
+          {resources.map((resource, index) => (
+            <Link
+              key={resource.slug}
+              href={`/resources/${resource.slug}`}
+              className="eo-premium-card eo-reveal-soft group rounded-lg border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_24px_54px_-42px_rgba(15,23,42,0.42)]"
+              style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
+            >
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{resource.eyebrow}</p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{resource.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">{resource.description}</p>
@@ -161,8 +185,9 @@ export function ResourceIndex({ resources }) {
 export function ResourceDetail({ resource }) {
   return (
     <main className="bg-white">
-      <section className="border-b border-slate-200/80">
-        <div className="mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+      <section className="relative border-b border-slate-200/80">
+        <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-30" />
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
           <Link href="/resources" className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">
             Resources
           </Link>
@@ -173,18 +198,22 @@ export function ResourceDetail({ resource }) {
       </section>
       <section>
         <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-12 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
+          <aside className="eo-premium-card eo-reveal-soft h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Guide Summary</p>
             <p className="mt-4 text-sm leading-7 text-slate-600">{resource.intro}</p>
             <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={5} className="mt-5" />
           </aside>
           <div className="space-y-8">
-            {resource.sections.map((section) => (
-              <section key={section.heading} className="border-b border-slate-200 pb-8 last:border-0 last:pb-0">
+            {resource.sections.map((section, sectionIndex) => (
+              <section key={section.heading} className="eo-reveal-soft border-b border-slate-200 pb-8 last:border-0 last:pb-0" style={{ "--eo-delay": `${sectionIndex * 55}ms` }}>
                 <h2 className="text-2xl font-semibold tracking-tight text-slate-950">{section.heading}</h2>
                 <div className="mt-5 grid gap-3">
-                  {section.points.map((item) => (
-                    <div key={item} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-4">
+                  {section.points.map((item, index) => (
+                    <div
+                      key={item}
+                      className="eo-premium-card flex gap-3 rounded-lg border border-slate-200 bg-white p-4"
+                      style={{ "--eo-delay": `${index * 35}ms` }}
+                    >
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" />
                       <p className="text-sm leading-6 text-slate-700">{item}</p>
                     </div>

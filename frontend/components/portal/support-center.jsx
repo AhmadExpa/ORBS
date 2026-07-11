@@ -13,7 +13,7 @@ import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 
 export function SupportCenter() {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const { showToast } = useActionToast();
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status") || "";
@@ -21,10 +21,20 @@ export function SupportCenter() {
     queryKey: ["portal-tickets"],
     path: "/tickets",
   });
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-profile"],
+    path: "/profile/me",
+  });
+  const subscriptionsQuery = useCustomerQuery({
+    queryKey: ["portal-subscriptions"],
+    path: "/subscriptions",
+  });
   const [form, setForm] = useState({
     subject: "",
     category: "general",
     priority: "medium",
+    subscriptionId: "",
+    serviceId: "",
     message: "",
   });
   const [state, setState] = useState({ saving: false, message: "", error: "" });
@@ -34,16 +44,19 @@ export function SupportCenter() {
     setState({ saving: true, message: "", error: "" });
 
     try {
-      const token = await getToken();
+      const token = userId ? await getToken() : undefined;
       await apiFetch("/tickets", {
         method: "POST",
         token,
+        authMode: userId ? "customer" : "delegate",
         body: form,
       });
       setForm({
         subject: "",
         category: "general",
         priority: "medium",
+        subscriptionId: "",
+        serviceId: "",
         message: "",
       });
       await refetch();
@@ -66,6 +79,8 @@ export function SupportCenter() {
   }
 
   const tickets = data?.tickets || [];
+  const subscriptions = subscriptionsQuery.data?.subscriptions || [];
+  const isDelegate = profileQuery.data?.actorType === "delegate";
   const visibleTickets = statusFilter ? tickets.filter((ticket) => (ticket.status || "open") === statusFilter) : tickets;
 
   if (isLoading && !data) {
@@ -182,6 +197,28 @@ export function SupportCenter() {
                       <option value="critical">Critical</option>
                     </Select>
                   </div>
+                </div>
+                <div>
+                  <FieldLabel>Service</FieldLabel>
+                  <Select
+                    value={form.subscriptionId}
+                    onChange={(event) => {
+                      const subscription = subscriptions.find((item) => String(item._id) === event.target.value);
+                      setForm((current) => ({
+                        ...current,
+                        subscriptionId: event.target.value,
+                        serviceId: subscription?.productPlanId?.serviceType || subscription?.productPlanId?.slug || "",
+                      }));
+                    }}
+                    required={isDelegate}
+                  >
+                    <option value="">{isDelegate ? "Choose assigned service" : "General account ticket"}</option>
+                    {subscriptions.map((subscription) => (
+                      <option key={subscription._id} value={subscription._id}>
+                        {subscription.productPlanId?.name || "Managed Service"}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
                 <div>
                   <FieldLabel>Describe the issue</FieldLabel>

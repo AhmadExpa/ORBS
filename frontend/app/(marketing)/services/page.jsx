@@ -20,14 +20,14 @@ import { ServiceLogo, ServiceLogoCluster, ServiceVisualPanel, getCategoryBrand }
 export const metadata = {
   title: "Services",
   description:
-    "Explore ElevenOrbits managed servers, AI services, VoIP and Vicidial management, CDN, object storage, self-hosted apps, cybersecurity, workflow automation, and managed IT support.",
+    "Explore ElevenOrbits managed servers, AI services, VoIP and Vicidial management, CDN, O7 Bucket storage, self-hosted apps, cybersecurity, workflow automation, and managed IT support.",
   alternates: {
     canonical: "/services",
   },
   openGraph: {
     title: "ElevenOrbits Services",
     description:
-    "Managed servers, AI services, VoIP, CDN, object storage, self-hosted apps, cybersecurity, workflow automation, and technical support from ElevenOrbits.",
+    "Managed servers, AI services, VoIP, CDN, O7 Bucket storage, self-hosted apps, cybersecurity, workflow automation, and technical support from ElevenOrbits.",
     url: `${siteConfig.publicUrl}/services`,
     siteName: siteConfig.name,
     type: "website",
@@ -53,7 +53,7 @@ const serviceIconMap = {
 export default function ServicesPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-16">
-      <section className="rounded-lg border border-slate-200 bg-white p-8 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.2)]">
+      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-8 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.2)]">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-center">
           <div>
             <SectionHeading
@@ -74,7 +74,7 @@ export default function ServicesPage() {
             title="All service lines in one managed catalog"
             description="Customers can compare hosting, AI, call-center, storage, security, and app hosting services before entering the portal."
             categorySlugs={serviceCategories.map((category) => category.slug)}
-            className="lg:justify-self-end"
+            className="eo-float-slow lg:justify-self-end"
           />
         </div>
       </section>
@@ -86,25 +86,26 @@ export default function ServicesPage() {
             <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Start with the business outcome.</h2>
           </div>
           <p className="max-w-2xl text-sm leading-6 text-slate-500">
-            These pages are built for search, answer engines, and real users who need to understand each product before opening a portal account.
+            Each sector page explains the scope, technology stack, delivery model, and order path before a customer opens a portal account.
           </p>
         </div>
         <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {serviceVerticals.map((vertical) => {
+          {serviceVerticals.map((vertical, index) => {
             const Icon = serviceIconMap[vertical.categorySlugs[0]] || Server;
 
             return (
               <Link
                 key={vertical.slug}
                 href={`/${vertical.slug}`}
-                className="group rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_58px_-46px_rgba(15,23,42,0.4)] transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-panel"
+                className="eo-premium-card eo-reveal-soft group rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_58px_-46px_rgba(15,23,42,0.4)] transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-panel"
+                style={{ "--eo-delay": `${Math.min(index * 45, 240)}ms` }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">{vertical.eyebrow}</p>
                     <h3 className="mt-3 text-xl font-semibold tracking-[-0.015em] text-slate-950">{vertical.name}</h3>
                   </div>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-700 ring-1 ring-slate-950/[0.06]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-700 ring-1 ring-slate-950/[0.06]">
                     <Icon className="h-5 w-5" />
                   </span>
                 </div>
@@ -130,18 +131,22 @@ export default function ServicesPage() {
       </section>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {serviceCategories.map((category) => {
+        {serviceCategories.map((category, index) => {
           const brand = getCategoryBrand(category.slug);
 
           return (
-            <Card key={category.slug} className="transition hover:-translate-y-1 hover:shadow-panel">
+            <Card
+              key={category.slug}
+              className="eo-premium-card eo-reveal-soft rounded-lg transition hover:-translate-y-1 hover:shadow-panel"
+              style={{ "--eo-delay": `${Math.min(index * 35, 260)}ms` }}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <CardTitle>{category.name}</CardTitle>
                     <CardDescription>{category.description}</CardDescription>
                   </div>
-                  <ServiceLogo brand={brand} imageClassName="h-8 w-9" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-2xl" />
+                  <ServiceLogo brand={brand} imageClassName="h-8 w-9" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-lg" />
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">

@@ -105,6 +105,7 @@ export const siteConfig = {
   publicUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_MARKETING_URL),
   appUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || fallbackAppUrl),
   apiUrl: normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL),
+  turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "",
 };
 
 export function getDepartmentContactByServiceSlug(slug) {

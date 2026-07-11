@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CheckCircle2, ClipboardList, LifeBuoy, Settings2 } from "lucide-react";
 import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
@@ -84,16 +85,33 @@ export function ServicePage({ slug }) {
       },
     ],
   };
+  const coverageItems = [
+    {
+      label: "Scope captured",
+      description: `${category.name} orders keep the service requirements, notes, and selected plan visible before fulfillment starts.`,
+      icon: ClipboardList,
+    },
+    {
+      label: "Managed setup",
+      description: "Provisioning, access handoff, and technical setup stay with the ElevenOrbits team after approval.",
+      icon: Settings2,
+    },
+    {
+      label: "Support record",
+      description: "Tickets, updates, and operational follow-up stay tied to the customer and active subscription.",
+      icon: LifeBuoy,
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-16">
       <JsonLd data={serviceSchema} />
       <JsonLd data={breadcrumbSchema} />
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-panel">
+      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-8 shadow-panel">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
           <div>
             <div className="mb-6">
-              <ServiceLogo brand={categoryBrand} showLabel imageClassName="h-8 w-10" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-2xl" />
+              <ServiceLogo brand={categoryBrand} showLabel imageClassName="h-8 w-10" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12 [&>span:first-child]:rounded-lg" />
             </div>
             <SectionHeading
               eyebrow="Service Detail"
@@ -114,14 +132,35 @@ export function ServicePage({ slug }) {
             description="The public plan, portal order, and managed handoff all stay tied to this service lane."
             categorySlugs={[slug]}
             techItems={planTechItems}
+            className="eo-float-slow"
           />
         </div>
+      </section>
+
+      <section className="mt-10 grid gap-4 md:grid-cols-3">
+        {coverageItems.map((item, index) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.label}
+              className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-40px_rgba(15,23,42,0.32)]"
+              style={{ "--eo-delay": `${index * 55}ms` }}
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-800">
+                <Icon className="h-5 w-5" />
+              </span>
+              <h2 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-slate-950">{item.label}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
+            </div>
+          );
+        })}
       </section>
 
       <section className="mt-12 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           {plans.length === 0 ? (
-            <Card>
+            <Card className="eo-premium-card eo-reveal-soft rounded-lg">
               <CardHeader>
                 <CardTitle>Custom delivery</CardTitle>
                 <CardDescription>This service is supported but starts as a custom engagement managed by ElevenOrbits.</CardDescription>
@@ -133,8 +172,12 @@ export function ServicePage({ slug }) {
               </CardContent>
             </Card>
           ) : (
-            plans.map((plan) => (
-              <Card key={plan.slug}>
+            plans.map((plan, index) => (
+              <Card
+                key={plan.slug}
+                className="eo-premium-card eo-reveal-soft rounded-lg"
+                style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -166,7 +209,10 @@ export function ServicePage({ slug }) {
                   ) : null}
                   <ul className="grid gap-2 text-sm text-slate-600 md:grid-cols-2">
                     {plan.features.map((feature) => (
-                      <li key={feature}>• {feature}</li>
+                      <li key={feature} className="flex gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                        <span>{feature}</span>
+                      </li>
                     ))}
                   </ul>
                 </CardContent>
@@ -175,7 +221,7 @@ export function ServicePage({ slug }) {
           )}
         </div>
         <div className="space-y-6">
-          <Card className="h-fit">
+          <Card className="eo-premium-card eo-reveal-soft h-fit rounded-lg">
             <CardHeader>
               <CardTitle>{departmentContact.title}</CardTitle>
               <CardDescription>{departmentContact.description}</CardDescription>
@@ -188,7 +234,7 @@ export function ServicePage({ slug }) {
               <address className="not-italic text-slate-700">{siteConfig.companyAddress}</address>
             </CardContent>
           </Card>
-          <Card className="h-fit">
+          <Card className="eo-premium-card eo-reveal-soft h-fit rounded-lg" style={{ "--eo-delay": "80ms" }}>
             <CardHeader>
               <CardTitle>Managed by ElevenOrbits</CardTitle>
               <CardDescription>Support and operations stay with our team across all managed services.</CardDescription>

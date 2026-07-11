@@ -443,7 +443,7 @@ function EdgeStorageSection({ subscriptions }) {
           <div>
             <CardTitle>Edge & Storage Services</CardTitle>
             <CardDescription>
-              CDN and Object Storage subscriptions are shown with delivery stack, renewal timing, and admin-published connection details.
+              CDN and O7 Bucket subscriptions are shown with delivery stack, renewal timing, and admin-published connection details.
             </CardDescription>
           </div>
         </div>
@@ -788,9 +788,15 @@ export default function PortalServicesPage() {
     queryKey: ["portal-subscriptions"],
     path: "/subscriptions",
   });
+  const profileQuery = useCustomerQuery({
+    queryKey: ["portal-profile"],
+    path: "/profile/me",
+  });
+  const isDelegate = profileQuery.data?.actorType === "delegate";
   const catalogQuery = useQuery({
     queryKey: ["portal-service-recommendation"],
     queryFn: () => apiFetch("/catalog/plans"),
+    enabled: !isDelegate,
   });
 
   const subscriptions = subscriptionsQuery.data?.subscriptions || [];
@@ -809,19 +815,27 @@ export default function PortalServicesPage() {
     <div>
       <Topbar
         title="Services"
-        subtitle="See the services you are currently using, review the next recommended plan, and jump into the wider catalog when you need more."
+        subtitle={
+          isDelegate
+            ? "Review the services assigned to your agent login and open support with the right context."
+            : "See the services you are currently using, review the next recommended plan, and jump into the wider catalog when you need more."
+        }
         actions={
+          !isDelegate ? (
           <Link href="/services">
             <Button>Browse More Services</Button>
           </Link>
+          ) : null
         }
       />
       <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <SummaryCard subscriptions={currentSubscriptions} />
+          {!isDelegate ? (
           <div className="space-y-6">
             <RecommendationCard recommendation={recommendation} isLoading={catalogQuery.isLoading} />
           </div>
+          ) : null}
         </div>
 
         {!currentSubscriptions.length && !subscriptionsQuery.isLoading ? (

@@ -3,6 +3,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { User } from "../../db/models/index.js";
 import { requireCustomer, findUserFromRequest } from "../../middleware/require-customer.js";
+import { isDelegateActor, requirePortalActor, serializeDelegateSession } from "../../middleware/require-portal-actor.js";
 import { verifyClerkRequestToken } from "../../services/clerk-auth-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { syncCustomerProfile } from "../../services/customer-profile-service.js";
@@ -60,11 +61,15 @@ profilesRouter.get(
 
 profilesRouter.get(
   "/me",
-  requireCustomer,
+  requirePortalActor,
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
     const user = await User.findById(req.auth.user._id);
-    res.json({ user });
+    res.json({
+      user,
+      actorType: isDelegateActor(req) ? "delegate" : "owner",
+      delegate: isDelegateActor(req) ? serializeDelegateSession(req.auth.delegate, user) : null,
+    });
   }),
 );
 

@@ -19,6 +19,7 @@ export const adminNavigation = [
   { href: "/eo-admin/disputes", label: "Disputes" },
   { href: "/eo-admin/contracts", label: "Contracts" },
   { href: "/eo-admin/tickets", label: "Tickets" },
+  { href: "/eo-admin/contact-submissions", label: "Contact Leads" },
   { href: "/eo-admin/settings", label: "Settings" },
   { href: "/eo-admin/activity", label: "Activity" },
 ];

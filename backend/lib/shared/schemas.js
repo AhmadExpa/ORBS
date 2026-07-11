@@ -27,6 +27,12 @@ export const orderQuoteSchema = z.object({
   selectedImageId: z.string().optional(),
   selectedStorageId: z.string().optional(),
   storageQuantity: z.coerce.number().min(0).optional(),
+  serviceConfiguration: z
+    .object({
+      answers: z.record(z.any()).default({}),
+    })
+    .passthrough()
+    .optional(),
   finalNote: z.string().trim().max(2000).optional(),
   billingCycle: z.enum(["monthly", "yearly"]),
 });

@@ -20,7 +20,7 @@ import {
 } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
-import { ServiceLogo, ServiceLogoCluster, TechLogoPills, getCategoryBrand } from "./service-branding";
+import { ServiceLogo, ServiceLogoCluster, TechLogoPills, getBrandForName, getCategoryBrand } from "./service-branding";
 
 const verticalIconMap = {
   "managed-servers": Server,
@@ -84,12 +84,75 @@ const verticalThemes = {
   },
 };
 
+const fallbackVerticalProof = {
+  title: "Managed delivery controls",
+  description: "This service lane is scoped, provisioned, documented, and supported through the ElevenOrbits portal workflow.",
+  aside: "Customers get a managed service path with service notes, approval context, access handoff, and support visibility tied to the active subscription.",
+  controls: ["Service scope captured before order approval", "Provisioning notes kept with the customer record", "Support tickets tied to the active service"],
+};
+
+const verticalProof = {
+  "managed-servers": {
+    title: "Server delivery without unmanaged handoff",
+    description: "VPS and VDS work includes the operating details customers need before a production server is released.",
+    aside: "Customers get server access only after provisioning, review, and credential assignment are complete.",
+    controls: ["OS, panel, backup, and access requirements captured", "IP, credential, and renewal notes assigned after setup", "Support requests tied to the active server"],
+  },
+  "ai-services": {
+    title: "AI infrastructure with operating guardrails",
+    description: "AI servers, model access, and managed AI products are delivered with rollout and support context attached.",
+    aside: "Customers get AI service details, deployment notes, and support channels connected to the service record.",
+    controls: ["Model or API requirements captured during order intake", "Deployment guidance kept with the customer account", "Prompt operations and usage questions routed to support"],
+  },
+  "voip-services": {
+    title: "Call operations scoped before provisioning",
+    description: "VoIP and Vicidial requests capture inbound, outbound, RVM, routing, agent, DID, and compliance requirements before setup starts.",
+    aside: "Customers get a call-center service path that records what traffic they run and what configuration the team must deliver.",
+    controls: ["Inbound, outbound, blended, and RVM intent captured", "SIP, DID, dialer, agent, and campaign needs documented", "Tickets connected to live call-center operations"],
+  },
+  "cybersecurity-services": {
+    title: "Security service delivery with visible scope",
+    description: "Security services define the systems, controls, response expectations, and reporting path before work begins.",
+    aside: "Customers get a managed security lane with clear coverage, escalation contacts, and support visibility.",
+    controls: ["Asset and risk scope captured during intake", "Monitoring and response expectations documented", "Security tickets routed to the right department"],
+  },
+  "edge-storage-services": {
+    title: "Edge delivery and O7 Bucket access controls",
+    description: "CDN and O7 Bucket storage requests define domains, CORS, gated access, S3-compatible API use, and monthly storage needs.",
+    aside: "Customers get a storage and edge delivery lane designed for predictable access, custom domains, and development use.",
+    controls: ["Bucket, domain, and CORS requirements captured", "S3-compatible credentials generated after approval", "Fixed monthly storage pricing shown before checkout"],
+  },
+  "self-hosted-app-services": {
+    title: "Self-hosted apps delivered as managed services",
+    description: "Hermes AI, OpenClaw, and Nextcloud requests are handled with stack, access, storage, and support expectations recorded upfront.",
+    aside: "Customers get app hosting that includes managed deployment context instead of a bare install with no operating owner.",
+    controls: ["Application stack and access needs captured", "Storage, domain, and backup expectations documented", "Support follows the hosted app service record"],
+  },
+  "workflow-automation": {
+    title: "Automation with ownership after launch",
+    description: "Workflow requests capture triggers, systems, credentials, business rules, and failure handling before buildout.",
+    aside: "Customers get workflow automation that is documented, supported, and connected to tickets after deployment.",
+    controls: ["Trigger, app, and credential requirements captured", "Business rules and failure paths documented", "Change requests tracked against the active workflow"],
+  },
+  "managed-it-support": {
+    title: "Technical support with accountable routing",
+    description: "Support services keep requests, access notes, systems, and follow-up inside the customer record.",
+    aside: "Customers get a managed support lane with the right service context attached to each ticket.",
+    controls: ["Support scope and system access captured", "Customer notes stay available to the support team", "Ticket history remains tied to active services"],
+  },
+};
+
 function absoluteUrl(path) {
   return `${siteConfig.publicUrl}${path}`;
 }
 
 function categoryNameFor(slug) {
   return serviceCategories.find((category) => category.slug === slug)?.name || slug;
+}
+
+function brandForPlan(plan) {
+  const planBrand = getBrandForName(plan.name);
+  return planBrand.logo ? planBrand : getCategoryBrand(plan.categorySlug);
 }
 
 function JsonLd({ data }) {
@@ -189,6 +252,7 @@ export function ProductVerticalPage({ slug }) {
     .map((categorySlug) => serviceCategories.find((category) => category.slug === categorySlug))
     .filter(Boolean);
   const departmentContact = getDepartmentContactByServiceSlug(vertical.categorySlugs[0]);
+  const proof = verticalProof[slug] || fallbackVerticalProof;
   const schema = buildSchema(vertical, plans);
 
   return (
@@ -200,7 +264,7 @@ export function ProductVerticalPage({ slug }) {
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-55" />
         <div className="relative mx-auto max-w-[1520px] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <div className={cn("overflow-hidden rounded-lg border p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.38)] md:p-9 lg:p-11", theme.shell)}>
+          <div className={cn("eo-premium-card eo-reveal-up overflow-hidden rounded-lg border p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.38)] md:p-9 lg:p-11", theme.shell)}>
             <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-end">
               <div className="max-w-5xl">
                 <div className="flex flex-wrap items-center gap-3">
@@ -231,7 +295,7 @@ export function ProductVerticalPage({ slug }) {
                 </div>
               </div>
 
-              <aside className="rounded-lg border border-slate-200/80 bg-white/88 p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.32)]">
+              <aside className="eo-reveal-soft rounded-lg border border-slate-200/80 bg-white/88 p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.32)]" style={{ "--eo-delay": "130ms" }}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Built For</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {vertical.audience.map((item) => (
@@ -241,13 +305,34 @@ export function ProductVerticalPage({ slug }) {
                   ))}
                 </div>
                 <div className="mt-6 border-t border-slate-950/[0.08] pt-5">
-                  <p className="text-sm leading-7 text-slate-600">
-                    This page is part of the ElevenOrbits public product network. Login, billing, support, and private dashboards stay behind protected portal routes.
-                  </p>
+                  <p className="text-sm leading-7 text-slate-600">{proof.aside}</p>
                   <ServiceLogoCluster categorySlugs={vertical.categorySlugs} techItems={laneTechItems} max={5} className="mt-5" />
                 </div>
               </aside>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200/80 bg-slate-50/60">
+        <div className="mx-auto grid max-w-[1520px] gap-8 px-4 py-14 sm:px-6 lg:px-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-center">
+          <div className="eo-reveal-up">
+            <p className={cn("text-xs font-semibold uppercase tracking-[0.24em]", theme.accent)}>Service Controls</p>
+            <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.045em] text-slate-950 md:text-5xl">{proof.title}</h2>
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">{proof.description}</p>
+            <ServiceLogoCluster categorySlugs={vertical.categorySlugs} techItems={laneTechItems} max={6} showLabels className="mt-7" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
+            {proof.controls.map((item, index) => (
+              <div
+                key={item}
+                className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)]"
+                style={{ "--eo-delay": `${index * 55}ms` }}
+              >
+                <CheckCircle2 className={cn("h-5 w-5", theme.accent)} />
+                <p className="mt-4 text-sm font-medium leading-7 text-slate-700">{item}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -261,8 +346,12 @@ export function ProductVerticalPage({ slug }) {
             </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {vertical.outcomes.map((item) => (
-              <div key={item} className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)]">
+            {vertical.outcomes.map((item, index) => (
+              <div
+                key={item}
+                className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)]"
+                style={{ "--eo-delay": `${index * 45}ms` }}
+              >
                 <CheckCircle2 className={cn("h-5 w-5", theme.accent)} />
                 <p className="mt-4 text-sm font-medium leading-7 text-slate-700">{item}</p>
               </div>
@@ -288,14 +377,18 @@ export function ProductVerticalPage({ slug }) {
             </div>
 
             <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {plans.map((plan) => (
-                <article key={plan.slug} className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
+              {plans.map((plan, index) => (
+                <article
+                  key={plan.slug}
+                  className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]"
+                  style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{categoryNameFor(plan.categorySlug)}</p>
                       <h3 className="mt-2 text-xl font-semibold tracking-[-0.015em] text-slate-950">{plan.name}</h3>
                     </div>
-                    <ServiceLogo brand={getCategoryBrand(plan.categorySlug)} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
+                    <ServiceLogo brand={brandForPlan(plan)} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
                     <p className="shrink-0 text-sm font-semibold text-slate-950">
                       {plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`}
                     </p>
@@ -318,7 +411,7 @@ export function ProductVerticalPage({ slug }) {
           </div>
 
           <aside className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
+            <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
               <p className={cn("text-xs font-semibold uppercase tracking-[0.22em]", theme.accent)}>How It Works</p>
               <ol className="mt-5 space-y-4">
                 {vertical.process.map((step, index) => (
@@ -332,7 +425,7 @@ export function ProductVerticalPage({ slug }) {
               </ol>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
+            <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]" style={{ "--eo-delay": "80ms" }}>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Related Detail Pages</p>
               <div className="mt-4 space-y-2">
                 {categories.map((category) => {
@@ -367,8 +460,12 @@ export function ProductVerticalPage({ slug }) {
             </h2>
           </div>
           <div className="grid gap-4">
-            {vertical.faqs.map((item) => (
-              <article key={item.question} className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)]">
+            {vertical.faqs.map((item, index) => (
+              <article
+                key={item.question}
+                className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.35)]"
+                style={{ "--eo-delay": `${index * 45}ms` }}
+              >
                 <h3 className="text-lg font-semibold tracking-[-0.01em] text-slate-950">{item.question}</h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{item.answer}</p>
               </article>
