@@ -13,8 +13,10 @@ import { Button, FieldLabel, TextInput, cn } from "@/lib/ui";
 
 const authAppearance = {
   elements: {
-    rootBox: "w-full",
-    card: "w-full border border-slate-200/90 bg-white shadow-[0_28px_80px_-54px_rgba(15,23,42,0.55)] rounded-lg",
+    rootBox: "w-full max-w-full",
+    cardBox: "w-full max-w-full",
+    card: "w-full max-w-full border border-slate-200/90 bg-white shadow-[0_28px_80px_-54px_rgba(15,23,42,0.55)] rounded-lg px-4 sm:px-6",
+    main: "w-full max-w-full",
     headerTitle: "text-slate-950 text-2xl font-semibold tracking-[-0.02em]",
     headerSubtitle: "text-slate-500",
     socialButtonsBlockButton:
@@ -62,7 +64,7 @@ function AgentLoginForm() {
   }
 
   return (
-    <form className="space-y-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={handleSubmit}>
+    <form className="w-full max-w-full space-y-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5" onSubmit={handleSubmit}>
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Agent Portal</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Log in as agent.</h3>
@@ -112,7 +114,7 @@ export function LoginModePanel({ redirectTo, signupUrl }) {
 
   return (
     <>
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+      <div className="mb-5 grid w-full grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
         {modes.map((item) => {
           const Icon = item.icon;
           const active = mode === item.id;
@@ -141,7 +143,7 @@ export function LoginModePanel({ redirectTo, signupUrl }) {
             <AccountStatusNotice />
             <div className="mb-6">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Customer Portal</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950">Log in to continue.</h2>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-3xl">Log in to continue.</h2>
             </div>
             <SignIn
               routing="path"

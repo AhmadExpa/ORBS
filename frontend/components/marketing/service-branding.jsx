@@ -186,26 +186,21 @@ export function ServiceLogo({ brand, name, showLabel = false, className, imageCl
 
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
-      <span
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_30px_-24px_rgba(15,23,42,0.45)]",
-          logoOnlyLabelRequested && "h-12 w-20",
-        )}
-      >
-        {resolved?.logo ? (
-          <img
-            src={resolved.logo}
-            alt={`${label} logo`}
-            loading="lazy"
-            decoding="async"
-            width={112}
-            height={44}
-            className={cn("h-7 w-8 object-contain", logoOnlyLabelRequested && "h-8 w-16", imageClassName)}
-          />
-        ) : (
+      {resolved?.logo ? (
+        <img
+          src={resolved.logo}
+          alt={`${label} logo`}
+          loading="lazy"
+          decoding="async"
+          width={144}
+          height={56}
+          className={cn("h-9 w-24 shrink-0 object-contain", logoOnlyLabelRequested && "h-10 w-28", imageClassName)}
+        />
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white">
           <span className="text-xs font-semibold text-slate-800">{getInitials(label)}</span>
-        )}
-      </span>
+        </span>
+      )}
       {shouldShowLabel ? <span className={cn("truncate text-sm font-semibold text-slate-800", labelClassName)}>{label}</span> : null}
     </span>
   );
@@ -231,8 +226,8 @@ export function TechLogoPills({ items = [], limit = 5, className }) {
         const brand = getBrandForName(item);
 
         return (
-          <span key={item} className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.24)]">
-            <ServiceLogo brand={brand} imageClassName="h-5 w-6" className="[&>span:first-child]:h-7 [&>span:first-child]:w-7 [&>span:first-child]:rounded-md [&>span:first-child]:shadow-none" />
+          <span key={item} className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-700">
+            <ServiceLogo brand={brand} imageClassName="h-6 w-12" className="[&>span:first-child]:h-7 [&>span:first-child]:w-7" />
             {brand.logo ? null : <span className="truncate">{item}</span>}
           </span>
         );
@@ -256,13 +251,13 @@ export function ServiceVisualPanel({ title = "Managed delivery stack", descripti
           <h3 className="mt-3 text-2xl font-semibold leading-tight text-slate-950">{title}</h3>
           {description ? <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p> : null}
         </div>
-        <ServiceLogo brand={primaryBrand} imageClassName="h-9 w-10" className="[&>span:first-child]:h-14 [&>span:first-child]:w-14 [&>span:first-child]:rounded-lg" />
+        <ServiceLogo brand={primaryBrand} imageClassName="h-12 w-24" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12" />
       </div>
 
-      <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mt-7 grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3">
         {brands.slice(0, 6).map((brand) => (
-          <div key={brand.logo || brand.name} className="flex min-h-16 items-center justify-center rounded-md border border-white/80 bg-white/82 px-3 py-3 shadow-[0_16px_38px_-32px_rgba(15,23,42,0.42)]">
-            <ServiceLogo brand={brand} showLabel imageClassName="h-9 w-20" className="[&>span:first-child]:h-12 [&>span:first-child]:w-24 [&>span:first-child]:shadow-none" labelClassName="text-xs" />
+          <div key={brand.logo || brand.name} className="flex min-h-14 items-center justify-center">
+            <ServiceLogo brand={brand} showLabel imageClassName="h-10 w-28" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" labelClassName="text-xs" />
           </div>
         ))}
       </div>

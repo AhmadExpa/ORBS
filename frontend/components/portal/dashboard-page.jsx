@@ -4,16 +4,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Activity as ActivityIcon,
   ArrowRight,
   ArrowUpRight,
   CalendarClock,
   CheckCircle2,
+  ClipboardCheck,
   CreditCard,
   FileSignature,
   LifeBuoy,
+  PackageCheck,
   Plus,
   Receipt,
   Server,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, cn } from "@/lib/ui";
@@ -99,12 +103,14 @@ export function PortalDashboardPage() {
   const paymentsQuery = useCustomerQuery({ queryKey: ["portal-payments"], path: "/payments/submissions" });
   const ticketsQuery = useCustomerQuery({ queryKey: ["portal-tickets"], path: "/tickets" });
   const contractQuery = useCustomerQuery({ queryKey: ["portal-contract-current"], path: "/contracts/current" });
+  const activityQuery = useCustomerQuery({ queryKey: ["portal-activity"], path: "/profile/activity" });
 
   const subscriptions = data?.subscriptions || [];
   const profile = profileQuery.data?.user;
   const invoices = invoicesQuery.data?.invoices || [];
   const submissions = paymentsQuery.data?.submissions || [];
   const tickets = ticketsQuery.data?.tickets || [];
+  const remoteActivity = activityQuery.data?.activities || [];
 
   const currentServices = subscriptions.filter(isActiveSubscription);
   const monthlyRecurring = getMonthlyRecurringAmount(subscriptions);
@@ -122,33 +128,43 @@ export function PortalDashboardPage() {
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const contractApproved = contractStatus === "APPROVED";
 
-  const activity = [
+  const fallbackActivity = [
     ...submissions.map((item) => ({
       id: `pay-${item._id}`,
       type: "payment",
       title: item.submissionType === "wallet_topup" ? "Wallet top-up" : item.invoiceCode || "Payment",
+      description: item.status?.replaceAll("_", " ") || "Payment update",
       status: item.status,
       at: item.submittedAt,
+      href: "/portal/payments",
     })),
     ...tickets.map((item) => ({
       id: `ticket-${item._id}`,
       type: "ticket",
       title: item.subject || "Support ticket",
+      description: "Support ticket",
       status: item.status,
       at: item.createdAt,
+      href: `/portal/support/${item._id}`,
     })),
   ]
     .filter((item) => item.at)
     .sort((a, b) => new Date(b.at) - new Date(a.at))
     .slice(0, 6);
+  const activity = remoteActivity.length ? remoteActivity : fallbackActivity;
 
   const firstName = String(profile?.name || profile?.company || "").trim().split(" ")[0];
   const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   const dashboardLoading =
-    isLoading || profileQuery.isLoading || invoicesQuery.isLoading || paymentsQuery.isLoading || ticketsQuery.isLoading;
+    isLoading ||
+    profileQuery.isLoading ||
+    invoicesQuery.isLoading ||
+    paymentsQuery.isLoading ||
+    ticketsQuery.isLoading ||
+    activityQuery.isLoading;
   const hasDashboardData = Boolean(
-    data || profileQuery.data || invoicesQuery.data || paymentsQuery.data || ticketsQuery.data,
+    data || profileQuery.data || invoicesQuery.data || paymentsQuery.data || ticketsQuery.data || activityQuery.data,
   );
   const showInitialLoader = dashboardLoading && !hasDashboardData;
 
@@ -339,23 +355,44 @@ export function PortalDashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent activity</CardTitle>
-                <CardDescription>Payments and support, newest first</CardDescription>
+                <CardDescription>Portal actions, payments, and support, newest first</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2.5">
                 {activity.length ? (
                   activity.map((item) => {
-                    const Icon = item.type === "payment" ? CreditCard : LifeBuoy;
-                    return (
-                      <div key={item.id} className="flex items-center gap-3 rounded-lg border border-line bg-white p-3">
+                    const Icon =
+                      item.type === "payment"
+                        ? CreditCard
+                        : item.type === "ticket"
+                          ? LifeBuoy
+                          : item.type === "delegate"
+                            ? UsersRound
+                            : item.type === "contract"
+                              ? ClipboardCheck
+                              : item.type === "service" || item.type === "order"
+                                ? PackageCheck
+                                : ActivityIcon;
+                    const body = (
+                      <div className="flex items-center gap-3 rounded-lg border border-line bg-white p-3 transition-colors hover:border-slate-300">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
                           <Icon className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
-                          <p className="text-xs font-medium text-slate-400">{relativeTime(item.at)}</p>
+                          <p className="truncate text-xs font-medium text-slate-400">
+                            {item.description ? `${item.description} · ` : ""}
+                            {relativeTime(item.at)}
+                          </p>
                         </div>
-                        <StatusBadge status={item.status} />
+                        {item.status ? <StatusBadge status={item.status} /> : null}
                       </div>
+                    );
+                    return item.href ? (
+                      <Link key={item.id} href={item.href} className="block">
+                        {body}
+                      </Link>
+                    ) : (
+                      <div key={item.id}>{body}</div>
                     );
                   })
                 ) : (

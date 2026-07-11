@@ -18,8 +18,8 @@ export default async function LoginPage({ searchParams }) {
   const signupUrl = `/signup?redirect_url=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_46%,#eef2f6_100%)] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] w-full max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_36px_110px_-72px_rgba(15,23,42,0.55)] lg:grid-cols-[0.95fr_1.05fr]">
+    <div className="min-h-screen overflow-x-hidden bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_46%,#eef2f6_100%)] px-0 py-0 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto grid min-h-screen w-full max-w-6xl overflow-hidden border-0 bg-white shadow-none sm:min-h-[calc(100vh-3rem)] sm:rounded-lg sm:border sm:border-slate-200 sm:shadow-[0_36px_110px_-72px_rgba(15,23,42,0.55)] lg:grid-cols-[0.95fr_1.05fr]">
         <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:block">
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12),transparent_34%),linear-gradient(180deg,#111827_0%,#020617_100%)]" />
           <div className="relative flex h-full flex-col justify-between">
@@ -60,10 +60,10 @@ export default async function LoginPage({ searchParams }) {
           </div>
         </section>
 
-        <section className="flex items-center justify-center p-5 sm:p-8 lg:p-12">
-          <div className="w-full max-w-md">
-            <Link href="/" className="mb-8 inline-flex lg:hidden" aria-label="ElevenOrbits home">
-              <BrandLogo className="h-11 w-[210px]" priority />
+        <section className="flex min-w-0 items-center justify-center px-4 py-6 sm:p-8 lg:p-12">
+          <div className="w-full min-w-0 max-w-md">
+            <Link href="/" className="mb-6 inline-flex max-w-full lg:hidden" aria-label="ElevenOrbits home">
+              <BrandLogo className="h-10 w-[190px] max-w-full sm:h-11 sm:w-[210px]" priority />
             </Link>
             <LoginModePanel redirectTo={redirectTo} signupUrl={signupUrl} />
           </div>

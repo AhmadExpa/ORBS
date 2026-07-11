@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { Building2, KeyRound, Mail, Power, RefreshCcw, Save, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import { Building2, KeyRound, LifeBuoy, Mail, Power, RefreshCcw, Save, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { Topbar } from "@/components/shared/topbar";
 import { AccountForm } from "@/components/portal/account-form";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -408,38 +408,58 @@ export function AccountSettingsPage() {
     <div>
       <Topbar title="Account" subtitle="Manage your sign-in details, security, and business profile." />
       <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside>
-            <nav className="space-y-2">
-              {visibleTabs.map((item) => {
-                const Icon = item.icon;
-                const active = tab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTab(item.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
-                      active ? "border-brand-200 bg-brand-50" : "border-line bg-white hover:border-slate-300 hover:bg-slate-50",
-                    )}
-                  >
-                    <span
+        <div className="grid gap-6 lg:grid-cols-[256px_minmax(0,1fr)]">
+          <aside className="flex min-h-[520px] flex-col rounded-lg border border-white/10 bg-[#0f1115] px-3 py-5 text-slate-300">
+            <div className="px-2">
+              <p className="text-sm font-semibold text-white">Account</p>
+              <p className="mt-0.5 text-xs leading-5 text-white/45">Profile, business details, and delegated access.</p>
+            </div>
+
+            <div className="mt-6">
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Views</p>
+              <nav className="mt-2 space-y-0.5">
+                {visibleTabs.map((item) => {
+                  const Icon = item.icon;
+                  const active = tab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setTab(item.id)}
                       className={cn(
-                        "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-                        active ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-500",
+                        "relative flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors",
+                        active ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className={cn("block text-sm font-semibold", active ? "text-brand-700" : "text-slate-900")}>{item.label}</span>
-                      <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
+                      {active ? <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-accent-500" /> : null}
+                      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-accent-400" : "text-white/40")} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{item.label}</span>
+                        <span className="mt-0.5 block text-xs leading-5 text-white/45">{item.description}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="mt-auto space-y-4 pt-8">
+              <Link href="/portal/support" className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white">
+                <LifeBuoy className="h-4 w-4 text-white/40" />
+                Contact support
+              </Link>
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3.5">
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-600/15 text-accent-400">
+                    <ShieldCheck className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Account control</p>
+                    <p className="mt-0.5 text-xs leading-5 text-white/50">Owners can update business details and manage service agents.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </aside>
 
           <div className="min-w-0">

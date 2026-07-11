@@ -3,22 +3,54 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
-import { LogIn, Menu, X } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  BookOpen,
+  Building2,
+  ChevronDown,
+  Cloud,
+  DollarSign,
+  Headset,
+  LogIn,
+  Menu,
+  PhoneCall,
+  Server,
+  ShieldCheck,
+  Workflow,
+  X,
+} from "lucide-react";
 import { Button, cn } from "@/lib/ui";
-import { getLoginPath, getSignupPath } from "@/lib/shared";
+import { getLoginPath, getSignupPath, serviceFamilies, serviceVerticals } from "@/lib/shared";
+import { ServiceLogoCluster } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
 
 const landingNavItems = [
-  { href: "/services", label: "Services" },
   { href: "/industries", label: "Industries" },
   { href: "/resources", label: "Resources" },
   { href: "/pricing", label: "Pricing" },
   { href: "/contact", label: "Contact" },
 ];
 
+const familyIcons = {
+  "Managed Cloud": Server,
+  "Call Centers": PhoneCall,
+  "AI Services": Bot,
+  Cybersecurity: ShieldCheck,
+};
+
+const utilityLinks = [
+  { href: "/pricing", label: "Pricing", description: "Compare monthly plans and service lanes.", icon: DollarSign },
+  { href: "/industries", label: "Industries", description: "Find the right operating model by business type.", icon: Building2 },
+  { href: "/resources", label: "Resources", description: "Guides for servers, AI, automation, security, and billing.", icon: BookOpen },
+  { href: "/tech-stack", label: "Tech Stack", description: "Review the platforms behind delivery.", icon: Cloud },
+  { href: "/contact", label: "Contact", description: "Route sales, support, billing, and security questions.", icon: Headset },
+];
+
 export function SiteHeader() {
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const greetingName = user?.firstName || user?.fullName || user?.username || "there";
   const elevated = hasScrolled || mobileMenuOpen;
@@ -31,10 +63,32 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", updateScrolled);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 border-b backdrop-blur-xl transition-all duration-300",
+        "sticky top-0 z-40 border-b backdrop-blur-xl transition-all duration-300",
         elevated
           ? "border-slate-200/80 bg-white/94 shadow-[0_18px_46px_-42px_rgba(15,23,42,0.45)]"
           : "border-transparent bg-white/72 shadow-none",
@@ -44,7 +98,108 @@ export function SiteHeader() {
         <Link href="/" className="flex shrink-0 items-center" aria-label="ElevenOrbits home">
           <BrandLogo className="h-11 w-[196px] md:h-12 md:w-[230px]" imageClassName="w-full" priority />
         </Link>
-        <nav className="hidden flex-1 items-center justify-center gap-8 text-sm font-semibold text-slate-600 lg:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold text-slate-600 lg:flex">
+          <div
+            className="relative"
+            onMouseEnter={() => setServicesMenuOpen(true)}
+            onMouseLeave={() => setServicesMenuOpen(false)}
+          >
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 py-2 transition hover:text-slate-950",
+                servicesMenuOpen && "text-slate-950",
+              )}
+              aria-expanded={servicesMenuOpen}
+              onClick={() => setServicesMenuOpen((open) => !open)}
+            >
+              Services
+              <ChevronDown className={cn("h-4 w-4 transition", servicesMenuOpen && "rotate-180")} />
+            </button>
+            {servicesMenuOpen ? (
+              <div className="absolute left-1/2 top-full z-50 mt-4 w-[min(1120px,calc(100vw-3rem))] -translate-x-1/2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_36px_100px_-58px_rgba(15,23,42,0.45)]">
+                <div className="grid gap-px bg-slate-200 lg:grid-cols-[1.15fr_0.95fr_0.9fr]">
+                  <div className="bg-white p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Service families</p>
+                    <div className="mt-5 grid gap-3">
+                      {serviceFamilies.map((family) => {
+                        const Icon = familyIcons[family.name] || Workflow;
+                        return (
+                          <Link
+                            key={family.name}
+                            href={`/${family.pageSlug || "services"}`}
+                            className="group rounded-lg border border-transparent p-3 transition hover:border-slate-200 hover:bg-slate-50"
+                            onClick={() => setServicesMenuOpen(false)}
+                          >
+                            <div className="flex items-start gap-4">
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white">
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="flex items-center gap-2 text-base font-semibold text-slate-950">
+                                  {family.name}
+                                  <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-700" />
+                                </span>
+                                <span className="mt-1 block text-sm leading-6 text-slate-600">{family.description}</span>
+                                <ServiceLogoCluster categorySlugs={family.categorySlugs} max={4} className="mt-3" />
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Product pages</p>
+                    <div className="mt-5 grid gap-2">
+                      {serviceVerticals.map((vertical) => (
+                        <Link
+                          key={vertical.slug}
+                          href={`/${vertical.slug}`}
+                          className="group rounded-lg px-3 py-2.5 transition hover:bg-slate-50"
+                          onClick={() => setServicesMenuOpen(false)}
+                        >
+                          <span className="block text-sm font-semibold text-slate-950">{vertical.name}</span>
+                          <span className="mt-1 block text-xs leading-5 text-slate-500">{vertical.eyebrow}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Fast paths</p>
+                    <div className="mt-5 grid gap-3">
+                      {utilityLinks.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="group flex gap-3 rounded-lg p-2.5 transition hover:bg-white"
+                            onClick={() => setServicesMenuOpen(false)}
+                          >
+                            <Icon className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-950" />
+                            <span>
+                              <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
+                              <span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+                      <p className="text-sm font-semibold text-slate-950">Ready to configure?</p>
+                      <p className="mt-2 text-xs leading-5 text-slate-500">Create an account, choose a plan, and send the requirements needed for provisioning.</p>
+                      <Link href={getSignupPath()} className="mt-4 inline-flex" onClick={() => setServicesMenuOpen(false)}>
+                        <Button className="min-h-10 rounded-md bg-slate-950 px-4 py-2 hover:bg-black">Get Started</Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
           {landingNavItems.map((item) => (
             <Link key={item.href} href={item.href} className="relative py-2 transition hover:text-slate-950">
               {item.label}
@@ -80,35 +235,95 @@ export function SiteHeader() {
         </div>
       </div>
       {mobileMenuOpen ? (
-        <div className="border-t border-slate-200 bg-white/96 px-4 py-4 shadow-[0_18px_46px_-42px_rgba(15,23,42,0.45)] lg:hidden">
-          <nav className="mx-auto grid max-w-[1520px] gap-1">
-            {landingNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-white lg:hidden">
+          <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <Link href="/" aria-label="ElevenOrbits home" onClick={() => setMobileMenuOpen(false)}>
+                <BrandLogo className="h-10 w-[188px]" imageClassName="brightness-0 invert" priority />
+              </Link>
+              <button
+                type="button"
+                className="flex h-11 w-11 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white"
+                aria-label="Close menu"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {item.label}
-              </Link>
-            ))}
-            <SignedOut>
-              <Link
-                href={getLoginPath()}
-                className="rounded-md px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 sm:hidden"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Log In
-              </Link>
-              <Link
-                href={getSignupPath()}
-                className="rounded-md bg-slate-950 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black sm:hidden"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Get Started
-              </Link>
-            </SignedOut>
-          </nav>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <nav className="mt-10 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/40">Services</p>
+              <div className="mt-4 grid gap-4">
+                {serviceFamilies.map((family) => {
+                  const Icon = familyIcons[family.name] || Workflow;
+                  return (
+                    <Link
+                      key={family.name}
+                      href={`/${family.pageSlug || "services"}`}
+                      className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex items-start gap-4">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-950">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-2xl font-semibold tracking-[-0.03em]">{family.name}</span>
+                          <span className="mt-2 block text-sm leading-6 text-white/60">{family.description}</span>
+                          <ServiceLogoCluster categorySlugs={family.categorySlugs} max={4} className="mt-4 [&_img]:brightness-0 [&_img]:invert" />
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="mt-9 border-t border-white/10 pt-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/40">Navigate</p>
+                <div className="mt-4 grid gap-1">
+                  {[{ href: "/services", label: "All Services" }, ...landingNavItems, { href: "/tech-stack", label: "Tech Stack" }].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center justify-between rounded-md py-3 text-3xl font-semibold tracking-[-0.04em] text-white"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                      <ArrowRight className="h-6 w-6 text-white/35" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </nav>
+
+            <div className="mt-8 grid gap-3 border-t border-white/10 pt-6">
+              <SignedOut>
+                <Link
+                  href={getSignupPath()}
+                  className="rounded-md bg-white px-4 py-3 text-center text-base font-semibold text-slate-950"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+                <Link
+                  href={getLoginPath()}
+                  className="rounded-md border border-white/15 px-4 py-3 text-center text-base font-semibold text-white"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Log In
+                </Link>
+              </SignedOut>
+              <SignedIn>
+                <Link
+                  href="/portal"
+                  className="rounded-md bg-white px-4 py-3 text-center text-base font-semibold text-slate-950"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Open Portal
+                </Link>
+              </SignedIn>
+            </div>
+          </div>
         </div>
       ) : null}
     </header>
