@@ -26,7 +26,6 @@ import {
 import { Button, cn } from "@/lib/ui";
 import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds, serviceVerticals } from "@/lib/shared";
 import { industryPages, resourcePages } from "@/lib/marketing-content";
-import { ServiceLogoCluster } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
 
 const planMap = new Map(productPlanSeeds.map((plan) => [plan.slug, plan]));
@@ -168,17 +167,11 @@ const serviceChoices = [
 
 const defaultServiceChoice = serviceChoices[0];
 
-const deliverySteps = [
-  { label: "Configure", description: "Plan, add-ons, and service-specific requirements." },
-  { label: "Approve", description: "Contract review before delegated access and provisioning." },
-  { label: "Operate", description: "Credentials, tickets, billing, renewals, and agents in portal." },
-];
-
 const companyLinks = [
-  { href: "/about", label: "About ElevenOrbits", description: "How services, billing, support, and operations connect.", icon: Building2 },
-  { href: "/process", label: "Delivery Process", description: "How orders move into provisioning and handoff.", icon: Workflow },
-  { href: "/tech-stack", label: "Operating Stack", description: "Platforms, logos, and managed products behind delivery.", icon: Server },
-  { href: "/contact", label: "Contact Routing", description: "Sales, support, billing, and security inquiries.", icon: Headset },
+  { href: "/about", label: "About", description: "Company and operating model.", icon: Building2 },
+  { href: "/process", label: "Process", description: "Order, approval, and handoff.", icon: Workflow },
+  { href: "/tech-stack", label: "Tech Stack", description: "Platforms behind delivery.", icon: Server },
+  { href: "/contact", label: "Contact", description: "Sales and support routing.", icon: Headset },
 ];
 
 function DesktopTrigger({ label, active, onClick }) {
@@ -217,7 +210,7 @@ function PlanCard({ plan, onNavigate }) {
 
 function MegaFrame({ children }) {
   return (
-    <div className="fixed left-1/2 top-[62px] z-50 hidden w-[min(1260px,calc(100vw-3rem))] -translate-x-1/2 pt-4 xl:block">
+    <div className="fixed left-1/2 top-[62px] z-50 hidden w-[min(1120px,calc(100vw-3rem))] -translate-x-1/2 pt-4 xl:block">
       <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_46px_120px_-56px_rgba(2,6,23,0.72)]">
         {children}
       </div>
@@ -233,15 +226,11 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 
   return (
     <MegaFrame>
-      <div className="grid bg-white xl:grid-cols-[340px_minmax(0,1fr)_340px]">
-        <section className="flex min-h-[610px] flex-col bg-slate-950 p-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300">Managed catalog</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em]">Choose the service lane before checkout.</h2>
-          <p className="mt-3 text-sm leading-6 text-white/60">
-            Hover a service to compare use case, configuration path, and order-ready plans.
-          </p>
+      <div className="grid bg-white xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+        <section className="flex flex-col bg-slate-950 p-5 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Services</p>
 
-          <div className="mt-6 grid gap-1.5">
+          <div className="mt-4 grid gap-1">
             {serviceChoices.map((choice) => {
               const ChoiceIcon = choice.icon;
               const active = choice.id === activeChoice.id;
@@ -253,11 +242,11 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                   onFocus={() => setActiveChoiceId(choice.id)}
                   onClick={() => setActiveChoiceId(choice.id)}
                   className={cn(
-                    "group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition",
+                    "group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition",
                     active ? "bg-white text-slate-950 shadow-sm" : "text-white/70 hover:bg-white/[0.08] hover:text-white",
                   )}
                 >
-                  <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", active ? "bg-slate-950 text-white" : "bg-white/[0.06] text-white/50")}>
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-slate-950 text-white" : "bg-white/[0.06] text-white/50")}>
                     <ChoiceIcon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
@@ -270,7 +259,7 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
             })}
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-6">
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
             <Link href="/services" className="rounded-md border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10" onClick={onNavigate}>
               All services
             </Link>
@@ -280,64 +269,44 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
           </div>
         </section>
 
-        <section className="min-w-0 bg-white p-8">
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white shadow-sm">
+        <section className="min-w-0 bg-white p-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white shadow-sm">
               <Icon className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">{activeChoice.eyebrow}</p>
-              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">{activeChoice.label}</h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{activeChoice.description}</p>
-              <ServiceLogoCluster categorySlugs={activeChoice.categorySlugs} max={5} className="mt-5" />
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">{activeChoice.eyebrow}</p>
+              <h3 className="mt-1 text-2xl font-semibold tracking-[-0.035em] text-slate-950">{activeChoice.label}</h3>
             </div>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-5">
             <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">What to choose</p>
-                <h4 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-slate-950">Pick the path that matches the workload.</h4>
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Choose</p>
               <Link href={activeChoice.href} className="hidden text-sm font-semibold text-sky-700 transition hover:text-sky-950 sm:inline-flex" onClick={onNavigate}>
-                Open service page
+                View service
               </Link>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid gap-2">
               {pathItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="group rounded-lg border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-200 hover:bg-sky-50/50"
+                  className="group flex items-start justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-sky-200 hover:bg-sky-50/50"
                   onClick={onNavigate}
                 >
-                  <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
-                  <span className="mt-2 block text-xs leading-5 text-slate-500">{item.description}</span>
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
-                    Review
-                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
                   </span>
+                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="mt-7 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
-            {deliverySteps.map((step, index) => (
-              <div key={step.label} className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[11px] font-semibold text-white">
-                  {index + 1}
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-slate-950">{step.label}</span>
-                  <span className="mt-0.5 block text-xs leading-5 text-slate-500">{step.description}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-5">
             <Link href={activeChoice.href} onClick={onNavigate}>
               <Button variant="outline" className="min-h-10 w-full rounded-md px-3 py-2">View Service</Button>
             </Link>
@@ -347,28 +316,96 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
           </div>
         </section>
 
-        <section className="border-l border-slate-200 bg-slate-50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Popular plans</p>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Start with a plan, then add configuration details in the portal before approval and provisioning.
-          </p>
-          <div className="mt-5 grid gap-2">
+        <section className="border-l border-slate-200 bg-slate-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Plans</p>
+          <div className="mt-3 grid gap-2">
             {plans.map((plan) => (
               <PlanCard key={plan.slug} plan={plan} onNavigate={onNavigate} />
             ))}
           </div>
 
-          <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-950">Need a custom configuration?</p>
-            <p className="mt-2 text-xs leading-5 text-slate-500">Use contact routing for enterprise scope, migration, carrier, or security review before order placement.</p>
-            <Link href="/contact" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
-              Contact sales
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </div>
+          <Link href="/contact" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+            Custom quote
+            <ArrowRight className="ml-1 h-4 w-4" />
+          </Link>
         </section>
       </div>
     </MegaFrame>
+  );
+}
+
+function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, active = false, onMouseEnter, onFocus, onClick }) {
+  const content = (
+    <>
+      {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-white/75" : "text-slate-400")} /> : null}
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold">{label}</span>
+        {description ? <span className={cn("mt-0.5 block truncate text-xs", active ? "text-white/50" : "text-slate-400")}>{description}</span> : null}
+      </span>
+      <ArrowRight className={cn("ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 transition", active ? "text-white/60" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-700")} />
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "group flex items-start gap-3 rounded-md px-3 py-2.5 transition",
+          active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+        )}
+        onMouseEnter={onMouseEnter}
+        onFocus={onFocus}
+        onClick={onNavigate}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "group flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition",
+        active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+      )}
+      onMouseEnter={onMouseEnter}
+      onFocus={onFocus}
+      onClick={onClick}
+    >
+      {content}
+    </button>
+  );
+}
+
+function RecommendedServiceLinks({ labels, onNavigate }) {
+  return (
+    <div className="grid gap-2">
+      {labels.map((label) => {
+        const match = serviceVerticals.find((vertical) => vertical.name === label || vertical.shortName === label || label.includes(vertical.shortName));
+        return (
+          <Link
+            key={label}
+            href={match ? `/${match.slug}` : "/services"}
+            className="group flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-sky-200 hover:bg-sky-50/50"
+            onClick={onNavigate}
+          >
+            {label}
+            <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function SimpleColumn({ eyebrow, children, className }) {
+  return (
+    <section className={cn("p-5", className)}>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">{eyebrow}</p>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
 
@@ -377,84 +414,37 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 
   return (
     <MegaFrame>
-      <div className="grid bg-slate-200 lg:grid-cols-[0.9fr_1.1fr_0.85fr]">
-        <section className="bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Industries</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-slate-950">Navigate by business context.</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Choose the kind of team you operate. The panel shows why the service mix fits and which pages to review.
-          </p>
-
-          <div className="mt-5 grid gap-1.5">
-            {industryPages.map((industry) => {
-              const active = industry.slug === activeIndustry.slug;
-              return (
-                <button
-                  key={industry.slug}
-                  type="button"
-                  onMouseEnter={() => setActiveIndustrySlug(industry.slug)}
-                  onFocus={() => setActiveIndustrySlug(industry.slug)}
-                  onClick={() => setActiveIndustrySlug(industry.slug)}
-                  className={cn(
-                    "group flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition",
-                    active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
-                  )}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold">{industry.title}</span>
-                    <span className={cn("mt-0.5 block text-xs", active ? "text-white/50" : "text-slate-400")}>{industry.eyebrow}</span>
-                  </span>
-                  <ArrowRight className={cn("h-3.5 w-3.5 shrink-0 transition", active ? "text-white/60" : "text-slate-300 group-hover:translate-x-0.5")} />
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="bg-slate-950 p-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300">{activeIndustry.eyebrow}</p>
-          <h3 className="mt-3 text-2xl font-semibold tracking-[-0.035em]">{activeIndustry.title}</h3>
-          <p className="mt-3 text-sm leading-6 text-white/60">{activeIndustry.fit}</p>
-          <div className="mt-5 grid gap-2">
-            {activeIndustry.outcomes.slice(0, 3).map((outcome) => (
-              <div key={outcome} className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm leading-6 text-white/75">
-                {outcome}
-              </div>
+      <div className="grid bg-white xl:grid-cols-[360px_minmax(0,1fr)_260px]">
+        <SimpleColumn eyebrow="Industries" className="border-r border-slate-200">
+          <div className="grid gap-1">
+            {industryPages.map((industry) => (
+              <SimpleLinkCard
+                key={industry.slug}
+                label={industry.title}
+                description={industry.eyebrow}
+                active={industry.slug === activeIndustry.slug}
+                onMouseEnter={() => setActiveIndustrySlug(industry.slug)}
+                onFocus={() => setActiveIndustrySlug(industry.slug)}
+                onClick={() => setActiveIndustrySlug(industry.slug)}
+              />
             ))}
           </div>
-          <Link
-            href={`/industries/${activeIndustry.slug}`}
-            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
-            onClick={onNavigate}
-          >
-            Open Industry
-          </Link>
-        </section>
+        </SimpleColumn>
 
-        <section className="bg-slate-50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Recommended pages</p>
-          <div className="mt-4 grid gap-2">
-            {activeIndustry.recommended.map((label) => {
-              const match = serviceVerticals.find((vertical) => vertical.name === label || vertical.shortName === label || label.includes(vertical.shortName));
-              return (
-                <Link
-                  key={label}
-                  href={match ? `/${match.slug}` : "/services"}
-                  className="group rounded-md border border-slate-200 bg-white px-3 py-2.5 transition hover:border-sky-200 hover:bg-sky-50/50"
-                  onClick={onNavigate}
-                >
-                  <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-950">
-                    {label}
-                    <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-          <Link href="/industries" className="mt-5 inline-flex text-sm font-semibold text-sky-700 hover:text-sky-900" onClick={onNavigate}>
-            Browse all industries
+        <SimpleColumn eyebrow="Recommended services">
+          <RecommendedServiceLinks labels={activeIndustry.recommended} onNavigate={onNavigate} />
+          <Link href={`/industries/${activeIndustry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+            Open industry page
+            <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
-        </section>
+        </SimpleColumn>
+
+        <SimpleColumn eyebrow="More" className="border-l border-slate-200 bg-slate-50">
+          <div className="grid gap-2">
+            <SimpleLinkCard href="/industries" label="All Industries" description="Browse every sector." icon={Building2} onNavigate={onNavigate} />
+            <SimpleLinkCard href="/contact" label="Talk to Sales" description="Get service guidance." icon={Headset} onNavigate={onNavigate} />
+          </div>
+        </SimpleColumn>
       </div>
     </MegaFrame>
   );
@@ -465,74 +455,48 @@ function LearnMegaMenu({ activeResourceSlug, setActiveResourceSlug, onNavigate }
 
   return (
     <MegaFrame>
-      <div className="grid bg-slate-200 lg:grid-cols-[1fr_1fr_0.9fr]">
-        <section className="bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Resources</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-slate-950">Guides before you configure.</h2>
-          <div className="mt-5 grid gap-1.5">
-            {resourcePages.map((resource) => {
-              const active = resource.slug === activeResource.slug;
-              return (
-                <button
-                  key={resource.slug}
-                  type="button"
-                  onMouseEnter={() => setActiveResourceSlug(resource.slug)}
-                  onFocus={() => setActiveResourceSlug(resource.slug)}
-                  onClick={() => setActiveResourceSlug(resource.slug)}
-                  className={cn(
-                    "group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition",
-                    active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
-                  )}
-                >
-                  <FileText className={cn("h-4 w-4 shrink-0", active ? "text-white/65" : "text-slate-400")} />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{resource.title}</span>
-                    <span className={cn("mt-0.5 block text-xs", active ? "text-white/50" : "text-slate-400")}>{resource.eyebrow}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="bg-slate-50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">{activeResource.eyebrow}</p>
-          <h3 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-slate-950">{activeResource.title}</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-600">{activeResource.description}</p>
-          <div className="mt-5 grid gap-2">
-            {activeResource.sections?.[0]?.points?.slice(0, 3).map((point) => (
-              <div key={point} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-700">
-                {point}
-              </div>
+      <div className="grid bg-white xl:grid-cols-[420px_minmax(0,1fr)_300px]">
+        <SimpleColumn eyebrow="Resources" className="border-r border-slate-200">
+          <div className="grid gap-1">
+            {resourcePages.map((resource) => (
+              <SimpleLinkCard
+                key={resource.slug}
+                label={resource.title}
+                description={resource.eyebrow}
+                active={resource.slug === activeResource.slug}
+                onMouseEnter={() => setActiveResourceSlug(resource.slug)}
+                onFocus={() => setActiveResourceSlug(resource.slug)}
+                onClick={() => setActiveResourceSlug(resource.slug)}
+              />
             ))}
           </div>
-          <Link href={`/resources/${activeResource.slug}`} className="mt-5 inline-flex" onClick={onNavigate}>
-            <Button variant="outline" className="min-h-10 rounded-md px-4 py-2">Read Guide</Button>
-          </Link>
-        </section>
+        </SimpleColumn>
 
-        <section className="bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Company and support</p>
-          <div className="mt-4 grid gap-2">
-            {companyLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group flex gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 transition hover:border-sky-200 hover:bg-sky-50/50"
-                  onClick={onNavigate}
-                >
-                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
-                  </span>
-                </Link>
-              );
-            })}
+        <SimpleColumn eyebrow="Selected guide">
+          <Link
+            href={`/resources/${activeResource.slug}`}
+            className="group flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition hover:border-sky-200 hover:bg-sky-50/50"
+            onClick={onNavigate}
+          >
+            <span>
+              <span className="block text-sm font-semibold">{activeResource.title}</span>
+              <span className="mt-0.5 block text-xs text-slate-500">{activeResource.eyebrow}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
+          </Link>
+          <Link href="/resources" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+            All resources
+            <ArrowRight className="ml-1 h-4 w-4" />
+          </Link>
+        </SimpleColumn>
+
+        <SimpleColumn eyebrow="Company" className="border-l border-slate-200 bg-slate-50">
+          <div className="grid gap-2">
+            {companyLinks.map((item) => (
+              <SimpleLinkCard key={item.href} href={item.href} label={item.label} description={item.description} icon={item.icon} onNavigate={onNavigate} />
+            ))}
           </div>
-        </section>
+        </SimpleColumn>
       </div>
     </MegaFrame>
   );
