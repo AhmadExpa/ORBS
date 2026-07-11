@@ -53,7 +53,7 @@ function CarouselPartnerCard({ partner }) {
   return (
     <article
       aria-label={partner.name}
-      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/94 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
+      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/95 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
     >
       <LogoMark partner={partner} />
     </article>
@@ -110,11 +110,25 @@ export function TechStackShowcase({ compact = false }) {
     <section id="tech-stack" className="relative overflow-hidden bg-white">
       <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-45" />
       <div className={cn("relative mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8", compact ? "py-14 lg:py-16" : "py-16 lg:py-20")}>
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-stretch">
-          <div className="eo-reveal-up flex h-full min-w-0 flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8">
+        <div
+          className={cn(
+            "grid grid-cols-[minmax(0,1fr)]",
+            compact
+              ? "gap-6 lg:grid-cols-[minmax(340px,0.78fr)_minmax(0,1.22fr)] lg:items-start"
+              : "gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-stretch",
+          )}
+        >
+          <div
+            className={cn(
+              "eo-reveal-up min-w-0",
+              compact
+                ? "rounded-xl border border-slate-200 bg-white/95 p-6 shadow-[0_22px_70px_-58px_rgba(15,23,42,0.7)]"
+                : "flex h-full flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8",
+            )}
+          >
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">Technology Partners</p>
-              <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
+              <h2 className={cn("mt-5 max-w-3xl font-semibold leading-[1.02] tracking-tight text-slate-950", compact ? "text-3xl md:text-4xl" : "text-4xl md:text-6xl")}>
                 The stack behind managed delivery.
               </h2>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">
@@ -122,41 +136,43 @@ export function TechStackShowcase({ compact = false }) {
               </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]">
+            <div className={cn("grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_48px_-44px_rgba(15,23,42,0.45)]", compact ? "mt-6" : "mt-8")}>
               {stackMetrics.map((metric) => (
-                <div key={metric.label} className="border-r border-slate-200 px-4 py-5 last:border-r-0">
-                  <p className="text-2xl font-semibold tracking-tight text-slate-950">{metric.value}</p>
+                <div key={metric.label} className={cn("border-r border-slate-200 last:border-r-0", compact ? "px-3 py-4" : "px-4 py-5")}>
+                  <p className={cn("font-semibold tracking-tight text-slate-950", compact ? "text-xl" : "text-2xl")}>{metric.value}</p>
                   <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{metric.label}</p>
                 </div>
               ))}
             </div>
 
-            <div className={cn("mt-7 grid gap-4", compact ? "md:grid-cols-3 lg:grid-cols-1" : "")}>
+            <div className={cn("grid", compact ? "mt-6 gap-3" : "mt-7 gap-4")}>
               {techStackHighlights.map((item) => (
-                <div key={item.label} className="border-t border-slate-200 pt-4">
+                <div key={item.label} className={cn("border-t border-slate-200", compact ? "pt-3" : "pt-4")}>
                   <p className="text-sm font-semibold text-slate-950">{item.label}</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className={cn("mt-7 rounded-lg bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]", compact && "lg:hidden xl:block")}>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Operating model</p>
-              <p className="mt-3 text-xl font-semibold tracking-tight">Partners are selected for delivery, not decoration.</p>
-              <div className="mt-5 grid gap-3">
-                {operatingModel.map((item) => (
-                  <div key={item} className="flex gap-3 text-sm leading-6 text-slate-300">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                    <span>{item}</span>
-                  </div>
-                ))}
+            {!compact ? (
+              <div className="mt-7 rounded-lg bg-slate-950 p-5 text-white shadow-[0_24px_70px_-42px_rgba(15,23,42,0.72)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Operating model</p>
+                <p className="mt-3 text-xl font-semibold tracking-tight">Partners are selected for delivery, not decoration.</p>
+                <div className="mt-5 grid gap-3">
+                  {operatingModel.map((item) => (
+                    <div key={item} className="flex gap-3 text-sm leading-6 text-slate-300">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
-            <div className="mt-auto pt-8">
+            <div className={compact ? "mt-6" : "mt-auto pt-8"}>
               <div className="border-t border-slate-200 pt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Coverage map</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className={cn("flex flex-wrap gap-2", compact ? "mt-3" : "mt-4")}>
                   {techStackGroups.map((group) => (
                     <span key={group.slug} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
                       {group.title}
@@ -165,7 +181,7 @@ export function TechStackShowcase({ compact = false }) {
                 </div>
               </div>
 
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className={cn("flex flex-wrap gap-3", compact ? "mt-5" : "mt-7")}>
                 <Link href="/services" className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
                   Explore services
                   <ArrowRight className="h-4 w-4" />
@@ -188,7 +204,7 @@ export function TechStackShowcase({ compact = false }) {
             </div>
           </div>
 
-          <div className="grid min-w-0 content-start gap-7">
+          <div className={cn("grid min-w-0 content-start", compact ? "gap-4" : "gap-7")}>
             {visibleGroups.map((group, index) => (
               <div key={group.slug} className="eo-reveal-soft" style={{ "--eo-delay": `${Math.min(index * 55, 260)}ms` }}>
                 <CarouselLane group={group} index={index} compact={compact} />
