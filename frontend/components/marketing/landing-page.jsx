@@ -189,6 +189,48 @@ function categoryNameFor(slug) {
   return serviceCategories.find((category) => category.slug === slug)?.name || slug;
 }
 
+function FaqSection() {
+  return (
+    <section id="faq" className="relative scroll-mt-28 border-t border-[color:var(--marketing-line)]">
+      <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
+      <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <div className="eo-premium-card eo-reveal-up rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--marketing-accent)]">07 / Customer Guidance</p>
+            <h2 className="mt-5 text-4xl font-semibold leading-[0.98] tracking-[-0.05em] text-slate-950 md:text-5xl">
+              Direct answers before a customer opens the portal.
+            </h2>
+            <p className="mt-5 text-sm leading-7 text-slate-600">
+              Public guidance focuses on how services are bought, provisioned, billed, and supported, so the portal only starts once the customer is ready to configure.
+            </p>
+            <div className="mt-7 flex flex-wrap justify-center gap-2">
+              {["FAQs", "Support", "Billing", "Onboarding"].map((item) => (
+                <span key={item} className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {faqItems.map((item, index) => (
+              <div
+                key={item.question}
+                className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]"
+                style={{ "--eo-delay": `${index * 45}ms` }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
+                <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950">{item.question}</h3>
+                <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LandingPage() {
   const pricingHighlights = productPlanSeeds.filter((plan) => highlightSlugs.includes(plan.slug));
   const featuredPlans = pricingHighlights.slice(0, 3);
@@ -235,7 +277,7 @@ export function LandingPage() {
                         </h1>
                       </div>
 
-                      <div className="eo-reveal-soft max-w-xs rounded-lg border border-slate-200/90 bg-white/88 p-5 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]" style={{ "--eo-delay": "120ms" }}>
+                      <div className="eo-reveal-soft max-w-xs rounded-lg border border-slate-200/90 bg-white/90 p-5 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]" style={{ "--eo-delay": "120ms" }}>
                         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                           Portal-Driven Service Model
                         </p>
@@ -545,7 +587,7 @@ export function LandingPage() {
                 </div>
 
                 <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]" style={{ "--eo-delay": "160ms" }}>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">ElevenOrbits Standard</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">ElevenOrbits Standard</p>
                   <p className="mt-5 text-3xl font-semibold leading-[1.05] tracking-[-0.04em]">
                     Professional systems deserve professional operational ownership.
                   </p>
@@ -560,44 +602,6 @@ export function LandingPage() {
       </section>
 
       <TechStackShowcase compact />
-
-      <section id="faq" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
-        <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
-        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-            <div className="eo-premium-card eo-reveal-up rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--marketing-accent)]">04 / Customer Guidance</p>
-              <h2 className="mt-5 text-4xl font-semibold leading-[0.98] tracking-[-0.05em] text-slate-950 md:text-5xl">
-                Direct answers before a customer opens the portal.
-              </h2>
-              <p className="mt-5 text-sm leading-7 text-slate-600">
-                Public guidance focuses on how services are bought, provisioned, billed, and supported, so the portal only starts once the customer is ready to configure.
-              </p>
-              <div className="mt-7 flex flex-wrap justify-center gap-2">
-                {["FAQs", "Support", "Billing", "Onboarding"].map((item) => (
-                  <span key={item} className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {faqItems.map((item, index) => (
-                <div
-                  key={item.question}
-                  className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]"
-                  style={{ "--eo-delay": `${index * 45}ms` }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
-                  <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950">{item.question}</h3>
-                  <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section id="pricing" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
@@ -660,7 +664,7 @@ export function LandingPage() {
                 {supportingPlans.map((plan) => (
                   <div
                     key={plan.slug}
-                    className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/88 p-5 shadow-[0_20px_60px_-52px_rgba(15,23,42,0.22)]"
+                    className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-5 shadow-[0_20px_60px_-52px_rgba(15,23,42,0.22)]"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -688,7 +692,7 @@ export function LandingPage() {
       <section id="contact" className="relative scroll-mt-28">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
         <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/88 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
+          <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/90 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
             <div className="grid gap-px bg-[color:var(--marketing-line)] xl:grid-cols-[1.08fr_0.92fr]">
               <div className="bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-8 md:p-10 xl:p-12">
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">06 / Contact</p>
@@ -720,33 +724,28 @@ export function LandingPage() {
                   </a>
                 </div>
 
-                <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5">
+                <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-lg border border-slate-200 bg-white/90 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">General Inquiries</p>
-                    <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.generalEmail}</p>
+                    <p className="mt-3 break-words text-base font-semibold text-slate-950">{siteConfig.generalEmail}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For broad questions, introductions, and company-level conversations.</p>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5">
+                  <div className="rounded-lg border border-slate-200 bg-white/90 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Support Desk</p>
-                    <p className="mt-3 text-lg font-semibold text-slate-950">{siteConfig.supportEmail}</p>
+                    <p className="mt-3 break-words text-base font-semibold text-slate-950">{siteConfig.supportEmail}</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600">For customer help, service follow-up, and operational issue escalation.</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-white/88 p-5 sm:col-span-2 xl:col-span-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Company Address</p>
-                    <address className="mt-3 text-lg font-semibold not-italic leading-7 text-slate-950">{siteConfig.companyAddress}</address>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">For company records and formal correspondence.</p>
                   </div>
                 </div>
               </div>
 
               <div className="grid gap-px bg-[color:var(--marketing-line)] sm:grid-cols-2">
                 {contactCards.map((card) => (
-                  <a key={card.key} href={`mailto:${card.email}`} className="group bg-white/92 px-6 py-7 transition duration-200 hover:bg-white">
+                  <a key={card.key} href={`mailto:${card.email}`} className="group bg-white/95 px-6 py-7 transition duration-200 hover:bg-white">
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{card.title}</p>
                       <Mail className="h-4 w-4 text-[color:var(--marketing-accent)]" />
                     </div>
-                    <p className="mt-6 text-lg font-semibold text-slate-950">{card.email}</p>
+                    <p className="mt-6 break-words text-base font-semibold text-slate-950">{card.email}</p>
                     <p className="mt-4 text-sm leading-7 text-slate-600">{card.description}</p>
                     <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
                       Start conversation
@@ -759,6 +758,8 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      <FaqSection />
     </div>
   );
 }

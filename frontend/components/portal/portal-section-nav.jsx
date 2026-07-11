@@ -194,7 +194,7 @@ export function PortalSectionNav({ section, isDelegate = false }) {
                         <span
                           className={cn(
                             "min-w-[1.5rem] rounded-full px-1.5 py-0.5 text-center text-xs font-semibold",
-                            active ? "bg-white/25 text-white" : "bg-white/10 text-white/55",
+                            active ? "bg-white/25 text-white" : "bg-white/10 text-white/60",
                           )}
                         >
                           {count}

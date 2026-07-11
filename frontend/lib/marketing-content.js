@@ -539,14 +539,14 @@ export const techStackGroups = [
     subtitle: "Business calling, collaboration, meetings, and communications continuity.",
     icon: "phone",
     partners: [
-      { name: "Nextiva", descriptor: "Business communications" },
+      { name: "Nextiva", logo: "/partners/nextiva.svg", descriptor: "Business communications" },
+      { name: "Zoom Phone", logo: "/partners/zoom-phone.svg", descriptor: "Cloud phone and meetings" },
+      { name: "Google Voice", logo: "/partners/google-voice.svg", descriptor: "Google calling for teams" },
       { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Collaboration and meetings" },
       { name: "Twilio", logo: "/partners/twilio.svg", descriptor: "Programmable voice and messaging" },
-      { name: "Telnyx", descriptor: "Carrier voice and SMS APIs" },
+      { name: "Telnyx", logo: "/partners/telnyx.svg", descriptor: "Carrier voice and SMS APIs" },
       { name: "VICIdial", logo: "/partners/vicidial.svg", descriptor: "Contact center dialer" },
-      { name: "Broadvoice", descriptor: "Cloud business phone" },
-      { name: "Zapier", logo: "/partners/zapier.svg", descriptor: "Communications automation" },
-      { name: "Jira", logo: "/partners/jira.svg", descriptor: "Service desk and ticketing" },
+      { name: "Broadvoice", logo: "/partners/broadvoice.svg", descriptor: "Cloud business phone" },
     ],
   },
 ];
@@ -573,6 +573,8 @@ export const featuredTechPartners = [
   "DeepSeek",
   "Kimi",
   "Nextiva",
+  "Zoom Phone",
+  "Google Voice",
   "Microsoft Teams",
 ];
 
@@ -591,7 +593,9 @@ export const featuredPartnerLogos = [
   { name: "Claude", logo: "/partners/claude.svg" },
   { name: "DeepSeek", logo: "/partners/deepseek.svg" },
   { name: "Kimi", logo: "/partners/kimi.svg" },
-  { name: "Nextiva" },
+  { name: "Nextiva", logo: "/partners/nextiva.svg" },
+  { name: "Zoom Phone", logo: "/partners/zoom-phone.svg" },
+  { name: "Google Voice", logo: "/partners/google-voice.svg" },
   { name: "Microsoft Teams", logo: "/partners/microsoft.svg" },
 ];
 

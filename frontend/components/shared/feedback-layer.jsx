@@ -135,7 +135,7 @@ export function FeedbackProvider({ children }) {
       >
         <div
           className={cn(
-            "w-full max-w-sm rounded-[28px] border border-white/80 bg-white/92 px-6 py-6 text-center shadow-[0_34px_120px_-52px_rgba(15,23,42,0.72)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl transition duration-300",
+            "w-full max-w-sm rounded-[28px] border border-white/80 bg-white/95 px-6 py-6 text-center shadow-[0_34px_120px_-52px_rgba(15,23,42,0.72)] ring-1 ring-slate-950/[0.04] backdrop-blur-2xl transition duration-300",
             loaderVisible ? "translate-y-0 scale-100" : "translate-y-3 scale-95",
           )}
         >

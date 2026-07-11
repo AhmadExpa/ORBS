@@ -39,11 +39,11 @@ function LogoMark({ partner }) {
   const label = partner.wordmark || partner.name;
 
   return (
-    <div className="flex h-full w-full shrink-0 items-center justify-center px-3">
+    <div className="flex h-full w-full shrink-0 items-center justify-center px-4">
       {partner.logo ? (
-        <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="max-h-8 max-w-full object-contain" />
+        <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="max-h-10 max-w-full object-contain" />
       ) : (
-        <span className="text-center text-sm font-semibold leading-4 tracking-tight text-slate-950">{label}</span>
+        <span className="text-center text-base font-semibold leading-5 tracking-tight text-slate-950">{label}</span>
       )}
     </div>
   );
@@ -53,7 +53,7 @@ function CarouselPartnerCard({ partner }) {
   return (
     <article
       aria-label={partner.name}
-      className="flex h-16 w-36 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/95 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
+      className="flex h-16 w-40 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/95 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
     >
       <LogoMark partner={partner} />
     </article>

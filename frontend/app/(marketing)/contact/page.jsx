@@ -47,17 +47,13 @@ export default function ContactPage() {
         </Card>
         <Card className="eo-premium-card eo-reveal-soft rounded-lg" style={{ "--eo-delay": "60ms" }}>
           <CardHeader>
-            <CardTitle>Company Address</CardTitle>
-            <CardDescription>Use this address for company records and formal correspondence.</CardDescription>
+            <CardTitle>Sales Routing</CardTitle>
+            <CardDescription>Use sales routing for commercial planning, managed service scope, and deployment questions.</CardDescription>
           </CardHeader>
           <CardContent>
-            <address className="text-base font-semibold not-italic leading-7 text-slate-950">
-              {siteConfig.companyAddressLines.map((line) => (
-                <span key={line} className="block">
-                  {line}
-                </span>
-              ))}
-            </address>
+            <a className="break-words text-base font-semibold text-sky-700" href={`mailto:${siteConfig.salesEmail}`}>
+              {siteConfig.salesEmail}
+            </a>
             <ServiceLogoCluster categorySlugs={["vps", "cybersecurity", "development-support"]} max={3} className="mt-5" />
           </CardContent>
         </Card>
@@ -89,7 +85,7 @@ export default function ContactPage() {
               <CardDescription>{department.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <a className="text-base font-semibold text-sky-700" href={`mailto:${department.email}`}>
+              <a className="break-words text-base font-semibold text-sky-700" href={`mailto:${department.email}`}>
                 {department.email}
               </a>
               <ServiceLogoCluster categorySlugs={departmentServiceSlugs[department.key] || contactServiceSlugs} max={5} className="mt-5" />

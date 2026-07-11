@@ -176,7 +176,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                       href={lockHrefFor(group.href)}
                       className={cn(
                         "relative flex h-14 items-center gap-2 px-3.5 text-sm font-medium transition-colors",
-                        active ? "text-white" : "text-white/55 hover:text-white",
+                        active ? "text-white" : "text-white/60 hover:text-white",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -194,7 +194,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                       onClick={() => setOpenGroup(isOpen ? "" : group.label)}
                       className={cn(
                         "relative flex h-14 items-center gap-1.5 px-3.5 text-sm font-medium transition-colors",
-                        active || isOpen ? "text-white" : "text-white/55 hover:text-white",
+                        active || isOpen ? "text-white" : "text-white/60 hover:text-white",
                       )}
                     >
                       <Icon className="h-4 w-4" />

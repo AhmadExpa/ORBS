@@ -295,7 +295,7 @@ export function ProductVerticalPage({ slug }) {
                 </div>
               </div>
 
-              <aside className="eo-reveal-soft rounded-lg border border-slate-200/80 bg-white/88 p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.32)]" style={{ "--eo-delay": "130ms" }}>
+              <aside className="eo-reveal-soft rounded-lg border border-slate-200/80 bg-white/90 p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.32)]" style={{ "--eo-delay": "130ms" }}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Built For</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {vertical.audience.map((item) => (

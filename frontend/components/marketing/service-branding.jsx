@@ -104,9 +104,9 @@ export const brandLogos = {
   "gpu-ready": categoryBranding["ai-servers"],
   vicidial: categoryBranding.vicidial,
   "vicidial management": categoryBranding.vicidial,
-  asterisk: { name: "Asterisk", logo: "/partners/vicidial.svg" },
+  asterisk: { name: "Asterisk" },
   n8n: { name: "n8n", logo: "/partners/n8n.svg" },
-  webhooks: { name: "Webhooks", logo: "/partners/n8n.svg" },
+  webhooks: { name: "Webhooks" },
   zapier: { name: "Zapier", logo: "/partners/zapier.svg" },
   deepseek: { name: "DeepSeek", logo: "/partners/deepseek.svg" },
   clawbot: { name: "Clawbot", logo: "/partners/clawbot.svg" },
@@ -128,6 +128,13 @@ export const brandLogos = {
   "development support": categoryBranding["development-support"],
   jira: { name: "Jira", logo: "/partners/jira.svg" },
   twilio: { name: "Twilio", logo: "/partners/twilio.svg" },
+  telnyx: { name: "Telnyx", logo: "/partners/telnyx.svg" },
+  broadvoice: { name: "Broadvoice", logo: "/partners/broadvoice.svg" },
+  nextiva: { name: "Nextiva", logo: "/partners/nextiva.svg" },
+  "zoom phone": { name: "Zoom Phone", logo: "/partners/zoom-phone.svg" },
+  zoom: { name: "Zoom Phone", logo: "/partners/zoom-phone.svg" },
+  "google voice": { name: "Google Voice", logo: "/partners/google-voice.svg" },
+  "google call": { name: "Google Voice", logo: "/partners/google-voice.svg" },
   microsoft: { name: "Microsoft", logo: "/partners/microsoft.svg" },
   azure: { name: "Microsoft Azure", logo: "/partners/azure.svg" },
   hp: { name: "HP", logo: "/partners/hp.svg" },
@@ -182,7 +189,7 @@ export function ServiceLogo({ brand, name, showLabel = false, className, imageCl
   const resolved = brand || getBrandForName(name);
   const label = resolved?.name || name || "Service";
   const shouldShowLabel = showLabel && !resolved?.logo;
-  const logoOnlyLabelRequested = showLabel && Boolean(resolved?.logo);
+  const logoSizeClassName = imageClassName || (showLabel ? "h-11 w-32" : "h-10 w-28");
 
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
@@ -194,7 +201,7 @@ export function ServiceLogo({ brand, name, showLabel = false, className, imageCl
           decoding="async"
           width={144}
           height={56}
-          className={cn("h-9 w-24 shrink-0 object-contain", logoOnlyLabelRequested && "h-10 w-28", imageClassName)}
+          className={cn("shrink-0 object-contain", logoSizeClassName)}
         />
       ) : (
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white">
@@ -254,10 +261,10 @@ export function ServiceVisualPanel({ title = "Managed delivery stack", descripti
         <ServiceLogo brand={primaryBrand} imageClassName="h-12 w-24" className="[&>span:first-child]:h-12 [&>span:first-child]:w-12" />
       </div>
 
-      <div className="mt-7 grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3">
+      <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-5">
         {brands.slice(0, 6).map((brand) => (
           <div key={brand.logo || brand.name} className="flex min-h-14 items-center justify-center">
-            <ServiceLogo brand={brand} showLabel imageClassName="h-10 w-28" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" labelClassName="text-xs" />
+            <ServiceLogo brand={brand} showLabel imageClassName="h-12 w-36 max-w-full" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" labelClassName="text-xs" />
           </div>
         ))}
       </div>
