@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Topbar } from "@/components/shared/topbar";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { formatCurrency } from "@/lib/shared";
+import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
 const AI_CATEGORY_SLUGS = new Set(["ai-servers", "workflows", "ai-solutions"]);
@@ -322,7 +322,7 @@ function ServerUsageSection({ subscriptions }) {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Billing Cycle</p>
-                  <p className="mt-2 font-semibold capitalize text-slate-950">{subscription.billingCycle}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{getBillingCycleLabel(subscription.billingCycle)}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>
@@ -482,7 +482,7 @@ function EdgeStorageSection({ subscriptions }) {
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-cyan-100 bg-white/85 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Billing Cycle</p>
-                  <p className="mt-2 font-semibold text-slate-950 capitalize">{subscription.billingCycle}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{getBillingCycleLabel(subscription.billingCycle)}</p>
                 </div>
                 <div className="rounded-2xl border border-cyan-100 bg-white/85 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>
@@ -642,7 +642,7 @@ function OperationsSection({ subscriptions }) {
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-amber-100 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Billing Cycle</p>
-                  <p className="mt-2 font-semibold text-slate-950 capitalize">{subscription.billingCycle}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{getBillingCycleLabel(subscription.billingCycle)}</p>
                 </div>
                 <div className="rounded-2xl border border-amber-100 bg-white p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>
@@ -714,7 +714,7 @@ function SecuritySection({ subscriptions }) {
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-emerald-100 bg-white/90 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Cycle</p>
-                  <p className="mt-2 font-semibold text-slate-950 capitalize">{subscription.billingCycle}</p>
+                  <p className="mt-2 font-semibold text-slate-950">{getBillingCycleLabel(subscription.billingCycle)}</p>
                 </div>
                 <div className="rounded-2xl border border-emerald-100 bg-white/90 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Renewal</p>

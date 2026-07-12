@@ -13,6 +13,11 @@ function addBillingPeriod(date, billingCycle) {
     return nextDate;
   }
 
+  if (billingCycle === "six_month") {
+    nextDate.setMonth(nextDate.getMonth() + 6);
+    return nextDate;
+  }
+
   nextDate.setMonth(nextDate.getMonth() + 1);
   return nextDate;
 }

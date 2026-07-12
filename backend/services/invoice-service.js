@@ -4,6 +4,7 @@ import { PassThrough } from "stream";
 import { fileURLToPath } from "url";
 import PDFDocument from "pdfkit";
 import { env } from "../config/env.js";
+import { getBillingCycleLabel } from "../lib/shared/pricing.js";
 import { generateInvoiceNumber } from "../utils/invoice-number.js";
 import { isObjectStorageEnabled, toPublicFileUrl, uploadBufferToStorage, writeBufferToFile } from "./storage-service.js";
 
@@ -62,16 +63,10 @@ function humanizeValue(value, fallback = "Not provided") {
 
 function formatBillingCycle(billingCycle) {
   if (!billingCycle) {
-    return "Monthly";
+    return getBillingCycleLabel("monthly");
   }
 
-  const labels = {
-    monthly: "Monthly",
-    yearly: "Yearly",
-    contact_sales: "Contact Sales",
-  };
-
-  return labels[billingCycle] || humanizeValue(billingCycle, "Monthly");
+  return getBillingCycleLabel(billingCycle) || humanizeValue(billingCycle, getBillingCycleLabel("monthly"));
 }
 
 function formatPaymentMethodLabel(paymentMethodType, paymentReferenceCode) {

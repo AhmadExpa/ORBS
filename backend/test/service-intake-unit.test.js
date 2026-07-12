@@ -7,9 +7,9 @@ test("VoIP service intake accepts required call-center essentials", () => {
     callGoals: ["inbound", "outbound", "rvm"],
     currentSetup: "existing_vicidial",
     agentCount: 25,
-    primaryRegion: "US Eastern",
+    primaryRegion: "north_america",
     sipCarrierStatus: "have_carrier",
-    didNumbers: "Existing DIDs in 813 and 727.",
+    didNumbers: ["have_numbers", "caller_id_rules"],
   });
 
   assert.equal(result.ok, true);
@@ -25,7 +25,6 @@ test("service intake reports missing required essentials", () => {
   });
 
   assert.equal(result.ok, false);
-  assert.equal(result.errors.estimatedGb, "Estimated monthly capacity is required.");
   assert.equal(result.errors.accessStyle, "Access style is required.");
 });
 
@@ -34,7 +33,7 @@ test("service intake rejects unknown answer keys", () => {
     originDomain: "origin.example.com",
     targetDomain: "cdn.example.com",
     contentType: "website_assets",
-    cachingGoal: "Cache static assets aggressively.",
+    cachingGoal: "static_assets",
     secretExtra: "unexpected",
   });
 

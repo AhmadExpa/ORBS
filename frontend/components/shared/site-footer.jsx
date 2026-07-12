@@ -8,7 +8,9 @@ import { BrandLogo } from "./brand-logo";
 const footerColumns = [
   {
     title: "Services",
-    links: serviceVerticals.map((vertical) => ({ href: `/${vertical.slug}`, label: vertical.name })),
+    links: serviceVerticals
+      .filter((vertical) => vertical.slug !== "workflow-automation")
+      .map((vertical) => ({ href: `/${vertical.slug}`, label: vertical.name })),
   },
   {
     title: "Infrastructure",
@@ -99,16 +101,20 @@ export function SiteFooter() {
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               {paymentBadges.map((badge) => (
-                <img
+                <span
                   key={badge.src}
-                  src={badge.src}
-                  alt={`${badge.alt} payment badge`}
-                  loading="lazy"
-                  decoding="async"
-                  width={64}
-                  height={38}
-                  className="h-10 w-auto rounded-md shadow-sm"
-                />
+                  className="flex h-10 w-[70px] items-center justify-center rounded-md border border-slate-200 bg-white shadow-sm"
+                >
+                  <img
+                    src={badge.src}
+                    alt={`${badge.alt} payment badge`}
+                    loading="lazy"
+                    decoding="async"
+                    width={58}
+                    height={34}
+                    className="max-h-7 max-w-[58px] object-contain"
+                  />
+                </span>
               ))}
             </div>
           </div>

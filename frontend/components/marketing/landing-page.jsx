@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BrainCircuit,
-  Clock3,
   Headset,
   Mail,
   PhoneCall,
@@ -11,7 +10,7 @@ import {
   Wallet,
   Workflow,
 } from "lucide-react";
-import { getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
+import { getBillingCycleDiscountPercent, getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
 import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
@@ -78,24 +77,6 @@ const operatingHighlights = [
     title: "Billing stays structured",
     description: "Wallet balance, saved-card fallback, card payments, and renewal rules are all part of the same customer journey.",
     icon: Wallet,
-  },
-];
-
-const governanceSignals = [
-  {
-    label: "Renewal routing",
-    value: "Wallet balance first, saved card second, with admin visibility over payment state.",
-    icon: Wallet,
-  },
-  {
-    label: "Support orchestration",
-    value: "Service issues, top-up requests, and order follow-up stay inside a single managed customer record.",
-    icon: Headset,
-  },
-  {
-    label: "Credential assignment",
-    value: "Logins, passwords, IP details, and provisioning notes are added by the team after approval and setup.",
-    icon: Clock3,
   },
 ];
 
@@ -480,38 +461,6 @@ export function LandingPage() {
                   categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
                   className="eo-reveal-soft"
                 />
-                <div className="rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-6 shadow-[0_22px_60px_-52px_rgba(12,108,242,0.22)]" style={{ "--eo-delay": "90ms" }}>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
-                  <div className="mt-6 space-y-4">
-                    {governanceSignals.map((item) => {
-                      const Icon = item.icon;
-
-                      return (
-                        <div key={item.label} className="rounded-md border border-slate-200 bg-white px-4 py-4">
-                          <div className="flex items-start gap-3">
-                            <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                              <Icon className="h-4 w-4" />
-                            </span>
-                            <div>
-                              <p className="text-sm font-semibold text-slate-950">{item.label}</p>
-                              <p className="mt-2 text-sm leading-7 text-slate-600">{item.value}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-slate-900 bg-slate-950 p-6 text-white shadow-[0_26px_70px_-58px_rgba(15,23,42,0.55)]" style={{ "--eo-delay": "160ms" }}>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">ElevenOrbits Standard</p>
-                  <p className="mt-5 text-2xl font-semibold leading-tight">
-                    Professional systems deserve professional operational ownership.
-                  </p>
-                  <p className="mt-4 text-sm leading-7 text-white/70">
-                    We lead with clarity, service structure, and governance because serious business systems need more than surface-level marketing.
-                  </p>
-                </div>
               </aside>
             </div>
           </div>
@@ -563,7 +512,9 @@ export function LandingPage() {
                   </div>
 
                   <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {plan.yearlyDiscountPercent ? `${plan.yearlyDiscountPercent}% yearly savings available` : "Flexible billing options"}
+                    {plan.contactSalesOnly
+                      ? "Scoped commercial contract"
+                      : `${getBillingCycleDiscountPercent(plan, "six_month")}% six month / ${getBillingCycleDiscountPercent(plan, "yearly")}% yearly savings`}
                   </p>
 
                   <div className="mt-7 space-y-3">

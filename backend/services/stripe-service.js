@@ -369,6 +369,39 @@ export async function createOffSessionCharge({ user, amount, description, metada
   });
 }
 
+export async function createSavedCardCharge({ user, paymentMethodId, amount, description, metadata }) {
+  assertStripeConfigured();
+
+  const savedCards = getUserSavedPaymentMethods(user);
+  const selectedCard = savedCards.find((card) => String(card.id) === String(paymentMethodId));
+
+  if (!selectedCard) {
+    throw new HttpError(404, "Saved card not found.");
+  }
+
+  if (!user.stripeCustomerId) {
+    throw new HttpError(400, "No Stripe customer is attached to this account.");
+  }
+
+  const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+  if (paymentMethod.customer && String(paymentMethod.customer) !== String(user.stripeCustomerId)) {
+    throw new HttpError(403, "This saved card does not belong to the authenticated customer.");
+  }
+
+  return stripe.paymentIntents.create({
+    amount: toStripeAmount(amount),
+    currency: env.stripeCurrency,
+    customer: user.stripeCustomerId,
+    payment_method: paymentMethodId,
+    payment_method_types: ["card"],
+    confirm: true,
+    off_session: true,
+    description,
+    metadata: normalizeMetadata(metadata),
+    expand: ["latest_charge"],
+  });
+}
+
 export async function constructWebhookEvent(rawBody, signature) {
   assertStripeConfigured();
 

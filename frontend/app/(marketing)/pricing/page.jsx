@@ -35,8 +35,8 @@ const confidenceItems = [
     icon: ShieldCheck,
   },
   {
-    label: "Yearly advantage",
-    value: "Eligible infrastructure and security plans include yearly savings where configured.",
+    label: "Term contracts",
+    value: "Eligible plans include monthly, 6-month, and yearly contract options with term savings.",
     icon: Clock3,
   },
   {
@@ -52,6 +52,26 @@ function getPlansForCategory(categorySlug) {
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 
+function getPricingSections() {
+  return serviceCategories
+    .filter((category) => category.slug !== "workflows")
+    .map((category) => {
+      if (category.slug !== "ai-servers") {
+        return { category, plans: getPlansForCategory(category.slug) };
+      }
+
+      return {
+        category: {
+          ...category,
+          name: "AI Services",
+          description: "Managed AI servers and n8n workflow infrastructure for model workloads, automations, and AI-assisted operations.",
+        },
+        plans: [...getPlansForCategory("ai-servers"), ...getPlansForCategory("workflows")],
+      };
+    })
+    .filter((item) => item.plans.length);
+}
+
 function getStartingPrice(plans) {
   const pricedPlans = plans.filter((plan) => !plan.contactSalesOnly && Number(plan.monthlyPrice) > 0);
   if (!pricedPlans.length) {
@@ -63,9 +83,7 @@ function getStartingPrice(plans) {
 }
 
 export default function PricingPage() {
-  const activeCategories = serviceCategories
-    .map((category) => ({ category, plans: getPlansForCategory(category.slug) }))
-    .filter((item) => item.plans.length);
+  const activeCategories = getPricingSections();
 
   return (
     <main className="bg-slate-50">

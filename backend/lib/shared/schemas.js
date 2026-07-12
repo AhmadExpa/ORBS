@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const billingCycleSchema = z.enum(["monthly", "yearly", "contact_sales"]);
+export const billingCycleSchema = z.enum(["monthly", "six_month", "yearly", "contact_sales"]);
 
 export const productPlanSchema = z.object({
   name: z.string().min(2),
@@ -34,7 +34,7 @@ export const orderQuoteSchema = z.object({
     .passthrough()
     .optional(),
   finalNote: z.string().trim().max(2000).optional(),
-  billingCycle: z.enum(["monthly", "yearly"]),
+  billingCycle: z.enum(["monthly", "six_month", "yearly"]),
 });
 
 export const supportTicketSchema = z.object({

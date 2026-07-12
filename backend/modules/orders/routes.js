@@ -1,5 +1,5 @@
 import express from "express";
-import { orderQuoteSchema, validateServiceIntakeAnswers } from "../../lib/shared/index.js";
+import { getAvailableBillingCycles, orderQuoteSchema, validateServiceIntakeAnswers } from "../../lib/shared/index.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { Invoice, Order, ProductPlan, Subscription, Addon } from "../../db/models/index.js";
@@ -93,7 +93,7 @@ async function buildQuote(body) {
     };
   }
 
-  if (!Array.isArray(plan.billingCycles) || !plan.billingCycles.includes(payload.billingCycle)) {
+  if (!getAvailableBillingCycles(plan).includes(payload.billingCycle)) {
     throw new HttpError(400, "Selected billing cycle is unavailable for this plan.");
   }
 

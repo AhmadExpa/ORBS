@@ -351,7 +351,7 @@ export function ProductVerticalPage({ slug }) {
       </section>
 
       <section className="border-b border-slate-200/80 bg-slate-50/70">
-        <div className="mx-auto grid max-w-[1520px] gap-8 px-4 py-14 sm:px-6 lg:px-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="mx-auto max-w-[1520px] px-4 py-14 sm:px-6 lg:px-8">
           <div>
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -369,7 +369,7 @@ export function ProductVerticalPage({ slug }) {
             <PlanCardDeck categorySlug={vertical.categorySlugs[0]} categoryName={vertical.name} plans={plans} className="mt-8" />
           </div>
 
-          <aside className="space-y-4">
+          <aside className="mt-8 grid gap-4 lg:grid-cols-2">
             <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]">
               <p className={cn("text-xs font-semibold uppercase tracking-[0.22em]", theme.accent)}>How It Works</p>
               <ol className="mt-5 space-y-4">
@@ -438,12 +438,15 @@ export function ProductVerticalPage({ slug }) {
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Next Step</p>
             <h2 className="mt-4 text-3xl font-semibold tracking-[-0.035em] md:text-5xl">
-              Bring {vertical.name.toLowerCase()} into your ElevenOrbits operating flow.
+              Bring {vertical.name} into your ElevenOrbits operating flow.
             </h2>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href={getSignupPath()}>
-              <Button className="bg-white text-slate-950 hover:bg-slate-100">Create Account</Button>
+            <Link
+              href={getSignupPath()}
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-white bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+            >
+              Create Account
             </Link>
             <Link href="/services">
               <Button variant="ghost" className="border-white/15 bg-white/10 text-white ring-white/10 hover:bg-white/15 hover:text-white">

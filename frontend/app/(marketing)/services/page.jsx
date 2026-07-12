@@ -63,7 +63,7 @@ export default function ServicesPage() {
               className="max-w-none"
             />
             <div className="mt-6 flex flex-wrap gap-2">
-              {["Managed Servers", "AI Services", "VoIP Operations", "CDN & Storage", "Self-Hosted Apps", "Cybersecurity", "Workflow Automation", "IT Support"].map((item) => (
+              {["Managed Servers", "AI Services", "VoIP Operations", "CDN & Storage", "Self-Hosted Apps", "Cybersecurity", "IT Support"].map((item) => (
                 <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                   {item}
                 </span>
@@ -90,7 +90,7 @@ export default function ServicesPage() {
           </p>
         </div>
         <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {serviceVerticals.map((vertical, index) => {
+          {serviceVerticals.filter((vertical) => vertical.slug !== "workflow-automation").map((vertical, index) => {
             const Icon = serviceIconMap[vertical.categorySlugs[0]] || Server;
 
             return (

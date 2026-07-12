@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
+import { getBillingCycleLabel } from "@/lib/shared";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge } from "@/lib/ui";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -89,7 +90,7 @@ export default function PortalSubscriptionsPage() {
         </Link>
       ),
     },
-    { key: "billingCycle", label: "Cycle" },
+    { key: "billingCycle", label: "Cycle", render: (row) => getBillingCycleLabel(row.billingCycle) },
     { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
     {
       key: "renewalDate",

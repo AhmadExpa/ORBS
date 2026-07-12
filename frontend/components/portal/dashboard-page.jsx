@@ -4,29 +4,26 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Activity as ActivityIcon,
   ArrowRight,
   ArrowUpRight,
   CalendarClock,
   CheckCircle2,
-  ClipboardCheck,
   CreditCard,
   FileSignature,
   LifeBuoy,
-  PackageCheck,
   Plus,
   Receipt,
   Server,
-  UsersRound,
   Wallet,
 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, cn } from "@/lib/ui";
-import { formatCurrency, getMonthlyRecurringAmount, isActiveSubscription } from "@/lib/shared";
+import { formatCurrency, getBillingCycleLabel, getMonthlyRecurringAmount, isActiveSubscription } from "@/lib/shared";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { Topbar } from "@/components/shared/topbar";
 import { PageLoader } from "@/components/shared/page-loader";
 import { DashboardSpendChart } from "@/components/portal/dashboard-spend-chart";
 import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
+import { PortalActivityPanel } from "@/components/portal/activity-panel";
 import { useCustomerQuery } from "@/lib/api/hooks";
 
 function formatDate(value) {
@@ -38,17 +35,6 @@ function daysUntil(value) {
   const target = new Date(value).getTime();
   if (Number.isNaN(target)) return null;
   return Math.ceil((target - Date.now()) / (1000 * 60 * 60 * 24));
-}
-
-function relativeTime(value) {
-  if (!value) return "";
-  const diff = Date.now() - new Date(value).getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 30) return `${days} days ago`;
-  const months = Math.floor(days / 30);
-  return `${months} month${months === 1 ? "" : "s"} ago`;
 }
 
 function renewalLabel(value) {
@@ -205,8 +191,8 @@ export function PortalDashboardPage() {
   return (
     <div>
       <Topbar
-        title="Dashboard"
-        subtitle="Your services, billing, and support activity at a glance."
+        title="Operations Dashboard"
+        subtitle="Monitor services, billing, agreements, and support from one workspace."
         actions={topbarActions}
       />
       {showInitialLoader ? (
@@ -219,25 +205,60 @@ export function PortalDashboardPage() {
             </div>
           ) : null}
 
-          {/* Welcome header */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-slate-900">
-                {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+            <div className="grid min-w-0 gap-px bg-slate-200 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
+              <div className="min-w-0 bg-slate-950 p-6 text-white md:p-7">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/45">{todayLabel}</p>
+                <h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.035em] md:text-4xl">
+                  {firstName ? `${firstName}, your managed workspace is ready.` : "Your managed workspace is ready."}
+                </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-white/65">
+                  Review operational health, renewal exposure, payment coverage, and open support work without leaving the portal.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Link href="/portal/services">
+                    <Button className="border-white bg-white text-slate-950 hover:bg-slate-100">
+                      <Plus className="h-4 w-4" />
+                      Order an app
+                    </Button>
+                  </Link>
+                  <Link href="/portal/support">
+                    <Button variant="ghost" className="border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                      <LifeBuoy className="h-4 w-4" />
+                      Open support
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid min-w-0 gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="bg-white p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <Wallet className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Wallet coverage</p>
+                      <p className="mt-1 text-xl font-semibold text-slate-950">{formatCurrency(walletBalance)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <CalendarClock className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Next renewal</p>
+                      <p className="mt-1 text-xl font-semibold text-slate-950">
+                        {nextRenewal ? renewalLabel(nextRenewal.renewalDate) : "No upcoming renewals"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
-                <Wallet className="h-4 w-4 text-emerald-500" />
-                {formatCurrency(walletBalance)} wallet
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
-                <CalendarClock className="h-4 w-4 text-brand-500" />
-                {nextRenewal ? renewalLabel(nextRenewal.renewalDate) : "No upcoming renewals"}
-              </span>
-            </div>
-          </div>
+          </section>
 
           {/* KPI row */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -306,7 +327,7 @@ export function PortalDashboardPage() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">{item.productPlanId?.name || "Managed service"}</p>
                         <p className="mt-0.5 text-xs font-medium text-slate-500">
-                          {renewalLabel(item.renewalDate)} · {item.billingCycle?.replaceAll("_", " ") || "monthly"}
+                          {renewalLabel(item.renewalDate)} · {getBillingCycleLabel(item.billingCycle)}
                         </p>
                       </div>
                       <span className="shrink-0 text-sm font-semibold text-slate-900">
@@ -342,7 +363,7 @@ export function PortalDashboardPage() {
                 <DataTable
                   columns={[
                     { key: "plan", label: "Plan", render: (row) => row.productPlanId?.name || "Managed service" },
-                    { key: "billingCycle", label: "Cycle", render: (row) => row.billingCycle?.replaceAll("_", " ") || "monthly" },
+                    { key: "billingCycle", label: "Cycle", render: (row) => getBillingCycleLabel(row.billingCycle) },
                     { key: "renewalDate", label: "Renews", render: (row) => formatDate(row.renewalDate) },
                     { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
                   ]}
@@ -352,56 +373,14 @@ export function PortalDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent activity</CardTitle>
-                <CardDescription>Portal actions, payments, and support, newest first</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2.5">
-                {activity.length ? (
-                  activity.map((item) => {
-                    const Icon =
-                      item.type === "payment"
-                        ? CreditCard
-                        : item.type === "ticket"
-                          ? LifeBuoy
-                          : item.type === "delegate"
-                            ? UsersRound
-                            : item.type === "contract"
-                              ? ClipboardCheck
-                              : item.type === "service" || item.type === "order"
-                                ? PackageCheck
-                                : ActivityIcon;
-                    const body = (
-                      <div className="flex items-center gap-3 rounded-lg border border-line bg-white p-3 transition-colors hover:border-slate-300">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
-                          <p className="truncate text-xs font-medium text-slate-400">
-                            {item.description ? `${item.description} · ` : ""}
-                            {relativeTime(item.at)}
-                          </p>
-                        </div>
-                        {item.status ? <StatusBadge status={item.status} /> : null}
-                      </div>
-                    );
-                    return item.href ? (
-                      <Link key={item.id} href={item.href} className="block">
-                        {body}
-                      </Link>
-                    ) : (
-                      <div key={item.id}>{body}</div>
-                    );
-                  })
-                ) : (
-                  <div className="rounded-lg border border-dashed border-line bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                    No recent activity yet.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <PortalActivityPanel
+              activities={activity}
+              loading={activityQuery.isLoading}
+              title="Activity control"
+              description="Filter recent payments, support, service, and access events."
+              maxItems={6}
+              compact
+            />
           </div>
 
           {/* Status strip */}

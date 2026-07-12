@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Cpu, HardDrive, Network, ShieldCheck } from "lucide-react";
-import { formatCurrency, getPurchasePath } from "@/lib/shared";
-import { Button, cn } from "@/lib/ui";
+import { formatCurrency, getAvailableBillingCycles, getBillingCycleDiscountPercent, getPurchasePath } from "@/lib/shared";
+import { cn } from "@/lib/ui";
 import { ServiceLogo, TechLogoPills, getBrandForName, getCategoryBrand } from "./service-branding";
 
 function planPrice(plan) {
@@ -16,11 +16,16 @@ function planPrice(plan) {
 }
 
 function discountLabel(plan) {
-  if (Number(plan.yearlyDiscountPercent) > 0) {
-    return `${plan.yearlyDiscountPercent}% yearly`;
+  if (plan.contactSalesOnly) {
+    return "Scoped";
   }
 
-  return plan.billingCycles?.includes("monthly") ? "Monthly" : "Fixed";
+  const cycles = getAvailableBillingCycles(plan);
+  if (cycles.includes("six_month") && cycles.includes("yearly")) {
+    return `${getBillingCycleDiscountPercent(plan, "six_month")}% / ${getBillingCycleDiscountPercent(plan, "yearly")}% terms`;
+  }
+
+  return cycles.includes("monthly") ? "Monthly" : "Fixed";
 }
 
 function renewalNote(plan) {
@@ -28,8 +33,10 @@ function renewalNote(plan) {
     return "Scoped by the ElevenOrbits team before launch.";
   }
 
-  if (Number(plan.yearlyPrice) > 0 && plan.billingCycles?.includes("yearly")) {
-    return `Yearly billing available at ${formatCurrency(plan.yearlyPrice)}/yr.`;
+  const cycles = getAvailableBillingCycles(plan);
+
+  if (cycles.includes("six_month") && cycles.includes("yearly")) {
+    return `Monthly, 6 month, and yearly contracts available. Yearly saves ${getBillingCycleDiscountPercent(plan, "yearly")}%.`;
   }
 
   return "Renews monthly. Cancel anytime.";
@@ -68,12 +75,12 @@ function PlanCard({ plan, featured = false }) {
   return (
     <article
       className={cn(
-        "relative flex min-h-[470px] flex-col rounded-[22px] border bg-[#19191c] p-6 text-white shadow-[0_28px_80px_-56px_rgba(2,6,23,0.95)]",
+        "relative flex min-h-[470px] flex-col overflow-hidden rounded-[22px] border bg-[#19191c] p-6 text-white shadow-[0_28px_80px_-56px_rgba(2,6,23,0.95)]",
         featured ? "border-violet-500 ring-1 ring-violet-500" : "border-white/10",
       )}
     >
       {featured ? (
-        <div className="absolute -left-px -right-px -top-11 rounded-t-[22px] bg-violet-500 px-4 py-3 text-center text-sm font-bold uppercase tracking-tight text-white">
+        <div className="-mx-6 -mt-6 mb-6 bg-violet-500 px-4 py-3 text-center text-sm font-bold uppercase tracking-tight text-white">
           Most Popular
         </div>
       ) : null}
@@ -98,18 +105,11 @@ function PlanCard({ plan, featured = false }) {
         </p>
       </div>
 
-      <Link href={getPurchasePath(plan)} className="mt-7 block">
-        <Button
-          variant={featured ? "ghost" : "outline"}
-          className={cn(
-            "min-h-12 w-full rounded-lg text-base font-bold",
-            featured
-              ? "border-white bg-white text-slate-950 hover:bg-slate-100"
-              : "border-white/80 bg-transparent text-white hover:border-white hover:bg-white hover:text-slate-950",
-          )}
-        >
-          {plan.contactSalesOnly ? "Contact Sales" : "Choose Plan"}
-        </Button>
+      <Link
+        href={getPurchasePath(plan)}
+        className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-white bg-white px-4 py-3 text-base font-bold text-slate-950 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#19191c]"
+      >
+        {plan.contactSalesOnly ? "Contact Sales" : "Choose Plan"}
       </Link>
 
       <p className="mt-4 min-h-10 text-xs font-medium leading-5 text-slate-300">{renewalNote(plan)}</p>

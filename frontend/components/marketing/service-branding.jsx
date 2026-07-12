@@ -18,7 +18,6 @@ import {
   Route,
   Shield,
   ShieldCheck,
-  Sparkles,
   Terminal,
   Webhook,
   Workflow,
@@ -141,13 +140,14 @@ export const brandLogos = {
   deepseek: { name: "DeepSeek", logo: "/partners/deepseek.svg" },
   "deepseek api": { name: "DeepSeek API", logo: "/partners/deepseek.svg" },
   "open-source deepseek": { name: "Open-source DeepSeek", logo: "/partners/deepseek.svg" },
-  "deepseek openai integration": { name: "DeepSeek / OpenAI integration", icon: Sparkles, iconClassName: "border-violet-200 bg-violet-50 text-violet-700" },
+  "deepseek openai integration": { name: "DeepSeek / OpenAI integration", icon: BrainCircuit, iconClassName: "border-violet-200 bg-violet-50 text-violet-700" },
   clawbot: { name: "Clawbot", logo: "/partners/clawbot.svg" },
   openai: { name: "OpenAI", logo: "/partners/openai.svg" },
   claude: { name: "Claude", logo: "/partners/claude.svg" },
   kimi: { name: "Kimi", logo: "/partners/kimi.svg" },
   cybersecurity: categoryBranding.cybersecurity,
   datto: { name: "Datto", logo: "/partners/datto.svg" },
+  kaseya: { name: "Kaseya", logo: "/partners/kaseya.svg" },
   veeam: { name: "Veeam", logo: "/partners/veeam.svg" },
   "managed cdn": categoryBranding.cdn,
   cdn: categoryBranding.cdn,
@@ -256,7 +256,7 @@ function getIconForLabel(label) {
     return { icon: Terminal, iconClassName: "border-orange-200 bg-orange-50 text-orange-700" };
   }
 
-  return { icon: Sparkles, iconClassName: "border-slate-200 bg-white text-slate-700" };
+  return { icon: CheckCircle2, iconClassName: "border-slate-200 bg-white text-slate-700" };
 }
 
 export function getCategoryBrand(categorySlug) {

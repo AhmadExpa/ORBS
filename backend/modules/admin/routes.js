@@ -365,7 +365,7 @@ adminRouter.get(
       .reduce((sum, subscription) => sum + Number(subscription.metadata?.billingAmount || 0), 0);
 
     const yearlyRecurringRevenue = subscriptions
-      .filter((sub) => sub.status === "active" && sub.billingCycle === "yearly")
+      .filter((sub) => sub.status === "active" && ["six_month", "yearly"].includes(sub.billingCycle))
       .reduce((sum, subscription) => sum + Number(subscription.metadata?.billingAmount || 0), 0);
 
     const unpaidInvoices = allInvoices.filter((invoice) => invoice.status !== "paid");

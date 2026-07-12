@@ -76,7 +76,6 @@ import {
   CardHeader,
   CardTitle,
   FieldLabel,
-  Select,
   TextArea,
   TextInput,
   cn,
@@ -85,9 +84,13 @@ import {
   calculatePlanPrice,
   calculateStoragePrice,
   formatCurrency,
-  getServiceIntakeConfig,
   getAddonPrice,
   getAddonUnitPrice,
+  getAvailableBillingCycles,
+  getBillingCycleDiscountPercent,
+  getBillingCycleLabel,
+  getBillingCycleMonths,
+  getServiceIntakeConfig,
   getStorageMinimumQuantity,
   validateServiceIntakeAnswers,
 } from "@/lib/shared";
@@ -97,11 +100,33 @@ import { PageLoader } from "@/components/shared/page-loader";
 import { apiFetch } from "@/lib/api/client";
 
 function getBillingSuffix(billingCycle) {
-  return billingCycle === "yearly" ? "/year" : "/month";
+  if (billingCycle === "yearly") {
+    return "/year";
+  }
+
+  if (billingCycle === "six_month") {
+    return "/6 months";
+  }
+
+  return "/month";
 }
 
 function formatAddonCharge(amount, billingCycle) {
   return amount > 0 ? `${formatCurrency(amount)}${getBillingSuffix(billingCycle)}` : "Included";
+}
+
+function getBillingCycleDescription(plan, billingCycle) {
+  if (billingCycle === "monthly") {
+    return "Flexible monthly contract. No term discount.";
+  }
+
+  const discountPercent = getBillingCycleDiscountPercent(plan, billingCycle);
+
+  if (billingCycle === "yearly") {
+    return `Yearly contract with ${discountPercent}% term discount.`;
+  }
+
+  return `${getBillingCycleMonths(billingCycle)} month contract with ${discountPercent}% term discount.`;
 }
 
 const defaultImageArtwork = {
@@ -381,33 +406,25 @@ function IntakeOptionButton({ option, selected, onClick, multi = false }) {
 function IntakeField({ field, value, error, onChange }) {
   const requiredMark = field.required ? <span className="text-rose-500">*</span> : null;
 
-  if (field.type === "select") {
-    return (
-      <div>
-        <FieldLabel>
-          {field.label} {requiredMark}
-        </FieldLabel>
-        <Select value={value || ""} onChange={(event) => onChange(event.target.value)}>
-          <option value="">Select one</option>
-          {(field.options || []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-        {error ? <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p> : null}
-      </div>
-    );
-  }
-
-  if (field.type === "segmented" || field.type === "multiselect") {
+  if (field.type === "select" || field.type === "segmented" || field.type === "multiselect") {
     const multi = field.type === "multiselect";
     const selectedValues = multi ? (Array.isArray(value) ? value : []) : [];
     return (
       <div>
-        <FieldLabel>
-          {field.label} {requiredMark}
-        </FieldLabel>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <FieldLabel>
+            {field.label} {requiredMark}
+          </FieldLabel>
+          {!multi && !field.required && value ? (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+            >
+              Clear selection
+            </button>
+          ) : null}
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           {(field.options || []).map((option) => {
             const selected = multi ? selectedValues.includes(option.value) : value === option.value;
@@ -577,6 +594,7 @@ export function OrderConfigurator({ slug }) {
   const [serviceAnswers, setServiceAnswers] = useState({});
   const [serviceAnswerErrors, setServiceAnswerErrors] = useState({});
   const [finalNote, setFinalNote] = useState("");
+  const [showFinalNote, setShowFinalNote] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -586,6 +604,10 @@ export function OrderConfigurator({ slug }) {
   });
 
   const plan = data?.plan;
+  const availableBillingCycles = useMemo(
+    () => getAvailableBillingCycles(plan).filter((cycle) => cycle !== "contact_sales"),
+    [plan],
+  );
   const categorySlug = plan?.categoryId?.slug || "";
   const serviceIntakeConfig = getServiceIntakeConfig(categorySlug);
   const addonsQuery = useQuery({
@@ -655,6 +677,14 @@ export function OrderConfigurator({ slug }) {
     setServiceAnswers({});
     setServiceAnswerErrors({});
   }, [categorySlug]);
+
+  useEffect(() => {
+    if (!availableBillingCycles.length || availableBillingCycles.includes(billingCycle)) {
+      return;
+    }
+
+    setBillingCycle(availableBillingCycles.includes("monthly") ? "monthly" : availableBillingCycles[0]);
+  }, [availableBillingCycles, billingCycle]);
 
   const minimumStorageQuantity = selectedStorage ? getStorageMinimumQuantity(selectedStorage) : 0;
   const storageQuantityInput = selectedStorage
@@ -734,7 +764,7 @@ export function OrderConfigurator({ slug }) {
 
   async function handleCreateOrder() {
     if (!plan || plan.contactSalesOnly) {
-      router.push("/#contact");
+      router.push("/contact");
       return;
     }
 
@@ -821,27 +851,23 @@ export function OrderConfigurator({ slug }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            <div className="grid gap-4 md:grid-cols-2">
-              {["monthly", "yearly"]
-                .filter((cycle) => plan.billingCycles.includes(cycle))
-                .map((cycle) => (
-                  <button
-                    key={cycle}
-                    type="button"
-                    onClick={() => setBillingCycle(cycle)}
-                    className={cn(
-                      "rounded-xl border p-5 text-left transition duration-200",
-                      billingCycle === cycle
-                        ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-                    )}
-                  >
-                    <p className="font-semibold capitalize text-slate-950">{cycle}</p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {cycle === "yearly" ? "Automatic yearly pricing where configured." : "Standard monthly billing."}
-                    </p>
-                  </button>
-                ))}
+            <div className="grid gap-4 md:grid-cols-3">
+              {availableBillingCycles.map((cycle) => (
+                <button
+                  key={cycle}
+                  type="button"
+                  onClick={() => setBillingCycle(cycle)}
+                  className={cn(
+                    "rounded-xl border p-5 text-left transition duration-200",
+                    billingCycle === cycle
+                      ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                  )}
+                >
+                  <p className="font-semibold text-slate-950">{getBillingCycleLabel(cycle)}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{getBillingCycleDescription(plan, cycle)}</p>
+                </button>
+              ))}
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -1088,25 +1114,32 @@ export function OrderConfigurator({ slug }) {
             ) : null}
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5">
-              <div className="flex items-start gap-3">
-                <span className="rounded-2xl bg-slate-100 p-2.5 text-slate-700">
-                  <Settings2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-lg font-semibold text-slate-950">Final Service Note</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Add anything the admin team should know for provisioning. Access details will be assigned by the admin team after the order is created and approved.
-                  </p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="rounded-2xl bg-slate-100 p-2.5 text-slate-700">
+                    <Settings2 className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-lg font-semibold text-slate-950">Custom Provisioning Note</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Use this only for details that are not covered by the selections above.
+                    </p>
+                  </div>
                 </div>
+                <Button type="button" variant="ghost" onClick={() => setShowFinalNote((current) => !current)}>
+                  {showFinalNote || finalNote ? "Hide note" : "Add custom note"}
+                </Button>
               </div>
-              <div className="mt-5">
-                <TextArea
-                  placeholder="Example: preferred hostname, app domain, storage region, model/provider keys, user count, migration timing, cache rules, API access needs, or deployment notes."
-                  value={finalNote}
-                  onChange={(event) => setFinalNote(event.target.value)}
-                  className="min-h-32"
-                />
-              </div>
+              {showFinalNote || finalNote ? (
+                <div className="mt-5">
+                  <TextArea
+                    placeholder="Example: preferred hostname, app domain, storage region, model/provider keys, user count, migration timing, cache rules, API access needs, or deployment notes."
+                    value={finalNote}
+                    onChange={(event) => setFinalNote(event.target.value)}
+                    className="min-h-32"
+                  />
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -1133,7 +1166,7 @@ export function OrderConfigurator({ slug }) {
           <CardContent className="space-y-4">
             <SummaryRow label="Plan" value={plan.name} />
             <SummaryRow label="Category" value={plan.categoryId?.name || "Managed Service"} />
-            <SummaryRow label="Billing Cycle" value={billingCycle[0].toUpperCase() + billingCycle.slice(1)} />
+            <SummaryRow label="Contract" value={getBillingCycleLabel(billingCycle)} />
 
             {selectedRegion ? <SummaryRow label="Region" value={selectedRegion.name} /> : null}
             {selectedStorage ? (
@@ -1160,7 +1193,10 @@ export function OrderConfigurator({ slug }) {
               </div>
             </div>
 
-            <SummaryRow label="Monthly Service Total" value={formatCurrency(monthlyTotal)} />
+            <SummaryRow
+              label={billingCycle === "monthly" ? "Monthly Service Total" : "Monthly Equivalent"}
+              value={formatCurrency(monthlyTotal)}
+            />
             <SummaryRow
               label="Total Due Today"
               value={plan.contactSalesOnly ? plan.displayPriceLabel || "Contact sales" : formatCurrency(total)}

@@ -8,7 +8,7 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Stat
 import { apiFetch } from "@/lib/api/client";
 import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { formatCurrency } from "@/lib/shared";
+import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -263,7 +263,7 @@ export function CheckoutPaymentView({ orderId }) {
                       <div>
                         <p className="font-semibold text-slate-950">{item.label}</p>
                         <p className="text-sm text-slate-500">
-                          {subscription?.billingCycle ? `${subscription.billingCycle} billing` : "Managed service"}
+                          {subscription?.billingCycle ? `${getBillingCycleLabel(subscription.billingCycle)} billing` : "Managed service"}
                         </p>
                       </div>
                       <span className="font-semibold text-slate-950">{formatCurrency(item.amount)}</span>
@@ -349,7 +349,9 @@ export function CheckoutPaymentView({ orderId }) {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Billing Cycle</span>
-              <span className="font-semibold capitalize text-slate-900">{subscription?.billingCycle || order.billingCycle}</span>
+              <span className="font-semibold text-slate-900">
+                {getBillingCycleLabel(subscription?.billingCycle || order.billingCycle)}
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Renewal Strategy</span>

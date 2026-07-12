@@ -115,9 +115,9 @@ export function AdminOverviewPage() {
                 tone: "amber",
               },
               {
-                label: "Yearly recurring revenue",
+                label: "Term contract revenue",
                 value: formatCurrency(data?.yearlyRecurringRevenue || 0),
-                helper: "Annualized run rate",
+                helper: "6-month and yearly active contracts",
                 icon: TrendingUp,
                 tone: "neutral",
               },

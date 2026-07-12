@@ -3,9 +3,25 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { Building2, KeyRound, LifeBuoy, Mail, Power, RefreshCcw, Save, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import {
+  Activity,
+  Building2,
+  CreditCard,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LifeBuoy,
+  Power,
+  RefreshCcw,
+  Save,
+  ShieldCheck,
+  UserRound,
+  UsersRound,
+  Wallet,
+} from "lucide-react";
 import { Topbar } from "@/components/shared/topbar";
 import { AccountForm } from "@/components/portal/account-form";
+import { PortalActivityPanel } from "@/components/portal/activity-panel";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FieldLabel, StatusBadge, TextInput, cn } from "@/lib/ui";
@@ -31,6 +47,12 @@ const tabs = [
     icon: UsersRound,
     ownerOnly: true,
   },
+  {
+    id: "activity",
+    label: "Activity log",
+    description: "Payments, support, access, and service events",
+    icon: Activity,
+  },
 ];
 
 function fieldValue(value) {
@@ -42,6 +64,32 @@ function AccountFact({ label, value }) {
     <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-2 break-words text-sm font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function PasswordField({ value, onChange, placeholder = "At least 8 characters", required = false }) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="relative">
+      <TextInput
+        type={visible ? "text" : "password"}
+        minLength={8}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        className="pr-11"
+      />
+      <button
+        type="button"
+        aria-label={visible ? "Hide password" : "Show password"}
+        onClick={() => setVisible((current) => !current)}
+        className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
     </div>
   );
 }
@@ -72,8 +120,6 @@ function GeneralAccountPanel({ onEditBusiness }) {
           <AccountFact label="Name" value={fieldValue(user?.name)} />
           <AccountFact label="Email" value={fieldValue(user?.email)} />
           <AccountFact label="Status" value={<StatusBadge status={user?.accountStatus || "active"} />} />
-          <AccountFact label="Company" value={fieldValue(user?.company)} />
-          <AccountFact label="Phone" value={fieldValue(user?.phone)} />
           <AccountFact label="Customer ID" value={fieldValue(user?._id)} />
         </CardContent>
       </Card>
@@ -81,15 +127,17 @@ function GeneralAccountPanel({ onEditBusiness }) {
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Contact Record</CardTitle>
-            <CardDescription>Business details used for invoices, support, and provisioning.</CardDescription>
+            <CardTitle>Business Details</CardTitle>
+            <CardDescription>Company, phone, and billing address are managed in a separate business profile.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
               <div>
-                <p className="text-sm font-semibold text-slate-950">{fieldValue(user?.company || user?.name)}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{fieldValue(user?.address)}</p>
+                <p className="text-sm font-semibold text-slate-950">Business profile</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Keep invoice and provisioning details current without exposing them in the main account summary.
+                </p>
               </div>
             </div>
             <Button type="button" onClick={onEditBusiness}>
@@ -100,23 +148,36 @@ function GeneralAccountPanel({ onEditBusiness }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Access</CardTitle>
-            <CardDescription>Account access is handled through your ElevenOrbits sign-in session.</CardDescription>
+            <CardTitle>Billing & Wallet</CardTitle>
+            <CardDescription>Wallet balance is used first for renewals and approved service charges.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3">
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-                <Mail className="h-5 w-5 text-slate-500" />
-                <span className="min-w-0 break-words text-sm font-semibold text-slate-950">{fieldValue(user?.email)}</span>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Wallet className="h-4 w-4" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em]">Wallet balance</span>
+                </div>
+                <p className="mt-2 text-2xl font-semibold text-slate-950">${Number(user?.accountBalance || 0).toFixed(0)}</p>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
-                <ShieldCheck className="h-5 w-5" />
-                <span className="text-sm font-semibold">Portal session active</span>
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <CreditCard className="h-4 w-4" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em]">Saved card</span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-slate-950">
+                  {user?.defaultPaymentMethodLast4 ? `Ending in ${user.defaultPaymentMethodLast4}` : "No card saved"}
+                </p>
               </div>
             </div>
-            <Link href="/portal/support" className="inline-flex">
-              <Button variant="ghost">Contact Support</Button>
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/portal/payments?section=instant-topup" className="inline-flex">
+                <Button>Top Up Wallet</Button>
+              </Link>
+              <Link href="/portal/payments?section=saved-card" className="inline-flex">
+                <Button variant="ghost">Manage Saved Card</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -149,6 +210,7 @@ function DelegateCard({ delegate, subscriptions, onUpdated }) {
   const [selectedIds, setSelectedIds] = useState(delegate.subscriptionIds || []);
   const [password, setPassword] = useState("");
   const [state, setState] = useState({ saving: false, passwordSaving: false, error: "", message: "" });
+  const assignedCount = selectedIds.length;
 
   async function patchDelegate(updates) {
     setState((current) => ({ ...current, saving: true, error: "", message: "" }));
@@ -184,14 +246,22 @@ function DelegateCard({ delegate, subscriptions, onUpdated }) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-base font-semibold text-slate-950">{delegate.displayName}</p>
             <StatusBadge status={delegate.isActive ? "active" : "disabled"} />
           </div>
           <p className="mt-1 text-sm font-medium text-slate-500">@{delegate.username}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+              {assignedCount} assigned service{assignedCount === 1 ? "" : "s"}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+              Tickets and credential view only
+            </span>
+          </div>
         </div>
         <Button
           type="button"
@@ -204,11 +274,16 @@ function DelegateCard({ delegate, subscriptions, onUpdated }) {
         </Button>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-slate-950">Service access</p>
+          <p className="text-xs font-medium text-slate-500">Select exactly what this agent can view.</p>
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
         {subscriptions.map((subscription) => {
           const id = String(subscription._id);
           return (
-            <label key={id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <label key={id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 transition hover:border-brand-200 hover:bg-brand-50/40">
               <input
                 type="checkbox"
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
@@ -222,27 +297,26 @@ function DelegateCard({ delegate, subscriptions, onUpdated }) {
             </label>
           );
         })}
+        </div>
+        {!subscriptions.length ? <p className="mt-3 text-sm text-slate-500">Active services appear here after provisioning.</p> : null}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button type="button" variant="ghost" disabled={state.saving || !selectedIds.length} onClick={() => patchDelegate({ subscriptionIds: selectedIds })}>
+      <div className="mt-5 grid gap-4 xl:grid-cols-[auto_minmax(0,1fr)] xl:items-end">
+        <Button type="button" variant="ghost" disabled={state.saving} onClick={() => patchDelegate({ subscriptionIds: selectedIds })}>
           <Save className="h-4 w-4" />
-          Save services
+          {state.saving ? "Saving..." : "Save services"}
         </Button>
-        <form className="flex min-w-[260px] flex-1 flex-wrap items-end gap-3" onSubmit={handleResetPassword}>
-          <div className="min-w-[220px] flex-1">
+        <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleResetPassword}>
+          <div>
             <FieldLabel>New password</FieldLabel>
-            <TextInput
-              type="password"
-              minLength={8}
+            <PasswordField
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
             />
           </div>
           <Button type="submit" variant="ghost" disabled={state.passwordSaving || password.length < 8}>
             <RefreshCcw className="h-4 w-4" />
-            Reset
+            {state.passwordSaving ? "Resetting..." : "Reset password"}
           </Button>
         </form>
       </div>
@@ -272,6 +346,7 @@ function DelegateAccessPanel() {
 
   const subscriptions = subscriptionsQuery.data?.subscriptions || [];
   const delegates = delegatesQuery.data?.delegates || [];
+  const activeDelegates = delegates.filter((delegate) => delegate.isActive).length;
 
   async function handleCreate(event) {
     event.preventDefault();
@@ -301,6 +376,24 @@ function DelegateAccessPanel() {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Active agents</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{activeDelegates}</p>
+          <p className="mt-1 text-sm text-slate-500">{delegates.length} total agent{delegates.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Assignable services</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{subscriptions.length}</p>
+          <p className="mt-1 text-sm text-slate-500">Active subscriptions available for agent access.</p>
+        </div>
+        <div className="rounded-xl border border-sky-100 bg-sky-50 p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Permission model</p>
+          <p className="mt-3 text-base font-semibold text-slate-950">Ticket + credential view</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">Agents only see the services selected by the account owner.</p>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Create Agent Access</CardTitle>
@@ -329,12 +422,9 @@ function DelegateAccessPanel() {
               </div>
               <div>
                 <FieldLabel>Password</FieldLabel>
-                <TextInput
-                  type="password"
-                  minLength={8}
+                <PasswordField
                   value={form.password}
                   onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                  placeholder="At least 8 characters"
                   required
                 />
               </div>
@@ -342,11 +432,11 @@ function DelegateAccessPanel() {
 
             <div>
               <FieldLabel>Assigned services</FieldLabel>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {subscriptions.map((subscription) => {
                   const id = String(subscription._id);
                   return (
-                    <label key={id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                    <label key={id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-brand-200 hover:bg-brand-50/40">
                       <input
                         type="checkbox"
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
@@ -371,10 +461,13 @@ function DelegateAccessPanel() {
 
             {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
             {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-            <Button type="submit" disabled={state.saving || !form.subscriptionIds.length}>
-              <KeyRound className="h-4 w-4" />
-              {state.saving ? "Creating..." : "Create agent"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={state.saving || !form.subscriptionIds.length}>
+                <KeyRound className="h-4 w-4" />
+                {state.saving ? "Creating..." : "Create agent"}
+              </Button>
+              <p className="text-xs leading-5 text-slate-500">Select at least one service before creating access.</p>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -392,6 +485,24 @@ function DelegateAccessPanel() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AccountActivityPanel() {
+  const activityQuery = useCustomerQuery({
+    queryKey: ["portal-activity"],
+    path: "/profile/activity",
+  });
+
+  return (
+    <PortalActivityPanel
+      activities={activityQuery.data?.activities || []}
+      loading={activityQuery.isLoading}
+      title="Account Activity"
+      description="Review and filter activity connected to your account, services, payments, and support."
+      maxItems={12}
+      emptyMessage="No account activity has been recorded yet."
+    />
   );
 }
 
@@ -467,6 +578,8 @@ export function AccountSettingsPage() {
               <GeneralAccountPanel onEditBusiness={() => setTab("business")} />
             ) : tab === "delegates" && !isDelegate ? (
               <DelegateAccessPanel />
+            ) : tab === "activity" ? (
+              <AccountActivityPanel />
             ) : (
               <AccountForm embedded />
             )}

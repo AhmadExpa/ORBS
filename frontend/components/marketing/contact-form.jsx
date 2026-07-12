@@ -30,7 +30,7 @@ const serviceInterests = [
   "Managed VPS",
   "Managed VDS",
   "AI Services",
-  "Workflow Automation",
+  "AI and n8n Workflows",
   "Vicidial",
   "Cybersecurity",
   "O7 Bucket",

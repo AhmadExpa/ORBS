@@ -18,9 +18,8 @@ export function getLoginPath(returnPath = "/portal") {
 
 export function getPurchasePath(plan) {
   if (!plan || plan.contactSalesOnly) {
-    return "/#contact";
+    return "/contact";
   }
 
   return getSignupPath(getOrderPath(plan.slug));
 }
-

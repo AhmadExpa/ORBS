@@ -5,7 +5,7 @@ import { CheckCircle2, ReceiptText, ServerCog } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { formatCurrency } from "@/lib/shared";
+import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 
@@ -110,7 +110,9 @@ export function CheckoutThankYouView({ orderId }) {
                       </div>
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500">Billing cycle</span>
-                        <span className="font-semibold capitalize text-slate-950">{subscription?.billingCycle || order.billingCycle}</span>
+                        <span className="font-semibold text-slate-950">
+                          {getBillingCycleLabel(subscription?.billingCycle || order.billingCycle)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500">Payment</span>

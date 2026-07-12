@@ -120,7 +120,7 @@ export function ServicePage({ slug }) {
               description={marketing?.body || category.description}
             />
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/#contact"}>
+              <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/contact"}>
                 <Button>{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
               </Link>
               <a href={`mailto:${departmentContact.email}`}>

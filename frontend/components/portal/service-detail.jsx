@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
-import { formatCurrency } from "@/lib/shared";
+import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -85,7 +85,7 @@ export function ServiceDetail({ serviceId }) {
                 <>
                   <div className="flex items-center justify-between">
                     <span>Billing Cycle</span>
-                    <span className="font-semibold capitalize text-slate-900">{subscription.billingCycle}</span>
+                    <span className="font-semibold text-slate-900">{getBillingCycleLabel(subscription.billingCycle)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Renewal Date</span>
@@ -204,9 +204,11 @@ export function ServiceDetail({ serviceId }) {
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
                   If the wallet does not fully cover the renewal on its due date, the system uses your saved card for the remaining amount. If no card is saved or the charge fails, the subscription is flagged for follow-up.
                 </div>
-                <Link href="/portal/payments">
-                  <Button variant="ghost">Top Up Wallet</Button>
-                </Link>
+                <div className="pt-1">
+                  <Link href="/portal/payments" className="inline-flex">
+                    <Button variant="ghost">Top Up Wallet</Button>
+                  </Link>
+                </div>
               </>
             ) : null}
           </CardContent>

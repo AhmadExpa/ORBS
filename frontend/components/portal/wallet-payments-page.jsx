@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, History, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -88,6 +88,7 @@ function wait(ms) {
 export function WalletPaymentsPage() {
   const { getToken } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useActionToast();
 
   const profileQuery = useCustomerQuery({
@@ -108,6 +109,7 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
+  const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
     action: "",
@@ -126,6 +128,13 @@ export function WalletPaymentsPage() {
   const hasSavedCard = savedCards.length > 0;
   const autoCardBillingEnabled = Boolean(primaryCard) && user?.autoCardBillingEnabled !== false;
   const renewalModeLabel = autoCardBillingEnabled ? "Wallet first, primary-card fallback" : "Wallet-only top-up mode";
+
+  useEffect(() => {
+    const requestedSection = searchParams.get("section");
+    if (walletSections.some((section) => section.id === requestedSection)) {
+      setActiveSection(requestedSection);
+    }
+  }, [searchParams]);
 
   async function syncPortalPayments() {
     await Promise.all([refetchPayments(), refetchProfile()]);
@@ -249,6 +258,55 @@ export function WalletPaymentsPage() {
     setInstantAmount("");
     setActiveSection("overview");
     return "Your wallet payment was received. The balance has been refreshed.";
+  }
+
+  async function handleSavedCardTopup(paymentMethodId) {
+    const numericAmount = Number(instantAmount || 0);
+    if (!numericAmount || numericAmount <= 0) {
+      setSavedTopupState({ savingId: "", error: "Enter a valid top-up amount before charging the saved card.", message: "" });
+      return;
+    }
+
+    setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
+        method: "POST",
+        token,
+        body: { amount: numericAmount },
+      });
+
+      await syncPortalPayments();
+      setInstantAmount("");
+      setActiveSection("overview");
+      setSavedTopupState({
+        savingId: "",
+        error: "",
+        message: response.message || "Your saved card was charged and the wallet balance has been refreshed.",
+      });
+      showToast({
+        type: "success",
+        action: "Wallet Top-up",
+        title: "Wallet funded",
+        description: response.message || "Your saved card was charged and the wallet balance has been refreshed.",
+      });
+    } catch (error) {
+      if (error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      setSavedTopupState({
+        savingId: "",
+        error: error.message || "The saved-card top-up could not be completed.",
+        message: "",
+      });
+      showToast({
+        type: "error",
+        action: "Wallet Top-up",
+        title: "Saved-card top-up failed",
+        description: error.message || "The saved-card top-up could not be completed.",
+      });
+    }
   }
 
   async function handleMakePrimaryCard(paymentMethodId) {
@@ -582,27 +640,54 @@ export function WalletPaymentsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Instant Card Top-up</CardTitle>
-              <CardDescription>Charge a card directly and post the amount to the wallet as soon as the payment is confirmed.</CardDescription>
+              <CardDescription>Use a saved card for the fastest top-up, or enter a new card for one-time wallet funding.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                   <FieldLabel>Top-up amount</FieldLabel>
                   <TextInput type="number" min="1" value={instantAmount} onChange={(event) => setInstantAmount(event.target.value)} placeholder="100" />
-                  <p className="mt-4 text-sm leading-7 text-slate-600">Use a positive amount and complete the card entry below to fund the wallet instantly.</p>
+                  <p className="mt-4 text-sm leading-7 text-slate-600">Use a positive amount. Saved-card top-ups post immediately after the card charge succeeds.</p>
+
+                  <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Saved-card top-up</p>
+                    {primaryCard ? (
+                      <>
+                        <p className="mt-3 text-sm font-semibold text-slate-950">{savedCardLabel(primaryCard)}</p>
+                        <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)}</p>
+                        {savedTopupState.error ? <p className="mt-3 text-sm font-medium text-rose-600">{savedTopupState.error}</p> : null}
+                        {savedTopupState.message ? <p className="mt-3 text-sm font-medium text-emerald-700">{savedTopupState.message}</p> : null}
+                        <Button
+                          type="button"
+                          className="mt-4 w-full"
+                          disabled={!instantAmount || Number(instantAmount) <= 0 || savedTopupState.savingId === primaryCard.id || !contractApproved}
+                          onClick={() => handleSavedCardTopup(primaryCard.id)}
+                        >
+                          {savedTopupState.savingId === primaryCard.id ? "Charging saved card..." : "Top Up From Saved Card"}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">No saved card is available yet.</p>
+                        <Button type="button" variant="ghost" className="mt-4 w-full" onClick={() => setActiveSection("saved-card")}>
+                          Save a Card
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                      Instant funding
+                      New card option
                     </span>
                     <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                       Instant wallet credit
                     </span>
                   </div>
                   <p className="mt-4 text-sm leading-7 text-slate-700">
-                    After payment confirmation, the wallet balance refreshes automatically and becomes available for orders, invoices, and subscription renewals.
+                    Enter a card here when you do not want to use a saved card. After confirmation, the wallet balance refreshes automatically.
                   </p>
 
                   <div className="mt-5 rounded-lg border border-line bg-white p-5">

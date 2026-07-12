@@ -7,6 +7,7 @@ import {
   createCheckoutLineItem,
   createPaymentCheckoutSession,
   createPaymentIntent,
+  createSavedCardCharge,
   createSetupCheckoutSession,
   createSetupIntent,
   getUserSavedPaymentMethods,
@@ -142,7 +143,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       throw new HttpError(400, "This order has already been paid.");
     }
 
-    if (paymentMethodId && customerId) {
+    if (metadata?.preserveSavedCard !== "true" && paymentMethodId && customerId) {
       await updateUserDefaultPaymentMethod({
         user,
         customerId,
@@ -254,7 +255,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       return { submission: existingSubmission, amount: existingSubmission.amount, shouldNotify: false };
     }
 
-    if (paymentMethodId && customerId) {
+    if (metadata?.preserveSavedCard !== "true" && paymentMethodId && customerId) {
       await updateUserDefaultPaymentMethod({
         user,
         customerId,
@@ -686,6 +687,46 @@ stripeRouter.get(
       paymentMethods: getUserSavedPaymentMethods(user),
       defaultPaymentMethodId: user.defaultPaymentMethodId || "",
       autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+    });
+  }),
+);
+
+stripeRouter.post(
+  "/payment-methods/:id/topup",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    await requireApprovedContract(req.auth.clerkId);
+
+    const amount = Number(req.body.amount || 0);
+    if (!amount || amount <= 0) {
+      throw new HttpError(400, "A valid top-up amount is required.");
+    }
+
+    const paymentIntent = await createSavedCardCharge({
+      user,
+      paymentMethodId: req.params.id,
+      amount,
+      description: "ElevenOrbits wallet top-up from saved card",
+      metadata: {
+        type: "wallet_topup",
+        userId: user._id,
+        amount: amount.toFixed(2),
+        preserveSavedCard: "true",
+      },
+    });
+
+    const submission = await finalizePaymentIntent({ paymentIntent, user });
+
+    res.json({
+      success: true,
+      type: "wallet_topup",
+      submission,
+      message: "Your saved card was charged and the wallet balance has been refreshed.",
     });
   }),
 );
