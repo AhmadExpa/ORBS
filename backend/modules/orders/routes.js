@@ -223,6 +223,8 @@ ordersRouter.post(
           configurationDetails: quote.configurationDetails,
           serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
+          trialRequested: Boolean(req.body.trialRequested),
+          trialDays: req.body.trialRequested ? 3 : 0,
         },
       });
 
@@ -242,6 +244,8 @@ ordersRouter.post(
           storageQuantity: quote.storageQuantity || 0,
           serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
+          trialRequested: Boolean(req.body.trialRequested),
+          trialDays: req.body.trialRequested ? 3 : 0,
         },
       });
 
@@ -328,6 +332,8 @@ ordersRouter.post(
   "/:id/cancel",
   requireCustomer,
   asyncHandler(async (req, res) => {
+    const reason = String(req.body.reason || "").trim();
+
     const result = await cancelCustomerOrder({
       orderId: req.params.id,
       userId: req.auth.user._id,
@@ -342,6 +348,7 @@ ordersRouter.post(
       metadata: {
         subscriptionId: result.subscription?._id ? String(result.subscription._id) : "",
         invoiceId: result.invoice?._id ? String(result.invoice._id) : "",
+        reason: reason || "No reason provided",
       },
     });
 
@@ -351,6 +358,48 @@ ordersRouter.post(
       order: result.order,
       subscription: result.subscription,
       invoice: result.invoice,
+    });
+  }),
+);
+
+ordersRouter.delete(
+  "/:id",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const reason = String(req.body.reason || "").trim();
+
+    const order = await Order.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    if (!order) {
+      throw new HttpError(404, "Order not found.");
+    }
+
+    if (order.status !== "cancelled") {
+      throw new HttpError(400, "Only cancelled orders can be deleted.");
+    }
+
+    order.metadata = {
+      ...(order.metadata || {}),
+      deletedByCustomer: true,
+      deletedAt: new Date().toISOString(),
+      deleteReason: reason || "No reason provided",
+    };
+    order.status = "deleted";
+    await order.save();
+
+    await recordActivity({
+      actorId: req.auth.user._id,
+      actorRole: "customer",
+      action: "order.deleted_by_customer",
+      targetType: "order",
+      targetId: String(order._id),
+      metadata: {
+        reason: reason || "No reason provided",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "The order has been deleted.",
     });
   }),
 );

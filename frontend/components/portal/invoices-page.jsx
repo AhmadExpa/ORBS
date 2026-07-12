@@ -13,6 +13,7 @@ import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
+import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
 
 function isWalletPayable(invoice) {
   return ["pending", "rejected"].includes(invoice?.status);
@@ -32,6 +33,8 @@ export function InvoicesPage({
   const [payingInvoiceId, setPayingInvoiceId] = useState("");
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState("");
   const [regeneratingInvoices, setRegeneratingInvoices] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
 
   const invoicesQuery = useCustomerQuery({
     queryKey: ["portal-invoices"],
@@ -171,6 +174,40 @@ export function InvoicesPage({
     }
   }
 
+  async function handleDeleteInvoice(reason) {
+    if (!deleteTarget?._id || isDeletingInvoice) return;
+
+    setIsDeletingInvoice(true);
+
+    try {
+      const token = await getToken();
+      await apiFetch(`/invoices/${deleteTarget._id}`, {
+        method: "DELETE",
+        token,
+        authMode: "customer",
+        body: { reason },
+      });
+
+      await invoicesQuery.refetch();
+      showToast({
+        type: "success",
+        action: "Invoice",
+        title: "Invoice deleted",
+        description: `Invoice ${deleteTarget.invoiceNumber || deleteTarget._id} has been removed from your account.`,
+      });
+      setDeleteTarget(null);
+    } catch (error) {
+      showToast({
+        type: "error",
+        action: "Invoice",
+        title: "Delete failed",
+        description: error.message || "The invoice could not be deleted.",
+      });
+    } finally {
+      setIsDeletingInvoice(false);
+    }
+  }
+
   if ((invoicesQuery.isLoading || profileQuery.isLoading) && !invoicesQuery.data && !profileQuery.data) {
     return <PageLoader title={title} subtitle={subtitle} cardCount={3} lines={4} />;
   }
@@ -257,6 +294,15 @@ export function InvoicesPage({
                               {walletLabel}
                             </Button>
                           ) : null}
+                          {row.status === "void" ? (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(row)}
+                              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100"
+                            >
+                              Delete
+                            </button>
+                          ) : null}
                         </div>
                       );
                     },
@@ -271,6 +317,16 @@ export function InvoicesPage({
           <EmptyState title={emptyTitle} description={emptyDescription} />
         )}
       </div>
+
+      <DeleteReasonModal
+        open={Boolean(deleteTarget)}
+        title="Delete void invoice"
+        subtitle={`This will permanently remove invoice ${deleteTarget?.invoiceNumber || ""} from your account. This action cannot be undone.`}
+        confirmLabel="Delete invoice"
+        isDeleting={isDeletingInvoice}
+        onConfirm={handleDeleteInvoice}
+        onClose={() => !isDeletingInvoice && setDeleteTarget(null)}
+      />
     </div>
   );
 }

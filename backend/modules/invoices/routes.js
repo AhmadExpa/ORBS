@@ -15,6 +15,7 @@ import {
 } from "../../services/storage-service.js";
 import { payInvoiceWithWalletBalance } from "../../services/wallet-payment-service.js";
 import { sendInvoiceNotification } from "../../services/email-service.js";
+import { recordActivity } from "../../services/activity-log-service.js";
 
 export const invoicesRouter = express.Router();
 
@@ -215,6 +216,49 @@ invoicesRouter.post(
       subscription: result.subscription,
       submission: result.submission,
       user: result.user,
+    });
+  }),
+);
+
+invoicesRouter.delete(
+  "/:id",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const reason = String(req.body.reason || "").trim();
+
+    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    if (!invoice) {
+      throw new HttpError(404, "Invoice not found.");
+    }
+
+    if (invoice.status !== "void") {
+      throw new HttpError(400, "Only void invoices can be deleted.");
+    }
+
+    invoice.status = "deleted";
+    invoice.metadata = {
+      ...(invoice.metadata || {}),
+      deletedByCustomer: true,
+      deletedAt: new Date().toISOString(),
+      deleteReason: reason || "No reason provided",
+    };
+    await invoice.save();
+
+    await recordActivity({
+      actorId: req.auth.user._id,
+      actorRole: "customer",
+      action: "invoice.deleted_by_customer",
+      targetType: "invoice",
+      targetId: String(invoice._id),
+      metadata: {
+        invoiceNumber: invoice.invoiceNumber || "",
+        reason: reason || "No reason provided",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "The invoice has been deleted.",
     });
   }),
 );

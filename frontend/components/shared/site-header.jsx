@@ -459,23 +459,36 @@ function LearnMegaMenu({ activeResourceSlug, setActiveResourceSlug, onNavigate }
           </div>
         </SimpleColumn>
 
-        <SimpleColumn eyebrow="Selected guide">
-          <Link
-            href={`/resources/${activeResource.slug}`}
-            className="group flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition hover:border-sky-200 hover:bg-sky-50/50"
-            onClick={onNavigate}
-          >
-            <span>
-              <span className="block text-sm font-semibold">{activeResource.title}</span>
-              <span className="mt-0.5 block text-xs text-slate-500">{activeResource.eyebrow}</span>
-            </span>
-            <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
-          </Link>
+        <SimpleColumn eyebrow="Guides">
+          <div className="grid gap-2">
+            {resourcePages.map((resource) => (
+              <Link
+                key={resource.slug}
+                href={`/resources/${resource.slug}`}
+                className={cn(
+                  "group flex items-center justify-between gap-3 rounded-md border px-4 py-3 transition",
+                  resource.slug === activeResource.slug
+                    ? "border-sky-300 bg-sky-50 text-sky-900"
+                    : "border-slate-200 bg-slate-50 text-slate-950 hover:border-sky-200 hover:bg-sky-50/50",
+                )}
+                onClick={onNavigate}
+                onFocus={() => setActiveResourceSlug(resource.slug)}
+                onMouseEnter={() => setActiveResourceSlug(resource.slug)}
+              >
+                <span>
+                  <span className="block text-sm font-semibold">{resource.title}</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">{resource.eyebrow}</span>
+                </span>
+                <ArrowRight className={cn("h-4 w-4 shrink-0 transition group-hover:translate-x-0.5", resource.slug === activeResource.slug ? "text-sky-400" : "text-slate-300 group-hover:text-slate-700")} />
+              </Link>
+            ))}
+          </div>
           <Link href="/resources" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
             All resources
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </SimpleColumn>
+
 
         <SimpleColumn eyebrow="Company" className="border-l border-slate-200 bg-slate-50">
           <div className="grid gap-2">

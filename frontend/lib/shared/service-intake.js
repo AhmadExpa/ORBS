@@ -131,13 +131,17 @@ const reportingOptions = [
 ];
 
 const modelProviderOptions = [
-  { value: "openai", label: "OpenAI-compatible", logo: "/partners/openai.svg" },
+  { value: "openai", label: "OpenAI / GPT-4o", logo: "/partners/openai.svg" },
   { value: "deepseek", label: "DeepSeek", logo: "/partners/deepseek.svg" },
-  { value: "claude", label: "Claude", logo: "/partners/claude.svg" },
-  { value: "kimi", label: "Kimi", logo: "/partners/kimi.svg" },
-  { value: "llama", label: "Llama / open model", icon: "bot" },
-  { value: "qwen", label: "Qwen", icon: "brain" },
-  { value: "custom", label: "Custom model", icon: "settings" },
+  { value: "claude", label: "Claude / Anthropic", logo: "/partners/claude.svg" },
+  { value: "gemini", label: "Gemini / Google", logo: "/partners/gemini.svg" },
+  { value: "mistral", label: "Mistral AI", logo: "/partners/mistral.svg" },
+  { value: "kimi", label: "Kimi / Moonshot", logo: "/partners/kimi.svg" },
+  { value: "llama", label: "Llama / Meta", icon: "bot" },
+  { value: "qwen", label: "Qwen / Alibaba", icon: "brain" },
+  { value: "grok", label: "Grok / xAI", icon: "zap" },
+  { value: "falcon", label: "Falcon / TII", icon: "activity" },
+  { value: "custom", label: "Custom / self-hosted model", icon: "settings" },
   { value: "not_sure", label: "Not sure yet", icon: "help-circle" },
 ];
 

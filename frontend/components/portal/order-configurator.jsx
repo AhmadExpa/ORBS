@@ -581,6 +581,16 @@ function buildPricingItems({ plan, billingCycle, selectedRegion, selectedStorage
   return items;
 }
 
+const TRIAL_ELIGIBLE_SLUGS = new Set([
+  "object-storage",
+  "cybersecurity",
+  "ai-servers",
+  "vicidial",
+  "hermes-ai-hosting",
+  "openclaw-hosting",
+  "nextcloud-hosting",
+]);
+
 export function OrderConfigurator({ slug }) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -595,6 +605,7 @@ export function OrderConfigurator({ slug }) {
   const [serviceAnswerErrors, setServiceAnswerErrors] = useState({});
   const [finalNote, setFinalNote] = useState("");
   const [showFinalNote, setShowFinalNote] = useState(false);
+  const [trialRequested, setTrialRequested] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -796,6 +807,7 @@ export function OrderConfigurator({ slug }) {
             answers: serviceAnswers,
           },
           finalNote: finalNote.trim() || undefined,
+          trialRequested: trialRequested || undefined,
         },
       });
       showToast({
@@ -869,6 +881,70 @@ export function OrderConfigurator({ slug }) {
                 </button>
               ))}
             </div>
+
+            {TRIAL_ELIGIBLE_SLUGS.has(categorySlug) ? (
+              <div
+                className={cn(
+                  "rounded-3xl border p-5 transition duration-200",
+                  trialRequested
+                    ? "border-emerald-400 bg-emerald-50 ring-1 ring-emerald-400/30"
+                    : "border-slate-200 bg-white",
+                )}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        "mt-0.5 rounded-2xl p-2.5 transition",
+                        trialRequested ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600",
+                      )}
+                    >
+                      <FlaskConical className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        3-Day Free Trial
+                        {trialRequested ? (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                            Requested
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Request a 3-day evaluation period at no charge. No immediate payment required — the ElevenOrbits team will review and activate the trial after verifying your order.
+                      </p>
+                    </div>
+                  </div>
+                  {trialRequested ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" /> : null}
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setTrialRequested(false)}
+                    className={cn(
+                      "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                      trialRequested
+                        ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        : "border-emerald-600 bg-emerald-600 text-white",
+                    )}
+                  >
+                    Start with full service
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrialRequested(true)}
+                    className={cn(
+                      "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                      trialRequested
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+                    )}
+                  >
+                    Yes, request a 3-day trial
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-start gap-3">
@@ -1203,8 +1279,15 @@ export function OrderConfigurator({ slug }) {
               emphasized
             />
 
+            {trialRequested ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <p className="text-xs font-semibold text-emerald-700">3-Day Trial Requested</p>
+                <p className="mt-1 text-xs text-emerald-600">No payment required at checkout. Trial activation is subject to team review.</p>
+              </div>
+            ) : null}
+
             <Button className="w-full" onClick={handleCreateOrder} disabled={isSubmitting}>
-              {isSubmitting ? "Creating order..." : plan.contactSalesOnly ? "Talk to Sales" : "Create Order"}
+              {isSubmitting ? "Creating order..." : plan.contactSalesOnly ? "Talk to Sales" : trialRequested ? "Request 3-Day Trial" : "Create Order"}
             </Button>
           </CardContent>
         </Card>
