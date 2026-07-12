@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
@@ -79,13 +79,15 @@ export default function PortalSubscriptionsPage() {
   const statusFilter = searchParams.get("status") || "";
   const allSubscriptions = data?.subscriptions || [];
   const subscriptions = statusFilter ? allSubscriptions.filter((item) => (item.status || "") === statusFilter) : allSubscriptions;
+  const pathname = usePathname();
   const isDelegate = profileQuery.data?.actorType === "delegate";
+  const isAgent = pathname?.startsWith("/agent") || isDelegate;
   const columns = [
     {
       key: "plan",
       label: "Plan",
       render: (row) => (
-        <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/services/${row._id}`}>
+        <Link className="font-semibold text-brand-700 hover:text-brand-600" href={isAgent ? `/agent/services/${row._id}` : `/portal/services/${row._id}`}>
           {row.productPlanId?.name || "Managed Service"}
         </Link>
       ),

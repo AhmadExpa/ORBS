@@ -196,15 +196,15 @@ function PlanCard({ plan, onNavigate }) {
   return (
     <Link
       href={href}
-      className="group rounded-md border border-slate-200 bg-white px-3 py-2.5 transition hover:border-sky-200 hover:bg-sky-50/50"
+      className="group rounded-md border border-white/10 bg-white/[0.02] px-3 py-2.5 transition hover:border-[#ff7a1a]/30 hover:bg-white/[0.05]"
       onClick={onNavigate}
     >
       <span className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-slate-950">{plan.name}</span>
-          <span className="mt-0.5 block truncate text-xs text-slate-500">{plan.displayPriceLabel || "Contact sales"}</span>
+          <span className="block truncate text-sm font-semibold text-white">{plan.name}</span>
+          <span className="mt-0.5 block truncate text-xs text-white/60">{plan.displayPriceLabel || "Contact sales"}</span>
         </span>
-        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
+        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" />
       </span>
     </Link>
   );
@@ -213,7 +213,7 @@ function PlanCard({ plan, onNavigate }) {
 function MegaFrame({ children }) {
   return (
     <div className="fixed left-1/2 top-[62px] z-50 hidden w-[min(1120px,calc(100vw-3rem))] -translate-x-1/2 pt-4 xl:block">
-      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_46px_120px_-56px_rgba(2,6,23,0.72)]">
+      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-white/10 bg-[#0d1117] shadow-[0_46px_120px_-56px_rgba(2,6,23,0.72)]">
         {children}
       </div>
     </div>
@@ -228,9 +228,9 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 
   return (
     <MegaFrame>
-      <div className="grid bg-white xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+      <div className="grid bg-[#0d1117] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
         <section className="flex flex-col bg-slate-950 p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Services</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">Services</p>
 
           <div className="mt-4 grid gap-1">
             {serviceChoices.map((choice) => {
@@ -244,17 +244,17 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                   onClick={() => setActiveChoiceId(choice.id)}
                   className={cn(
                     "group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition",
-                    active ? "bg-white text-slate-950 shadow-sm" : "text-white/70 hover:bg-white/[0.08] hover:text-white",
+                    active ? "bg-white/[0.08] text-white shadow-sm border-l-2 border-[#ff7a1a]" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
                   )}
                 >
-                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-slate-950 text-white" : "bg-white/[0.06] text-white/50")}>
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-white/[0.12] text-white" : "bg-white/[0.06] text-white/50")}>
                     <ChoiceIcon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold">{choice.label}</span>
-                    <span className={cn("mt-0.5 block truncate text-xs", active ? "text-slate-500" : "text-white/40")}>{choice.eyebrow}</span>
+                    <span className={cn("mt-0.5 block truncate text-xs", active ? "text-[#ff7a1a]" : "text-white/40")}>{choice.eyebrow}</span>
                   </span>
-                  <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-slate-500" : "text-white/25 group-hover:translate-x-0.5")} />
+                  <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-[#ff7a1a]" : "text-white/25 group-hover:translate-x-0.5")} />
                 </button>
               );
             })}
@@ -264,27 +264,27 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
             <Link href="/services" className="rounded-md border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10" onClick={onNavigate}>
               All services
             </Link>
-            <Link href="/pricing" className="rounded-md bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-950 transition hover:bg-slate-100" onClick={onNavigate}>
+            <Link href="/pricing" className="rounded-md bg-[#ff7a1a] px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#e66a12]" onClick={onNavigate}>
               Pricing
             </Link>
           </div>
         </section>
 
-        <section className="min-w-0 bg-white p-6">
+        <section className="min-w-0 bg-[#0d1117] p-6 text-white">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white shadow-sm">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-white shadow-sm">
               <Icon className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">{activeChoice.eyebrow}</p>
-              <h3 className="mt-1 text-2xl font-semibold leading-tight text-slate-950">{activeChoice.label}</h3>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">{activeChoice.eyebrow}</p>
+              <h3 className="mt-1 text-2xl font-semibold leading-tight text-white">{activeChoice.label}</h3>
             </div>
           </div>
 
           <div className="mt-5">
             <div className="flex items-end justify-between gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Choose</p>
-              <Link href={activeChoice.href} className="hidden text-sm font-semibold text-sky-700 transition hover:text-sky-950 sm:inline-flex" onClick={onNavigate}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Choose</p>
+              <Link href={activeChoice.href} className="hidden text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12] sm:inline-flex" onClick={onNavigate}>
                 View service
               </Link>
             </div>
@@ -294,38 +294,38 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="group flex items-start justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-sky-200 hover:bg-sky-50/50"
+                  className="group flex items-start justify-between gap-4 rounded-md border border-white/10 bg-white/[0.02] px-3 py-3 transition hover:border-[#ff7a1a]/30 hover:bg-white/[0.05]"
                   onClick={onNavigate}
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
+                    <span className="block text-sm font-semibold text-white">{item.label}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-white/40">{item.description}</span>
                   </span>
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
+                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" />
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-5">
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-5">
             <Link href={activeChoice.href} onClick={onNavigate}>
-              <Button variant="outline" className="min-h-10 w-full rounded-md px-3 py-2">View Service</Button>
+              <Button variant="outline" className="min-h-10 w-full rounded-md border border-white/10 bg-transparent text-white hover:bg-white/10">View Service</Button>
             </Link>
             <Link href={getSignupPath()} onClick={onNavigate}>
-              <Button className="min-h-10 w-full rounded-md bg-slate-950 px-3 py-2 hover:bg-black">Start Account</Button>
+              <Button className="min-h-10 w-full rounded-md bg-[#ff7a1a] hover:bg-[#e66a12] text-white border-0">Start Account</Button>
             </Link>
           </div>
         </section>
 
-        <section className="border-l border-slate-200 bg-slate-50 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Plans</p>
+        <section className="border-l border-white/[0.07] bg-[#0b0e14] p-5 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">Plans</p>
           <div className="mt-3 grid gap-2">
             {plans.map((plan) => (
               <PlanCard key={plan.slug} plan={plan} onNavigate={onNavigate} />
             ))}
           </div>
 
-          <Link href="/contact" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+          <Link href="/contact" className="mt-4 inline-flex text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12]" onClick={onNavigate}>
             Custom quote
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
@@ -338,12 +338,12 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, active = false, onFocus, onClick }) {
   const content = (
     <>
-      {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-white/75" : "text-slate-400")} /> : null}
+      {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-[#ff7a1a]" : "text-white/30")} /> : null}
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold">{label}</span>
-        {description ? <span className={cn("mt-0.5 block truncate text-xs", active ? "text-white/50" : "text-slate-400")}>{description}</span> : null}
+        {description ? <span className={cn("mt-0.5 block truncate text-xs", active ? "text-white/65" : "text-white/40")}>{description}</span> : null}
       </span>
-      <ArrowRight className={cn("ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 transition", active ? "text-white/60" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-700")} />
+      <ArrowRight className={cn("ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 transition", active ? "text-[#ff7a1a]" : "text-white/20 group-hover:translate-x-0.5 group-hover:text-white/60")} />
     </>
   );
 
@@ -353,7 +353,7 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
         href={href}
         className={cn(
           "group flex items-start gap-3 rounded-md px-3 py-2.5 transition",
-          active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+          active ? "bg-[#ff7a1a]/10 text-white border border-[#ff7a1a]/30" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
         )}
         onFocus={onFocus}
         onClick={onNavigate}
@@ -368,7 +368,7 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
       type="button"
       className={cn(
         "group flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition",
-        active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+        active ? "bg-[#ff7a1a]/10 text-white border border-[#ff7a1a]/30" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
       )}
       onFocus={onFocus}
       onClick={onClick}
@@ -380,12 +380,12 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
 
 function IndustryFitPanel({ industry, onNavigate }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+    <div className="rounded-md border border-white/10 bg-white/[0.02] p-4 text-white">
       <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(industry.recommended)} max={5} />
-      <p className="mt-4 text-sm leading-6 text-slate-600">
+      <p className="mt-4 text-sm leading-6 text-white/60">
         {industry.fit}
       </p>
-      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12]" onClick={onNavigate}>
         Open industry page
         <ArrowRight className="ml-1 h-4 w-4" />
       </Link>
@@ -396,7 +396,7 @@ function IndustryFitPanel({ industry, onNavigate }) {
 function SimpleColumn({ eyebrow, children, className }) {
   return (
     <section className={cn("p-5", className)}>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">{eyebrow}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">{eyebrow}</p>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -407,8 +407,8 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 
   return (
     <MegaFrame>
-      <div className="grid bg-white xl:grid-cols-[360px_minmax(0,1fr)_260px]">
-        <SimpleColumn eyebrow="Industries" className="border-r border-slate-200">
+      <div className="grid bg-[#0d1117] xl:grid-cols-[360px_minmax(0,1fr)_260px] text-white">
+        <SimpleColumn eyebrow="Industries" className="border-r border-white/[0.07]">
           <div className="grid gap-1">
             {industryPages.map((industry) => (
               <SimpleLinkCard
@@ -427,7 +427,7 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
           <IndustryFitPanel industry={activeIndustry} onNavigate={onNavigate} />
         </SimpleColumn>
 
-        <SimpleColumn eyebrow="More" className="border-l border-slate-200 bg-slate-50">
+        <SimpleColumn eyebrow="More" className="border-l border-white/[0.07] bg-[#0b0e14]">
           <div className="grid gap-2">
             <SimpleLinkCard href="/industries" label="All Industries" description="Browse every sector." icon={Building2} onNavigate={onNavigate} />
             <SimpleLinkCard href="/contact" label="Talk to Sales" description="Get service guidance." icon={Headset} onNavigate={onNavigate} />
@@ -441,7 +441,7 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 function LearnMegaMenu({ onNavigate }) {
   // Map eyebrow types to colors
   const typeColor = {
-    Guide: { dot: "bg-sky-400", text: "text-sky-400", badge: "bg-sky-400/10 text-sky-400" },
+    Guide: { dot: "bg-[#ff7a1a]", text: "text-[#ff7a1a]", badge: "bg-[#ff7a1a]/15 text-[#ff7a1a]" },
     Checklist: { dot: "bg-emerald-400", text: "text-emerald-400", badge: "bg-emerald-400/10 text-emerald-400" },
     Baseline: { dot: "bg-amber-400", text: "text-amber-400", badge: "bg-amber-400/10 text-amber-400" },
   };
@@ -470,13 +470,13 @@ function LearnMegaMenu({ onNavigate }) {
                 <span className={cn("h-1.5 w-1.5 rounded-full", (typeColor[featured.eyebrow] || typeColor.Guide).dot)} />
                 {featured.eyebrow}
               </span>
-              <h3 className="mt-3 text-lg font-bold leading-snug text-white transition-colors group-hover:text-sky-300">
+              <h3 className="mt-3 text-lg font-bold leading-snug text-white transition-colors group-hover:text-[#ff7a1a]">
                 {featured.title}
               </h3>
               <p className="mt-2 text-sm leading-6 text-white/40 line-clamp-3">
                 {featured.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-sky-400 transition group-hover:gap-2.5">
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#ff7a1a] transition group-hover:gap-2.5">
                 Read guide <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </Link>
@@ -510,7 +510,7 @@ function LearnMegaMenu({ onNavigate }) {
                     <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tc.dot)} />
                     {resource.eyebrow}
                   </span>
-                  <span className="text-sm font-semibold leading-snug text-white/85 transition group-hover:text-white">
+                  <span className="text-sm font-semibold leading-snug text-white/85 transition group-hover:text-[#ff7a1a]">
                     {resource.title}
                   </span>
                   <span className="text-xs leading-5 text-white/35 line-clamp-2">{resource.description}</span>
@@ -544,10 +544,10 @@ function LearnMegaMenu({ onNavigate }) {
           <div className="mt-auto pt-6">
             <Link
               href="/contact"
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500/20 to-indigo-500/20 px-4 py-3.5 text-sm font-semibold text-white/80 ring-1 ring-white/10 transition hover:from-sky-500/30 hover:to-indigo-500/30 hover:text-white"
+              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff7a1a]/10 to-red-500/10 px-4 py-3.5 text-sm font-semibold text-white/80 ring-1 ring-white/10 transition hover:from-[#ff7a1a]/20 hover:to-red-500/20 hover:text-white"
               onClick={onNavigate}
             >
-              <Headset className="h-4 w-4 text-sky-400" />
+              <Headset className="h-4 w-4 text-[#ff7a1a]" />
               Talk to sales
               <ArrowRight className="ml-auto h-3.5 w-3.5 text-white/30 transition group-hover:translate-x-0.5" />
             </Link>

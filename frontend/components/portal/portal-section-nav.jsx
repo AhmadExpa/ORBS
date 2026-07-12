@@ -76,14 +76,32 @@ export function PortalSectionNav({ section, isDelegate = false }) {
   const invoices = invoicesQuery.data?.invoices || [];
   const tickets = ticketsQuery.data?.tickets || [];
   const walletBalance = Number(profileQuery.data?.user?.accountBalance || 0);
-  const sectionLinks = isDelegate
+  const isAgent = isDelegate || pathname?.startsWith("/agent");
+  const normalizedPathname = pathname?.replace(/^\/agent/, "/portal");
+
+  let sectionLinks = isAgent
     ? (section.links || []).filter((link) => !["/portal/invoices", "/portal/payments", "/portal/contracts"].includes(link.href))
     : section.links || [];
-  const quickActions = isDelegate
+
+  if (isAgent) {
+    sectionLinks = sectionLinks.map((link) => ({
+      ...link,
+      href: link.href.replace(/^\/portal/, "/agent"),
+    }));
+  }
+
+  let quickActions = isAgent
     ? (section.quickActions || []).filter((action) => action.href === "/portal/support")
     : section.quickActions || [];
 
-  const filter = portalFilters[pathname];
+  if (isAgent) {
+    quickActions = quickActions.map((action) => ({
+      ...action,
+      href: action.href.replace(/^\/portal/, "/agent"),
+    }));
+  }
+
+  const filter = portalFilters[normalizedPathname];
   const activeFilter = filter ? searchParams.get(filter.param) || "" : "";
 
   function filterHref(value) {
@@ -98,16 +116,16 @@ export function PortalSectionNav({ section, isDelegate = false }) {
   }
 
   function filterCount(value) {
-    if (pathname === "/portal/support") {
+    if (normalizedPathname === "/portal/support") {
       if (!value) return tickets.length;
       return tickets.filter((ticket) => (ticket.status || "open") === value).length;
     }
-    if (pathname === "/portal/invoices") {
+    if (normalizedPathname === "/portal/invoices") {
       if (!value) return invoices.length;
       if (value === "paid") return invoices.filter((invoice) => invoice.status === "paid").length;
       if (value === "outstanding") return invoices.filter((invoice) => invoice.status !== "paid").length;
     }
-    if (pathname === "/portal/subscriptions") {
+    if (normalizedPathname === "/portal/subscriptions") {
       if (!value) return subscriptions.length;
       return subscriptions.filter((item) => (item.status || "") === value).length;
     }
@@ -253,7 +271,7 @@ export function PortalSectionNav({ section, isDelegate = false }) {
               <p className="text-sm font-semibold text-white">Need a hand?</p>
               <p className="mt-0.5 text-xs leading-5 text-white/50">
                 Our team replies on every ticket.{" "}
-                <Link href="/portal/support" className="font-semibold text-accent-400 hover:text-accent-300">
+                <Link href={isAgent ? "/agent/support" : "/portal/support"} className="font-semibold text-accent-400 hover:text-accent-300">
                   Contact support
                 </Link>
               </p>

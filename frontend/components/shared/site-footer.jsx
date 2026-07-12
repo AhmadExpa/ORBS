@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Headset, LockKeyhole, Mail, UserCircle } from "lucide-react";
+import { Headset, LockKeyhole, Mail, UserCircle, ShieldCheck } from "lucide-react";
 import { legalPages } from "@/lib/legal-content";
 import { companyLinks, resourcePages } from "@/lib/marketing-content";
 import { serviceVerticals } from "@/lib/shared";
@@ -60,11 +60,6 @@ const paymentBadges = [
   { src: "/payments/diners.svg", alt: "Diners Club" },
 ];
 
-const trustBadges = [
-  { src: "/payments/privacy-protected.svg", alt: "Privacy protected" },
-  { src: "/payments/secure-checkout.svg", alt: "Secure checkout" },
-];
-
 const quickLinks = [
   { href: "/contact", label: "Contact", icon: Mail },
   { href: "/portal/support", label: "Support", icon: Headset },
@@ -121,9 +116,27 @@ export function SiteFooter() {
 
           <div className="flex flex-col gap-5 lg:items-end">
             <div className="flex flex-wrap gap-3 lg:justify-end">
-              {trustBadges.map((badge) => (
-                <img key={badge.src} src={badge.src} alt={badge.alt} loading="lazy" decoding="async" width={176} height={56} className="h-10 w-auto rounded-md shadow-sm sm:h-11" />
-              ))}
+              {/* Privacy Protected Card */}
+              <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+                <div className="flex h-7 w-7 items-center justify-center rounded bg-orange-50 text-[#ff7a1a]">
+                  <LockKeyhole className="h-4 w-4" />
+                </div>
+                <div className="text-left leading-none">
+                  <span className="block text-[9px] font-semibold uppercase tracking-wider text-slate-400">Security</span>
+                  <span className="block text-xs font-bold text-slate-800">Privacy Protected</span>
+                </div>
+              </div>
+
+              {/* Secure Checkout Card */}
+              <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+                <div className="flex h-7 w-7 items-center justify-center rounded bg-orange-50 text-[#ff7a1a]">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div className="text-left leading-none">
+                  <span className="block text-[9px] font-semibold uppercase tracking-wider text-slate-400">Payments</span>
+                  <span className="block text-xs font-bold text-slate-800">Secure Checkout</span>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {quickLinks.map((item) => {

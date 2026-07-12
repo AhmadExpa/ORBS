@@ -51,7 +51,7 @@ function AgentLoginForm() {
         title: "Signed in",
         description: "Opening your assigned services.",
       });
-      window.location.assign("/portal/services");
+      window.location.assign("/agent/services");
     } catch (error) {
       setState({ loading: false, error: error.message });
       showToast({

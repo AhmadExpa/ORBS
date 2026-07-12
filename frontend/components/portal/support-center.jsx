@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { LifeBuoy } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, FieldLabel, Select, StatusBadge, TextArea, TextInput } from "@/lib/ui";
@@ -15,6 +15,7 @@ import { PageLoader } from "@/components/shared/page-loader";
 export function SupportCenter() {
   const { getToken, userId } = useAuth();
   const { showToast } = useActionToast();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status") || "";
   const { data, refetch, isLoading } = useCustomerQuery({
@@ -81,6 +82,7 @@ export function SupportCenter() {
   const tickets = data?.tickets || [];
   const subscriptions = subscriptionsQuery.data?.subscriptions || [];
   const isDelegate = profileQuery.data?.actorType === "delegate";
+  const isAgent = pathname?.startsWith("/agent") || isDelegate;
   const visibleTickets = statusFilter ? tickets.filter((ticket) => (ticket.status || "open") === statusFilter) : tickets;
 
   if (isLoading && !data) {
@@ -139,7 +141,7 @@ export function SupportCenter() {
                     key: "subject",
                     label: "Subject",
                     render: (row) => (
-                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={`/portal/support/${row._id}`}>
+                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={isAgent ? `/agent/support/${row._id}` : `/portal/support/${row._id}`}>
                         {row.subject}
                       </Link>
                     ),

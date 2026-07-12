@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useMemo } from "react";
 import {
   ArrowRight,
   BrainCircuit,
@@ -9,6 +12,19 @@ import {
   ShieldCheck,
   Wallet,
   Workflow,
+  Search,
+  Terminal,
+  Cpu,
+  HardDrive,
+  Network,
+  CheckCircle2,
+  ChevronRight,
+  Play,
+  Layers,
+  Activity,
+  Lock,
+  ArrowUpRight,
+  Info,
 } from "lucide-react";
 import { getBillingCycleDiscountPercent, getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
@@ -16,591 +32,695 @@ import { Button, cn } from "@/lib/ui";
 import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
 import { TechStackShowcase } from "./tech-stack-showcase";
 
-const highlightSlugs = [
-  "basic-managed-vps",
-  "balanced-managed-vds",
-  "ai-server-starter",
-  "starter-vicidial-management",
-  "workflow-starter",
-  "cybersecurity-basic",
+const tabsConfig = [
+  { id: "compute", label: "Compute & VPS", icon: Cpu },
+  { id: "ai", label: "AI & Model Servers", icon: BrainCircuit },
+  { id: "voip", label: "VICIdial & VoIP", icon: PhoneCall },
+  { id: "storage", label: "Storage & CDN", icon: HardDrive },
+  { id: "security", label: "Cybersecurity", icon: ShieldCheck },
 ];
 
-const heroBrandSlugs = [
-  "vps",
-  "vds",
-  "vicidial",
-  "workflows",
-  "cdn",
-  "object-storage",
-  "hermes-ai-hosting",
-  "openclaw-hosting",
-  "nextcloud-hosting",
-  "cybersecurity",
-];
-
-const heroSignals = [
-  {
-    label: "Managed lanes",
-    value: "Hosting, AI systems, workflow automation, and support run under one operating standard.",
-  },
-  {
-    label: "Commercial flow",
-    value: "Orders, wallet funding, card payment activity, and recurring billing stay inside the portal.",
-  },
-  {
-    label: "Access delivery",
-    value: "Credentials, login details, and server handoff are assigned by the admin team after provisioning.",
-  },
-  {
-    label: "Change handling",
-    value: "Support tickets, deployment notes, and service updates stay tied to the active subscription.",
-  },
-];
-
-const operatingHighlights = [
-  {
-    title: "Provisioning stays managed",
-    description: "Deployments are created, reviewed, and handed off through a controlled fulfillment flow instead of unmanaged raw infrastructure access.",
-    icon: ServerCog,
-  },
-  {
-    title: "Support stays contextual",
-    description: "Tickets connect directly to the customer, the subscription, and the service involved, which keeps support actionable.",
-    icon: Headset,
-  },
-  {
-    title: "Automation stays governed",
-    description: "AI and workflow systems are treated as operating products, not one-off experiments left without lifecycle ownership.",
-    icon: Workflow,
-  },
-  {
-    title: "Billing stays structured",
-    description: "Wallet balance, saved-card fallback, card payments, and renewal rules are all part of the same customer journey.",
-    icon: Wallet,
-  },
-];
-
-const contactCards = [
-  {
-    key: "sales",
-    title: "Sales & Scoping",
-    email: siteConfig.salesEmail,
-    description: "Commercial planning, enterprise proposals, and custom deployment scoping.",
-  },
-  {
-    key: "servers",
-    title: "Managed Servers",
-    email: siteConfig.salesEmail,
-    description: "Managed VPS, VDS, provisioning requests, migration planning, and infrastructure rollout.",
-  },
-  {
-    key: "ai",
-    title: "AI & Automation",
-    email: siteConfig.salesEmail,
-    description: "AI servers, agents, workflow automation, and model-backed application delivery.",
-  },
-  {
-    key: "support",
-    title: "Support",
-    email: siteConfig.supportEmail,
-    description: "Active customer support, operational follow-up, and service issue escalation.",
-  },
+const mockSearchSuggestions = [
+  "Managed VDS",
+  "RTX 4090 GPU",
+  "VICIdial Starter",
+  "Nextcloud Storage",
 ];
 
 const faqItems = [
   {
-    question: "Who manages the environment after the order is placed?",
-    answer: "ElevenOrbits handles provisioning, delivery, monitoring, support routing, and operational follow-up after approval.",
+    question: "How does the 3-day trial option work?",
+    answer: "For eligible services (including VPS, VICIdial, and self-hosted apps), customers can check the 'Request 3-Day Trial' box inside the portal configurator. A pending invoice is created, and your setup is provisioned. If canceled before 3 days, no charges apply.",
   },
   {
-    question: "How are AI systems and automation services delivered?",
-    answer: "AI servers, workflow automation, and AI solutions are delivered as managed workloads with stack guidance, rollout support, and ongoing ownership.",
+    question: "What is your network SLA and backing?",
+    answer: "All core computing lanes (managed VPS/VDS) are backed by a 99.9% uptime Service Level Agreement. We partner with tier-1 data center facilities globally to route traffic with less than 35ms edge latency.",
   },
   {
-    question: "How does support work once I become a customer?",
-    answer: "Support tickets stay tied to the customer and the subscription, so follow-up, context, and service history remain connected.",
+    question: "Do you offer full root/SSH access to managed servers?",
+    answer: "By default, servers are delivered with access credentials assigned in your portal. For fully managed plans, our team manages updates, firewall hardening, and daemon status, but customized admin access levels can be delegated upon request.",
   },
   {
-    question: "What happens before checkout?",
-    answer: "Customers create or access an account first, then configure the selected service, complete card payment, and continue to the portal after confirmation.",
+    question: "How does portal wallet billing function?",
+    answer: "ElevenOrbits operates on a prepay wallet model. You can top up your balance via credit card or bank details. Active subscriptions deduct balance monthly. If your wallet goes below zero, the saved card is automatically used as fallback.",
   },
 ];
 
-const familyThemes = {
-  "Managed Cloud": {
-    icon: ServerCog,
-    index: "01",
-    cardClassName:
-      "border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#ffe3cb_58%,#fff7f1_100%)] text-slate-950 shadow-[0_34px_90px_-56px_rgba(255,122,26,0.4)]",
-    descriptionClassName: "text-slate-700",
-    chipClassName: "border-orange-200 bg-white/85 text-slate-700",
-    dividerClassName: "bg-[color:var(--marketing-accent)]",
-    overlayClassName: "marketing-strata opacity-90",
-  },
-  "Call Centers": {
-    icon: PhoneCall,
-    index: "02",
-    cardClassName: "border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#fbfbfd_100%)] text-slate-950",
-    descriptionClassName: "text-slate-600",
-    chipClassName: "border-slate-200 bg-slate-50 text-slate-700",
-    dividerClassName: "bg-slate-950",
-    overlayClassName: "bg-[linear-gradient(135deg,rgba(15,23,42,0.05),transparent_62%)]",
-  },
-  "AI Services": {
-    icon: BrainCircuit,
-    index: "03",
-    cardClassName: "border-sky-200 bg-[linear-gradient(180deg,#f7fbff_0%,#eff7ff_100%)] text-slate-950",
-    descriptionClassName: "text-slate-600",
-    chipClassName: "border-sky-200 bg-white/85 text-slate-700",
-    dividerClassName: "bg-sky-600",
-    overlayClassName: "bg-[linear-gradient(135deg,rgba(12,108,242,0.12),transparent_62%)]",
-  },
-  Cybersecurity: {
-    icon: ShieldCheck,
-    index: "04",
-    cardClassName: "border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-950",
-    descriptionClassName: "text-slate-600",
-    chipClassName: "border-slate-200 bg-white/80 text-slate-700",
-    dividerClassName: "bg-slate-950",
-    overlayClassName: "bg-[linear-gradient(135deg,rgba(15,23,42,0.08),transparent_62%)]",
-  },
-};
+export function LandingPage() {
+  const [activeTab, setActiveTab] = useState("compute");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [consoleMetricTab, setConsoleMetricTab] = useState("cpu");
 
-function categoryNameFor(slug) {
-  return serviceCategories.find((category) => category.slug === slug)?.name || slug;
-}
+  // Group plans for quick technical specs (AWS-style)
+  const computeSpecs = [
+    { name: "Basic Managed VPS", cores: "2 vCPU", ram: "4 GB DDR4", disk: "40 GB SSD", network: "2 TB @ 1 Gbps", price: "$20", period: "mo", trial: true },
+    { name: "Pro Managed VPS", cores: "4 vCPU", ram: "8 GB DDR4", disk: "80 GB SSD", network: "4 TB @ 1 Gbps", price: "$40", period: "mo", trial: true },
+    { name: "Elite Managed VPS", cores: "8 vCPU", ram: "16 GB DDR4", disk: "160 GB SSD", network: "8 TB @ 1 Gbps", price: "$80", period: "mo", trial: true },
+    { name: "Balanced Managed VDS", cores: "Dedicated Cores", ram: "16 GB RAM", disk: "160 GB SSD", network: "10 TB @ 1 Gbps", price: "$100", period: "mo", trial: false },
+  ];
 
-function FaqSection() {
+  const aiSpecs = [
+    { name: "AI Server Starter", gpu: "RTX 4090 (24GB VRAM)", cores: "8 vCPU", ram: "32 GB RAM", disk: "500 GB NVMe", model: "DeepSeek-R1 / Llama-3", price: "$150", period: "mo", trial: true },
+    { name: "DeepSeek API Access", gpu: "Shared API Endpoints", cores: "Managed Lanes", ram: "Guardrails Incl.", disk: "Unlimited Calls", model: "DeepSeek-R1-671B", price: "$0.02", period: "1k tokens", trial: false },
+    { name: "Private Model Planning", gpu: "Custom Architectures", cores: "Consultancy", ram: "SLA Guidance", disk: "Private Registry", model: "Custom LLMs", price: "Custom", period: "quote", trial: false },
+  ];
+
+  const voipSpecs = [
+    { name: "Starter VICIdial", seats: "Up to 5 seats", trunks: "2 SIP Trunks", rate: "20 calls/min", setup: "48 hours", support: "1 Lane support", price: "$250", period: "mo", trial: true },
+    { name: "Standard VICIdial", seats: "Up to 15 seats", trunks: "5 SIP Trunks", rate: "60 calls/min", setup: "24 hours", support: "Priority Lane", price: "$350", period: "mo", trial: true },
+    { name: "Vicidial Multi-Server", seats: "30+ seats", trunks: "Unlimited", rate: "200+ calls/min", setup: "Custom", support: "Dedicated SLAs", price: "Custom", period: "quote", trial: false },
+  ];
+
+  const storageSpecs = [
+    { name: "O7 Bucket Starter", space: "100 GB S3 Storage", api: "Full S3 API Compatibility", traffic: "1 TB Outbound Transfer", speed: "Edge Cached Distribution", price: "$10", period: "mo", trial: true },
+    { name: "O7 Bucket Pro", space: "500 GB S3 Storage", api: "Full S3 API Compatibility", traffic: "5 TB Outbound Transfer", speed: "Global Edge CDN Included", price: "$30", period: "mo", trial: true },
+    { name: "Custom Object Cluster", space: "10 TB+ Storage", api: "Dedicated Endpoints", traffic: "Unmetered Inbound", speed: "Private CDN & Custom SSL", price: "Custom", period: "quote", trial: false },
+  ];
+
+  const securitySpecs = [
+    { name: "Cybersecurity Basic", scope: "Single Server Node", hardening: "OS Lockdown & Ports Hardening", scans: "Weekly Vulnerability Audits", log: "Syslog Shipping Ready", price: "$50", period: "mo", trial: true },
+    { name: "Cybersecurity Premium", scope: "Up to 3 Server Nodes", hardening: "WAF & IDS/IPS Active Rules", scans: "Daily Security Audits", log: "Managed SIEM Dashboard", price: "$150", period: "mo", trial: false },
+    { name: "Enterprise Compliance", scope: "Custom Infrastructure", hardening: "ISO 27001 Prep / CIS Baseline", scans: "Continuous Agent Monitoring", log: "24/7 Support Escalation", price: "Custom", period: "quote", trial: false },
+  ];
+
   return (
-    <section id="faq" className="relative scroll-mt-24 border-t border-[color:var(--marketing-line)] bg-white">
-      <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start">
-          <div className="min-w-0 rounded-lg border border-orange-200 bg-orange-50/70 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--marketing-accent)]">Customer Guidance</p>
-            <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
-              Direct answers before a customer opens the portal.
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600">
-              Public guidance focuses on how services are bought, provisioned, billed, and supported before a customer configures the portal order.
-            </p>
-          </div>
+    <div className="relative overflow-x-clip bg-[#f8f9fa] pb-16 text-slate-900">
+      {/* Decorative Warm Accent Gradients using HubSpot Orange style color */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-200/50 via-orange-50/20 to-transparent opacity-80" />
 
-          <div className="grid min-w-0 gap-4 md:grid-cols-2">
-            {faqItems.map((item, index) => (
-              <div
-                key={item.question}
-                className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-42px_rgba(15,23,42,0.2)]"
-                style={{ "--eo-delay": `${index * 45}ms` }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
-                <h3 className="mt-4 text-lg font-semibold leading-snug text-slate-950">{item.question}</h3>
-                <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
+      {/* SECTION 1: AWS-STYLE HERO SECTION */}
+      <section id="hero" className="relative border-b border-slate-200/80 scroll-mt-24">
+        <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
+        <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            
+            {/* Left Hero Details */}
+            <div className="relative z-10 flex flex-col items-start">
+              {/* Premium Release Badge (HubSpot Orange themed) */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50/60 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-orange-800">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-[#ff7a1a] animate-pulse" />
+                Now Available: Private DeepSeek-R1 GPU Server Configurations
+              </div>
+
+              <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-[54px] lg:leading-[1.1]">
+                Build, Deploy, and Manage Enterprise Infrastructure.
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-655 sm:text-lg">
+                Deploy managed computing, scalable call center dialers, edge-cached object storage, and secure model layers. ElevenOrbits provides concrete SLAs, unified billing wallets, and responsive engineering teams.
+              </p>
+
+              {/* AWS-Style Search bar simulator (HubSpot Orange focus themed) */}
+              <div className="mt-8 w-full max-w-xl">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery) {
+                      window.location.href = `/signup?service=${encodeURIComponent(searchQuery)}`;
+                    }
+                  }}
+                  className="relative flex items-center rounded-lg border border-slate-300 bg-white shadow-sm focus-within:border-[#ff7a1a] focus-within:ring-2 focus-within:ring-orange-100"
+                >
+                  <Search className="ml-4 h-5 w-5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search compute, dialers, or AI systems..."
+                    className="w-full border-0 bg-transparent px-3 py-3.5 text-sm text-slate-800 focus:outline-none focus:ring-0 placeholder:text-slate-450"
+                  />
+                  <button
+                    type="submit"
+                    className="mr-2 rounded-md bg-slate-950 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-900"
+                  >
+                    Locate
+                  </button>
+                </form>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500">Popular searches:</span>
+                  {mockSearchSuggestions.map((term) => (
+                    <button
+                      key={term}
+                      onClick={() => setSearchQuery(term)}
+                      className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600 transition hover:bg-slate-50"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA Action Deck */}
+              <div className="mt-8 flex flex-wrap gap-3.5">
+                <Link
+                  href={getSignupPath()}
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#ff7a1a] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#e66a12] shadow-sm"
+                >
+                  Create Free Account
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                <Link
+                  href="#explorer"
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Explore Pricing specs
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Hero Panel: AWS Platform Console Preview Mockup */}
+            <div className="relative min-w-0">
+              <div className="relative rounded-xl border border-slate-250 bg-white p-2 shadow-xl">
+                {/* Console Bar UI */}
+                <div className="flex items-center justify-between border-b border-slate-150 px-4 py-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded-full bg-slate-200" />
+                    <span className="h-3 w-3 rounded-full bg-slate-200" />
+                    <span className="h-3 w-3 rounded-full bg-slate-200" />
+                    <span className="ml-2 font-mono text-[10px] tracking-wide">elevenorbits-console-v2.9.1</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="font-semibold text-slate-600">Region: US-East (N. Virginia)</span>
+                  </div>
+                </div>
+
+                {/* Console Main Content Grid */}
+                <div className="grid min-h-[340px] grid-cols-[140px_minmax(0,1fr)] bg-[#f8f9fa] text-xs">
+                  {/* Left Console Sidebar */}
+                  <aside className="border-r border-slate-200 bg-[#f1f3f5] p-3 text-slate-655">
+                    <p className="font-semibold text-slate-800 uppercase tracking-[0.08em] text-[10px]">Lanes</p>
+                    <ul className="mt-3 space-y-2">
+                      <li className="flex items-center gap-2 rounded bg-white px-2 py-1.5 font-bold text-slate-900 shadow-sm border border-slate-200/60">
+                        <Cpu className="h-3.5 w-3.5 text-[#ff7a1a]" /> Compute
+                      </li>
+                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
+                        <BrainCircuit className="h-3.5 w-3.5" /> AI Servers
+                      </li>
+                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
+                        <PhoneCall className="h-3.5 w-3.5" /> VoIP Trunks
+                      </li>
+                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
+                        <Wallet className="h-3.5 w-3.5" /> Wallet billing
+                      </li>
+                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
+                        <Headset className="h-3.5 w-3.5" /> Support Lane
+                      </li>
+                    </ul>
+                  </aside>
+
+                  {/* Console Working Panel */}
+                  <main className="p-4 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-900">active_instance_vps_102</h3>
+                        <span className="rounded bg-orange-50 border border-orange-200 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">3-Day Trial Active</span>
+                      </div>
+
+                      {/* Micro Specs card */}
+                      <div className="mt-4 grid gap-2.5">
+                        <div className="rounded border border-slate-200 bg-white p-3 shadow-sm">
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span className="font-semibold">Compute Profile</span>
+                            <span className="font-mono text-slate-850">4 vCPU / 8 GB RAM / 80 GB SSD</span>
+                          </div>
+                          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-slate-600">
+                            <span>Status</span>
+                            <span className="flex items-center gap-1 font-bold text-emerald-600">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              Running
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Console Tab switcher mockup */}
+                        <div className="flex border-b border-slate-200 mt-2 text-[11px]">
+                          <button onClick={() => setConsoleMetricTab("cpu")} className={cn("px-2.5 py-1 font-semibold", consoleMetricTab === "cpu" ? "border-b-2 border-[#ff7a1a] text-[#ff7a1a]" : "text-slate-500")}>CPU Utilization</button>
+                          <button onClick={() => setConsoleMetricTab("network")} className={cn("px-2.5 py-1 font-semibold", consoleMetricTab === "network" ? "border-b-2 border-[#ff7a1a] text-[#ff7a1a]" : "text-slate-500")}>Network I/O</button>
+                        </div>
+
+                        <div className="rounded border border-slate-200 bg-white p-2.5">
+                          {consoleMetricTab === "cpu" ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] text-slate-500">
+                                <span>Core Usage Peak</span>
+                                <span>14.2% average load</span>
+                              </div>
+                              <div className="h-8 w-full bg-slate-50 rounded border border-slate-100 flex items-end gap-1 p-1">
+                                <span className="w-full bg-orange-200 h-1/4 rounded-sm" />
+                                <span className="w-full bg-orange-200 h-1/3 rounded-sm" />
+                                <span className="w-full bg-orange-300 h-1/2 rounded-sm" />
+                                <span className="w-full bg-orange-450 h-2/3 rounded-sm" />
+                                <span className="w-full bg-[#ff7a1a] h-4/5 rounded-sm" />
+                                <span className="w-full bg-orange-300 h-1/3 rounded-sm" />
+                                <span className="w-full bg-orange-200 h-1/4 rounded-sm" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] text-slate-500">
+                                <span>Active Traffic</span>
+                                <span>3.12 Mbps Tx / 842 Kbps Rx</span>
+                              </div>
+                              <div className="h-8 w-full bg-slate-50 rounded border border-slate-100 flex items-end gap-1 p-1">
+                                <span className="w-full bg-slate-200 h-1/2 rounded-sm" />
+                                <span className="w-full bg-slate-350 h-2/3 rounded-sm" />
+                                <span className="w-full bg-slate-200 h-1/3 rounded-sm" />
+                                <span className="w-full bg-slate-400 h-3/4 rounded-sm" />
+                                <span className="w-full bg-slate-950 h-4/5 rounded-sm" />
+                                <span className="w-full bg-slate-350 h-1/2 rounded-sm" />
+                                <span className="w-full bg-slate-200 h-1/4 rounded-sm" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Console Info Footer */}
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-[10px] text-slate-500">
+                      <span className="flex items-center gap-1"><Layers className="h-3 w-3" /> US-East Edge Pool</span>
+                      <span>Next renewal: In 27 days</span>
+                    </div>
+                  </main>
+                </div>
+              </div>
+
+              {/* Float Decorative badge */}
+              <div className="absolute -bottom-5 -left-5 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white p-3.5 shadow-lg md:flex">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                <div className="text-left">
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Firewall Status</p>
+                  <p className="text-xs font-bold text-slate-900">Active - Ports Protected</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 2: HIGH-DENSITY CLOUD STATS */}
+      <section className="border-b border-slate-200/60 bg-white">
+        <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Global Edge Latency", value: "< 35ms RTT", description: "BGP route optimization with anycast traffic distribution." },
+              { label: "Operating SLA Assurance", value: "99.9% Uptime", description: "Backed by redundant VM storage arrays & priority hypervisors." },
+              { label: "Trial Accessibility", value: "3-Day Free Trial", description: "Request instant provisioning on eligible compute and app lanes." },
+              { label: "Compliant Security", value: "CIS Hardened", description: "Firewall lockdown, access auditing, and patch updates configured." },
+            ].map((stat, i) => (
+              <div key={i} className="min-w-0 border-l-2 border-slate-150 pl-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-extrabold text-slate-955">{stat.value}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-550">{stat.description}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-export function LandingPage() {
-  const pricingHighlights = productPlanSeeds.filter((plan) => highlightSlugs.includes(plan.slug));
-
-  return (
-    <div className="relative overflow-x-clip bg-white pb-14">
-      <div className="pointer-events-none absolute inset-0 marketing-glow opacity-90" />
-
-      <section id="overview" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
-        <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-80" />
-        <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8 lg:py-14">
-          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch">
-            <div className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-58px_rgba(15,23,42,0.28)] backdrop-blur md:p-8 lg:p-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">ElevenOrbits Operating Systems</p>
-              <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Managed hosting, AI infrastructure, and workflow delivery.
-              </h1>
-              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
-                ElevenOrbits gives businesses a structured operating layer for infrastructure, AI deployment, billing control, support routing, and service handoff.
-              </p>
-
-              <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                <Link href={getSignupPath()} className="min-w-0">
-                  <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black">Get Started</Button>
-                </Link>
-                <Link href="/#pricing" className="min-w-0">
-                  <Button variant="ghost" className="w-full justify-center bg-white">Review Pricing</Button>
-                </Link>
-                <a href={`mailto:${siteConfig.salesEmail}`} className="min-w-0">
-                  <Button variant="ghost" className="w-full justify-center bg-white">Email Sales</Button>
-                </a>
-              </div>
-
-              <div className="mt-8 border-t border-[color:var(--marketing-line)] pt-6">
-                <ServiceLogoCluster categorySlugs={heroBrandSlugs} max={8} />
-              </div>
-            </div>
-
-            <aside className="grid min-w-0 gap-4">
-              <div className="min-w-0 rounded-lg border border-orange-200 bg-orange-50/80 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--marketing-accent)]">Service Model</p>
-                <p className="mt-4 text-2xl font-semibold leading-tight text-slate-950">
-                  The product is the operating control around the compute.
-                </p>
-                <p className="mt-4 text-sm leading-7 text-slate-600">
-                  Orders, payment activity, support, credential assignment, and service continuity stay in one accountable delivery model.
-                </p>
-              </div>
-
-              <div className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white p-5 shadow-[0_22px_60px_-52px_rgba(15,23,42,0.22)]">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Operating Signals</p>
-                  <ShieldCheck className="h-5 w-5 shrink-0 text-[color:var(--marketing-accent)]" />
-                </div>
-                <div className="mt-4 grid gap-3">
-                  {heroSignals.map((item, index) => (
-                    <div
-                      key={item.label}
-                      className="min-w-0 rounded-md border border-slate-200 bg-slate-50 px-4 py-3"
-                      style={{ "--eo-delay": `${260 + index * 45}ms` }}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-700">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-          </div>
-        </div>
-
-        <div className="border-t border-[color:var(--marketing-line)]">
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="grid min-w-0 gap-4 py-8 md:grid-cols-2 xl:grid-cols-4">
-              {operatingHighlights.map((item, index) => {
-                const Icon = item.icon;
-
-                return (
-                  <div key={item.title} className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white px-5 py-6" style={{ "--eo-delay": `${index * 55}ms` }}>
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--marketing-panel-warm)] text-[color:var(--marketing-accent)]">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <p className="text-base font-semibold leading-snug text-slate-950">{item.title}</p>
-                    </div>
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       </section>
 
-      <section id="services" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
-        <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
-        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid min-w-0 gap-8">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Services</p>
-              <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
-                Service families built around real operating work.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                Each service lane is framed around the way customers actually buy, run, secure, and support their systems over time.
-              </p>
-            </div>
+      {/* SECTION 3: TABBED AWS-STYLE PRODUCT EXPLORER (CONCRETE SPECS) */}
+      <section id="explorer" className="relative scroll-mt-24 border-b border-slate-200/60">
+        <div className="pointer-events-none absolute inset-0 marketing-grid opacity-35" />
+        <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#ff7a1a]">Compute Catalog</p>
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight text-slate-955 sm:text-4xl">
+              Concrete technical profiles. No marketing fluff.
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-655">
+              Review specific resources, storage volumes, network speeds, and prices. Select your starting config and activate trial options directly in the ElevenOrbits portal.
+            </p>
+          </div>
 
-            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {serviceFamilies.map((family, index) => {
-                const theme = familyThemes[family.name];
-                const Icon = theme.icon;
-
+          {/* AWS-Style tab switcher (HubSpot Orange themed) */}
+          <div className="mt-10 border-b border-slate-250">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              {tabsConfig.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
                 return (
-                  <Link
-                    key={family.name}
-                    href={`/${family.pageSlug || `services/${family.categorySlugs[0]}`}`}
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "group relative flex min-w-0 flex-col overflow-hidden rounded-lg border px-5 py-6 transition duration-200 hover:shadow-[0_24px_70px_-54px_rgba(15,23,42,0.28)]",
-                      theme.cardClassName,
+                      "flex items-center gap-2 border-b-2 px-4 py-3.5 text-sm font-bold transition-all duration-200",
+                      active
+                        ? "border-[#ff7a1a] text-[#ff7a1a] bg-white rounded-t-lg"
+                        : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"
                     )}
-                    style={{ "--eo-delay": `${index * 70}ms` }}
                   >
-                    <div className={cn("pointer-events-none absolute inset-0 opacity-70 transition duration-300 group-hover:opacity-100", theme.overlayClassName)} />
-                    <div className="relative flex h-full flex-col">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">{theme.index}</p>
-                        <Icon className="h-5 w-5" />
-                      </div>
-
-                      <div className="mt-8">
-                        <p className="text-2xl font-semibold leading-tight">{family.name}</p>
-                        <p className={cn("mt-4 text-sm leading-7", theme.descriptionClassName)}>{family.description}</p>
-                      </div>
-
-                      <div className={cn("mt-6 h-1.5 w-14 rounded-full", theme.dividerClassName)} />
-
-                      <div className="mt-6 space-y-5">
-                        <ServiceLogoCluster categorySlugs={family.categorySlugs} max={5} />
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">Includes</p>
-                          <p className={cn("mt-3 text-base font-semibold leading-7", theme.descriptionClassName)}>
-                            {family.includes.join(", ")}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {family.techHighlights.map((item) => (
-                            <span
-                              key={item}
-                              className={cn(
-                                "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em]",
-                                theme.chipClassName,
-                              )}
-                            >
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-auto flex items-center gap-2 pt-8 text-sm font-semibold">
-                        Explore services
-                        <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-1" />
-                      </div>
-                    </div>
-                  </Link>
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
                 );
               })}
             </div>
           </div>
-        </div>
-      </section>
 
-      <section id="managed" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
-        <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
-        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid min-w-0 gap-8">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Why ElevenOrbits</p>
-              <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
-                Why teams choose a managed operating layer.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                The value is the operating layer around the service: provisioning, billing structure, support ownership, and controlled change execution.
-              </p>
-            </div>
-
-            <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="grid min-w-0 gap-4">
-                <div className="grid min-w-0 gap-4 md:grid-cols-3">
-                  {[
-                    {
-                      title: "Structured delivery",
-                      description: "Orders and service requests turn into accountable provisioning workflows with customer notes, tracked approvals, and controlled fulfillment.",
-                      icon: ServerCog,
-                    },
-                    {
-                      title: "Unified service ownership",
-                      description: "Infrastructure, AI services, workflow systems, and support escalation remain visible under one operational umbrella.",
-                      icon: Workflow,
-                    },
-                    {
-                      title: "Professional customer handling",
-                      description: "Billing, tickets, wallet funding, and saved payment methods fit into the same customer record instead of disconnected tools.",
-                      icon: Headset,
-                    },
-                  ].map((item, index) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <div key={item.title} className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white px-5 py-6 shadow-[0_18px_48px_-42px_rgba(15,23,42,0.18)]">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
-                        <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <h3 className="mt-6 text-lg font-semibold leading-snug text-slate-950">{item.title}</h3>
-                        <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
+          {/* Tab contents wrapper */}
+          <div className="mt-6">
+            
+            {/* Compute Tab */}
+            {activeTab === "compute" && (
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 animate-eo-menu-in">
+                {computeSpecs.map((plan, i) => (
+                  <div key={i} className="flex flex-col justify-between rounded-xl border border-slate-250 bg-white p-6 shadow-sm hover:border-slate-350 transition duration-200">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">{plan.name}</h3>
+                        {plan.trial && (
+                          <span className="rounded bg-orange-50 border border-orange-100 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">Trial Available</span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-
-                <div className="min-w-0 rounded-lg border border-orange-100 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-6 shadow-[0_22px_60px_-52px_rgba(249,115,22,0.2)]">
-                  <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">
-                        Customer Journey
-                      </p>
-                      <p className="mt-4 text-2xl font-semibold leading-tight text-slate-950">
-                        Create the order. We take the delivery forward.
-                      </p>
-                      <p className="mt-4 text-sm leading-7 text-slate-600">
-                        Customers choose the plan, configure the monthly add-ons, review pricing, and leave final notes. ElevenOrbits handles provisioning,
-                        assigns access after setup, and keeps support tied to the active service.
-                      </p>
+                      <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">Cores</span><span className="font-semibold text-slate-800">{plan.cores}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Memory</span><span className="font-semibold text-slate-800">{plan.ram}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">SSD Disk</span><span className="font-semibold text-slate-800">{plan.disk}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Transfer</span><span className="font-semibold text-slate-800">{plan.network}</span></div>
+                      </div>
                     </div>
-                    <div className="grid gap-3">
-                      {[
-                        "Order created with plan and add-ons",
-                        "Deployment notes captured before fulfillment",
-                        "Credentials and IP details assigned after provisioning",
-                      ].map((item) => (
-                        <div key={item} className="rounded-md border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700">
-                          {item}
-                        </div>
-                      ))}
+                    <div className="mt-8 border-t border-slate-100 pt-5">
+                      <div className="flex items-end gap-1.5">
+                        <span className="text-3xl font-extrabold text-slate-950">{plan.price}</span>
+                        <span className="pb-1 text-xs text-slate-500">/{plan.period}</span>
+                      </div>
+                      <Link href={getSignupPath()} className="mt-5 flex w-full items-center justify-center rounded-lg bg-slate-950 py-2.5 text-xs font-bold text-white transition hover:bg-slate-900">
+                        Launch Instance
+                      </Link>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
+            )}
 
-              <aside className="min-w-0 space-y-5">
-                <ServiceVisualPanel
-                  title="Partner-backed delivery"
-                  description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
-                  categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
-                  className="eo-reveal-soft"
-                />
-              </aside>
-            </div>
+            {/* AI Tab */}
+            {activeTab === "ai" && (
+              <div className="grid gap-6 md:grid-cols-3 animate-eo-menu-in">
+                {aiSpecs.map((plan, i) => (
+                  <div key={i} className="flex flex-col justify-between rounded-xl border border-slate-250 bg-white p-6 shadow-sm hover:border-slate-350 transition duration-200">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">{plan.name}</h3>
+                        {plan.trial && (
+                          <span className="rounded bg-orange-50 border border-orange-100 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">Trial Available</span>
+                        )}
+                      </div>
+                      <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">GPU Capacity</span><span className="font-semibold text-slate-850">{plan.gpu}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Host Cores</span><span className="font-semibold text-slate-800">{plan.cores}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Host RAM</span><span className="font-semibold text-slate-800">{plan.ram}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">System Disk</span><span className="font-semibold text-slate-800">{plan.disk}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Model Hub</span><span className="font-semibold text-[#ff7a1a]">{plan.model}</span></div>
+                      </div>
+                    </div>
+                    <div className="mt-8 border-t border-slate-100 pt-5">
+                      <div className="flex items-end gap-1.5">
+                        <span className="text-3xl font-extrabold text-slate-950">{plan.price}</span>
+                        <span className="pb-1 text-xs text-slate-500">/{plan.period}</span>
+                      </div>
+                      <Link href={getSignupPath()} className="mt-5 flex w-full items-center justify-center rounded-lg bg-slate-950 py-2.5 text-xs font-bold text-white transition hover:bg-slate-900">
+                        Request Scoping
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* VoIP/Vicidial Tab */}
+            {activeTab === "voip" && (
+              <div className="grid gap-6 md:grid-cols-3 animate-eo-menu-in">
+                {voipSpecs.map((plan, i) => (
+                  <div key={i} className="flex flex-col justify-between rounded-xl border border-slate-250 bg-white p-6 shadow-sm hover:border-slate-350 transition duration-200">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">{plan.name}</h3>
+                        {plan.trial && (
+                          <span className="rounded bg-orange-50 border border-orange-100 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">Trial Available</span>
+                        )}
+                      </div>
+                      <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">User Seats</span><span className="font-semibold text-slate-850">{plan.seats}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">SIP Lanes</span><span className="font-semibold text-slate-800">{plan.trunks}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Dial Limit</span><span className="font-semibold text-slate-800">{plan.rate}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Provision Time</span><span className="font-semibold text-slate-800">{plan.setup}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Support Group</span><span className="font-semibold text-slate-800">{plan.support}</span></div>
+                      </div>
+                    </div>
+                    <div className="mt-8 border-t border-slate-100 pt-5">
+                      <div className="flex items-end gap-1.5">
+                        <span className="text-3xl font-extrabold text-slate-950">{plan.price}</span>
+                        <span className="pb-1 text-xs text-slate-500">/{plan.period}</span>
+                      </div>
+                      <Link href={getSignupPath()} className="mt-5 flex w-full items-center justify-center rounded-lg bg-slate-950 py-2.5 text-xs font-bold text-white transition hover:bg-slate-900">
+                        Launch Dialer
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Storage Tab */}
+            {activeTab === "storage" && (
+              <div className="grid gap-6 md:grid-cols-3 animate-eo-menu-in">
+                {storageSpecs.map((plan, i) => (
+                  <div key={i} className="flex flex-col justify-between rounded-xl border border-slate-250 bg-white p-6 shadow-sm hover:border-slate-350 transition duration-200">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">{plan.name}</h3>
+                        {plan.trial && (
+                          <span className="rounded bg-orange-50 border border-orange-100 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">Trial Available</span>
+                        )}
+                      </div>
+                      <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">S3 Space</span><span className="font-semibold text-slate-850">{plan.space}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">API Standard</span><span className="font-semibold text-slate-800">{plan.api}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Monthly Traffic</span><span className="font-semibold text-slate-800">{plan.traffic}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Distribution</span><span className="font-semibold text-slate-800">{plan.speed}</span></div>
+                      </div>
+                    </div>
+                    <div className="mt-8 border-t border-slate-100 pt-5">
+                      <div className="flex items-end gap-1.5">
+                        <span className="text-3xl font-extrabold text-slate-950">{plan.price}</span>
+                        <span className="pb-1 text-xs text-slate-500">/{plan.period}</span>
+                      </div>
+                      <Link href={getSignupPath()} className="mt-5 flex w-full items-center justify-center rounded-lg bg-slate-950 py-2.5 text-xs font-bold text-white transition hover:bg-slate-900">
+                        Provision S3 Bucket
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Security Tab */}
+            {activeTab === "security" && (
+              <div className="grid gap-6 md:grid-cols-3 animate-eo-menu-in">
+                {securitySpecs.map((plan, i) => (
+                  <div key={i} className="flex flex-col justify-between rounded-xl border border-slate-250 bg-white p-6 shadow-sm hover:border-slate-350 transition duration-200">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">{plan.name}</h3>
+                        {plan.trial && (
+                          <span className="rounded bg-orange-50 border border-orange-100 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">Trial Available</span>
+                        )}
+                      </div>
+                      <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">Coverage Range</span><span className="font-semibold text-slate-850">{plan.scope}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Hardening Level</span><span className="font-semibold text-slate-800">{plan.hardening}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Audit Scans</span><span className="font-semibold text-slate-800">{plan.scans}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Log Forwarding</span><span className="font-semibold text-slate-800">{plan.log}</span></div>
+                      </div>
+                    </div>
+                    <div className="mt-8 border-t border-slate-100 pt-5">
+                      <div className="flex items-end gap-1.5">
+                        <span className="text-3xl font-extrabold text-slate-950">{plan.price}</span>
+                        <span className="pb-1 text-xs text-slate-500">/{plan.period}</span>
+                      </div>
+                      <Link href={getSignupPath()} className="mt-5 flex w-full items-center justify-center rounded-lg bg-slate-950 py-2.5 text-xs font-bold text-white transition hover:bg-slate-900">
+                        Enable Security Scan
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
           </div>
+
         </div>
       </section>
 
-      <TechStackShowcase compact />
+      {/* SECTION 4: REFERENCE WORKLOADS (AWS-STYLE SOLUTIONS) */}
+      <section id="workloads" className="relative scroll-mt-24 border-b border-slate-200/60 bg-white">
+        <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-80" />
+        <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#ff7a1a]">Reference Deployments</p>
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight text-slate-950 sm:text-4xl">
+              Engineered configurations for common enterprise workloads.
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-655">
+              Choose pre-architected templates built combining our servers, private storage buckets, security guidelines, and automation blocks.
+            </p>
+          </div>
 
-      <section id="pricing" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
-        <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
-        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid min-w-0 gap-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Pricing</p>
-                <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
-                  Commercial starting points for managed delivery.
-                </h2>
-                <p className="mt-4 text-sm leading-7 text-slate-600">
-                  These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, saved-card billing, and renewals.
-                </p>
-              </div>
-              <Link href={getSignupPath()}>
-                <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black sm:w-auto">Open Portal</Button>
-              </Link>
-            </div>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                title: "Call Center Dialer Core",
+                purpose: "Outbound telemarketing & VoIP queues",
+                workflow: [
+                  "Starter VICIdial dials via 2 pre-configured SIP lanes.",
+                  "Audio logs are compressed hourly & shipped to S3 bucket.",
+                  "Cybersecurity scan schedules block rogue port access weekly.",
+                ],
+                tag: "VoIP & Storage Integration",
+              },
+              {
+                title: "Private LLM Inference Lane",
+                purpose: "Internal AI agents and data privacy",
+                workflow: [
+                  "AI Server Starter runs DeepSeek model isolated on GPU VRAM.",
+                  "Nextcloud app hosts corporate file logs for private context.",
+                  "All access credentials stored inside the portal secure vault.",
+                ],
+                tag: "AI & Collaboration Stack",
+              },
+              {
+                title: "Scalable Web Operations",
+                purpose: "Corporate websites, APIs, and portals",
+                workflow: [
+                  "VDS Compute hosts primary database & backend server.",
+                  "Object storage ships static assets with CDN cache active.",
+                  "Daily backup rotations ensure instant VM snapshot rollback.",
+                ],
+                tag: "Compute & CDN Stack",
+              },
+            ].map((workload, idx) => (
+              <div key={idx} className="flex flex-col justify-between rounded-xl border border-slate-200 bg-[#f8f9fa] p-6 shadow-sm hover:shadow-md transition duration-200">
+                <div>
+                  <span className="rounded bg-orange-50 border border-orange-200/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#ff7a1a]">{workload.tag}</span>
+                  <h3 className="mt-5 text-xl font-bold text-slate-955">{workload.title}</h3>
+                  <p className="mt-2 text-xs text-slate-500 font-medium">{workload.purpose}</p>
 
-            <div className="grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {pricingHighlights.map((plan, index) => (
-                <div
-                  key={plan.slug}
-                  className={cn(
-                    "min-w-0 rounded-lg border border-[color:var(--marketing-line)] p-6 shadow-[0_22px_60px_-52px_rgba(15,23,42,0.2)]",
-                    index === 0 && "border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)]",
-                    index === 1 && "border-slate-200 bg-white/90",
-                    index >= 2 && "border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)]",
-                  )}
-                  style={{ "--eo-delay": `${index * 65}ms` }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{categoryNameFor(plan.categorySlug)}</p>
-                  <h3 className="mt-4 text-2xl font-semibold leading-tight text-slate-950">{plan.name}</h3>
-                  <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
-
-                  <div className="mt-7 flex items-end gap-3">
-                    <p className="text-4xl font-semibold text-slate-950">
-                      {plan.contactSalesOnly ? plan.displayPriceLabel : formatCurrency(plan.monthlyPrice)}
-                    </p>
-                    <p className="pb-1 text-sm text-slate-500">{plan.contactSalesOnly ? "custom" : "monthly"}</p>
-                  </div>
-
-                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {plan.contactSalesOnly
-                      ? "Scoped commercial contract"
-                      : `${getBillingCycleDiscountPercent(plan, "six_month")}% six month / ${getBillingCycleDiscountPercent(plan, "yearly")}% yearly savings`}
-                  </p>
-
-                  <div className="mt-7 space-y-3">
-                    {plan.features.slice(0, 3).map((feature) => (
-                      <div key={feature} className="rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700">
-                        {feature}
+                  <div className="mt-6 space-y-3.5 border-t border-slate-200/60 pt-5">
+                    {workload.workflow.map((step, sIdx) => (
+                      <div key={sIdx} className="flex items-start gap-3 text-xs leading-relaxed text-slate-600">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white border border-slate-200 font-bold text-slate-700">{sIdx + 1}</span>
+                        <p>{step}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="mt-8 border-t border-slate-200/60 pt-5">
+                  <Link href={getSignupPath()} className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff7a1a] hover:text-[#e66a12]">
+                    Deploy this configuration
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
+
         </div>
       </section>
 
-      <section id="contact" className="relative scroll-mt-24">
-        <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
-        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white shadow-[0_28px_86px_-64px_rgba(15,23,42,0.3)]">
-            <div className="grid min-w-0 gap-px bg-[color:var(--marketing-line)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-              <div className="min-w-0 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-6 md:p-8 lg:p-10">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Contact</p>
-                <h2 className="mt-5 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
-                  Let&apos;s talk about the next environment.
-                </h2>
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                  Tell us what you need to host, automate, protect, or support. We will help shape the operating model, service path, and commercial starting
-                  point that fits the work.
-                </p>
+      {/* SECTION 5: PAY-AS-YOU-GO TRANSPARENCY (NO BLUFF BILLING) */}
+      <section className="relative border-b border-slate-200/60 bg-slate-50/50">
+        <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            
+            {/* Wallet Mechanics Left */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#ff7a1a]">Transparent Billing</p>
+              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-slate-955">
+                Wallet-based funding. Predictable hourly pricing.
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-slate-655">
+                We take billing seriously. All servers run on pre-calculated monthly ceilings but compute balance scales. Deposit money, configure active limits, and track expenses in real-time.
+              </p>
 
-                <div className="mt-8 rounded-lg border border-slate-200 bg-white/90 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Routing Standard</p>
-                  <p className="mt-3 text-xl font-semibold text-slate-950">Start with the right team.</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">
-                    Sales, servers, AI and automation, and support requests route through dedicated inboxes so each conversation starts with the right context.
-                  </p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-[#ff7a1a] border border-orange-100">
+                    <Wallet className="h-4 w-4" />
+                  </div>
+                  <h4 className="mt-4 text-sm font-bold text-slate-950">Secure Portal Wallet</h4>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-550">Top up credits via Credit Card. Payments are securely managed and auto-renew balance seamlessly.</p>
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  <Link href={getSignupPath()} className="min-w-0">
-                    <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black">Start Account</Button>
-                  </Link>
-                  <a href={`mailto:${siteConfig.salesEmail}`} className="min-w-0">
-                    <Button variant="ghost" className="w-full justify-center bg-white/90">
-                      Contact Sales
-                    </Button>
-                  </a>
-                </div>
-
-                <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-lg border border-slate-200 bg-white/90 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">General Inquiries</p>
-                    <p className="mt-3 break-words text-base font-semibold text-slate-950">{siteConfig.generalEmail}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">For broad questions, introductions, and company-level conversations.</p>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-[#ff7a1a] border border-orange-100">
+                    <Lock className="h-4 w-4" />
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-white/90 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Support Desk</p>
-                    <p className="mt-3 break-words text-base font-semibold text-slate-950">{siteConfig.supportEmail}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">For customer help, service follow-up, and operational issue escalation.</p>
-                  </div>
+                  <h4 className="mt-4 text-sm font-bold text-slate-955">No-Hassle Cancellation</h4>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-550">Cancel subscriptions at any time directly through the portal with transparent cancel feedback forms.</p>
                 </div>
               </div>
+            </div>
 
-              <div className="grid min-w-0 gap-px bg-[color:var(--marketing-line)] sm:grid-cols-2">
-                {contactCards.map((card) => (
-                  <a key={card.key} href={`mailto:${card.email}`} className="group bg-white/95 px-6 py-7 transition duration-200 hover:bg-white">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{card.title}</p>
-                      <Mail className="h-4 w-4 text-[color:var(--marketing-accent)]" />
+            {/* Spec visual card list right */}
+            <div className="rounded-xl border border-slate-250 bg-white p-6 shadow-md">
+              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-150 pb-3">Operational Safeguards</h3>
+              <div className="mt-5 space-y-4">
+                {[
+                  { label: "Automatic Backups", value: "Snapshot rotations captured daily with 7-day retention limit." },
+                  { label: "Port Protections", value: "Default block on critical mail / database ports; whitelists configed." },
+                  { label: "Support Hand-off", value: "Dedicated engineering lanes verify daemon configurations before setup hand-off." },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex gap-4">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-950">{item.label}</p>
+                      <p className="mt-1 text-xs text-slate-555 leading-relaxed">{item.value}</p>
                     </div>
-                    <p className="mt-6 break-words text-base font-semibold text-slate-950">{card.email}</p>
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{card.description}</p>
-                    <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
-                      Start conversation
-                      <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-1" />
-                    </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      <FaqSection />
+      {/* SECTION 6: INTEGRATION PARTNERS (COMPACT TECH SHOWCASE) */}
+      <TechStackShowcase compact />
+
+      {/* SECTION 7: DIRECT AWS-STYLE FAQ */}
+      <section id="faq" className="relative scroll-mt-24 border-t border-slate-200/60 bg-white">
+        <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+            
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#ff7a1a]">FAQ</p>
+              <h2 className="mt-4 text-2xl font-bold leading-tight text-slate-955 sm:text-3xl">
+                Technical queries, direct answers.
+              </h2>
+              <p className="mt-4 text-xs leading-relaxed text-slate-600">
+                Detailed information for cloud operations, trial constraints, billing mechanisms, and support parameters before registering your portal account.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqItems.map((item, idx) => (
+                <div key={idx} className="rounded-xl border border-slate-200 bg-[#f8f9fa] p-5 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#ff7a1a]">Audit 0{idx + 1}</p>
+                  <h3 className="mt-3 text-sm font-bold text-slate-955 leading-snug">{item.question}</h3>
+                  <p className="mt-3.5 text-xs leading-relaxed text-slate-600">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

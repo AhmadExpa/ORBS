@@ -59,7 +59,7 @@ function flattenLinks(groups) {
   return groups.flatMap((group) => (group.href ? [group] : group.items || []));
 }
 
-export function PortalShell({ children, groups = portalNavGroups }) {
+export function PortalShell({ children, groups = portalNavGroups, isAgentPortal = false }) {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useClerk();
@@ -83,37 +83,37 @@ export function PortalShell({ children, groups = portalNavGroups }) {
   });
   const activeSection = getActiveSection(pathname);
   const isDelegate = profileQuery.data?.actorType === "delegate";
-  const visibleGroups = isDelegate
+  const isAgent = isAgentPortal || isDelegate || pathname?.startsWith("/agent");
+
+  const visibleGroups = isAgent
     ? [
         {
           label: "Services",
           icon: "server",
           items: [
-            { href: "/portal/services", label: "Services", icon: "server", description: "Assigned services and access details" },
-            { href: "/portal/subscriptions", label: "Subscriptions", icon: "package", description: "Services assigned to your agent login" },
+            { href: "/agent/services", label: "Services", icon: "server", description: "Assigned services and access details" },
+            { href: "/agent/subscriptions", label: "Subscriptions", icon: "package", description: "Services assigned to your agent login" },
           ],
         },
-        { label: "Support", href: "/portal/support", icon: "life-buoy" },
+        { label: "Support", href: "/agent/support", icon: "life-buoy" },
       ]
     : groups;
   const user = profileQuery.data?.user;
   const delegate = profileQuery.data?.delegate;
   const walletBalance = Number(user?.accountBalance || 0);
-  const displayName = isDelegate ? delegate?.displayName || delegate?.username || "Agent access" : user?.name || user?.company || user?.email || "Your account";
-  const displayEmail = isDelegate ? user?.company || user?.email || "Assigned account" : user?.email;
+  const displayName = isAgent ? delegate?.displayName || delegate?.username || "Agent access" : user?.name || user?.company || user?.email || "Your account";
+  const displayEmail = isAgent ? user?.company || user?.email || "Assigned account" : user?.email;
   const initial = String(displayName).trim().charAt(0).toUpperCase() || "A";
 
   useEffect(() => {
-    if (!isDelegate) {
+    if (!isAgent) {
       return;
     }
 
-    const ownerOnlyPaths = ["/portal", "/portal/invoices", "/portal/payments", "/portal/contracts"];
-    const ownerOnly = ownerOnlyPaths.some((href) => pathname === href || pathname?.startsWith(`${href}/`));
-    if (ownerOnly) {
-      router.replace("/portal/services");
+    if (pathname === "/agent") {
+      router.replace("/agent/services");
     }
-  }, [isDelegate, pathname, router]);
+  }, [isAgent, pathname, router]);
 
   // Close menus on route change.
   useEffect(() => {
@@ -139,7 +139,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
   }
 
   async function handleSignOut() {
-    if (isDelegate) {
+    if (isAgent) {
       try {
         await apiFetch("/delegate/auth/logout", { method: "POST", authMode: "delegate" });
       } catch {
@@ -245,7 +245,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
             </nav>
 
             <div className="ml-auto flex items-center gap-2">
-              {!portalLocked && !isDelegate ? (
+              {!portalLocked && !isAgent ? (
                 <Link
                   href="/portal/payments"
                   className="hidden items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:flex"
@@ -255,7 +255,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                 </Link>
               ) : null}
 
-              {!portalLocked && !isDelegate ? (
+              {!portalLocked && !isAgent ? (
                 <Link
                   href="/portal/services"
                   className="hidden items-center gap-1.5 rounded-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-500 sm:flex"
@@ -284,13 +284,13 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                         {displayEmail ? <p className="truncate text-xs text-slate-500">{displayEmail}</p> : null}
                       </div>
                     </div>
-                    {!isDelegate ? (
+                    {!isAgent ? (
                       <Link href="/portal/account" className="mt-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
                         <UserRound className="h-4 w-4 text-slate-400" />
                         Account settings
                       </Link>
                     ) : null}
-                    <Link href="/portal/support" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                    <Link href={isAgent ? "/agent/support" : "/portal/support"} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
                       <LifeBuoy className="h-4 w-4 text-slate-400" />
                       Support
                     </Link>
@@ -341,7 +341,7 @@ export function PortalShell({ children, groups = portalNavGroups }) {
                     </Link>
                   );
                 })}
-                {!isDelegate ? (
+                 {!isAgent ? (
                   <Link href="/portal/services" className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white">
                     <Plus className="h-4 w-4" />
                     Order an app
@@ -364,9 +364,9 @@ export function PortalShell({ children, groups = portalNavGroups }) {
         ) : null}
 
         <main className="min-w-0 flex-1">
-          {activeSection && !portalLocked ? (
+           {activeSection && !portalLocked ? (
             <div className="grid grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)]">
-              <PortalSectionNav section={activeSection} isDelegate={isDelegate} />
+              <PortalSectionNav section={activeSection} isDelegate={isAgent} />
               <div className="min-w-0">{children}</div>
             </div>
           ) : (
