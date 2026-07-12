@@ -1,7 +1,6 @@
-<svg viewBox="0 0 204 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
   <title id="title">Google Voice</title>
-  <path d="M0 10c0-5 4-9 9-9h31c5 0 9 4 9 9v22c0 5-4 9-9 9H25L13 48v-7H9c-5 0-9-4-9-9V10z" fill="#34a853"/>
-  <path d="M15 14c4 9 10 15 20 19l5-5-9-5-3 3c-3-2-5-4-7-7l3-3-5-8-4 6z" fill="#ffffff"/>
-  <text x="63" y="22" fill="#4285f4" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800">Google</text>
-  <text x="63" y="40" fill="#101828" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Voice</text>
+  <rect width="64" height="64" rx="16" fill="#f0fdf4"/>
+  <path d="M14 20c0-5 4-9 9-9h21c5 0 9 4 9 9v17c0 5-4 9-9 9H33l-11 7v-7c-4.6-.5-8-4.3-8-9V20z" fill="#34a853"/>
+  <path d="M27 22c3.5 8 8.5 13 17 16l4-4-8-4-3 3c-2.5-1.4-4.5-3.4-6-6l3-3-4-7-3 5z" fill="#fff"/>
 </svg>

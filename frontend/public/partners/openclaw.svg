@@ -1,1 +1,7 @@
-<svg viewBox="0 0 180 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title"><title id="title">OpenClaw</title><rect width="180" height="64" rx="18" fill="#eff6ff"/><rect x="12" y="12" width="42" height="40" rx="10" fill="#2563eb"/><path d="M25 42c7-16 9-24 8-24M35 42c8-15 9-22 7-26M45 42c5-10 5-16 3-21" stroke="#fff" stroke-width="4" stroke-linecap="round"/><text x="66" y="39" fill="#0f172a" font-family="Arial, sans-serif" font-size="23" font-weight="800">OpenClaw</text></svg>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">OpenClaw</title>
+  <rect width="64" height="64" rx="16" fill="#eff6ff"/>
+  <rect x="13" y="13" width="38" height="38" rx="11" fill="#2563eb"/>
+  <path d="M24 44c7-15 8-23 7-27M34 44c7-14 8-22 6-29M44 43c4-9 4-15 2-21" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M22 33c6 4 13 5 22 2" fill="none" stroke="#bfdbfe" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { techStackGroups, techStackHighlights } from "@/lib/marketing-content";
 import { cn } from "@/lib/ui";
+import { ServiceLogo, getBrandForName } from "./service-branding";
 
 const iconMap = {
   brain: BrainCircuit,
@@ -37,13 +38,14 @@ const operatingModel = [
 
 function LogoMark({ partner }) {
   const label = partner.wordmark || partner.name;
+  const brand = partner.logo ? { name: partner.name, logo: partner.logo } : getBrandForName(label);
 
   return (
     <div className="flex h-full w-full shrink-0 items-center justify-center px-4">
       {partner.logo ? (
         <img src={partner.logo} alt={`${partner.name} logo`} loading="lazy" decoding="async" className="max-h-10 max-w-full object-contain" />
       ) : (
-        <span className="text-center text-base font-semibold leading-5 tracking-tight text-slate-950">{label}</span>
+        <ServiceLogo brand={brand} imageClassName="h-8 w-12" className="[&>span:first-child]:h-10 [&>span:first-child]:w-10" />
       )}
     </div>
   );

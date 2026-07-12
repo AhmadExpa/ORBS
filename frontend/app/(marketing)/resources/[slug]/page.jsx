@@ -39,5 +39,5 @@ export default async function ResourcePage({ params }) {
     notFound();
   }
 
-  return <ResourceDetail resource={page} />;
+  return <ResourceDetail resource={page} resources={resourcePages} />;
 }

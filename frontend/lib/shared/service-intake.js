@@ -439,7 +439,6 @@ export const serviceIntakeConfigs = {
             { value: "delete", label: "DELETE", icon: "trash" },
             { value: "list", label: "LIST", icon: "list" },
           ], icon: "code" },
-          { key: "credentialRecipient", label: "Credential recipient", type: "email", placeholder: "developer@example.com", icon: "mail" },
           { key: "lifecycleNotes", label: "Lifecycle or retention notes", type: "textarea", placeholder: "Retention, archival, backup, or cleanup rules.", icon: "calendar" },
         ],
       },

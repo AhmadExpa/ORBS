@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 56" role="img" aria-labelledby="title">
+  <title id="title">Diners Club</title>
+  <rect width="96" height="56" rx="8" fill="#fff"/>
+  <rect x=".5" y=".5" width="95" height="55" rx="7.5" fill="none" stroke="#d7dde7"/>
+  <path fill="#0079BE" d="M33 14h30c7.7 0 14 6.3 14 14s-6.3 14-14 14H33c-7.7 0-14-6.3-14-14s6.3-14 14-14"/>
+  <circle cx="40" cy="28" r="10" fill="#fff"/>
+  <path fill="#0079BE" d="M40 18a10 10 0 0 0 0 20 10 10 0 0 1 0-20"/>
+  <circle cx="56" cy="28" r="10" fill="#fff"/>
+  <path fill="#0079BE" d="M56 18a10 10 0 0 1 0 20 10 10 0 0 0 0-20"/>
+</svg>

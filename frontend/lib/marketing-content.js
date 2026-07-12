@@ -456,6 +456,78 @@ export const resourcePages = [
       },
     ],
   },
+  {
+    slug: "vps-migration-planning-guide",
+    title: "VPS Migration Planning Guide",
+    eyebrow: "Guide",
+    description:
+      "A practical migration guide for moving websites, applications, databases, DNS, email-adjacent services, and backups into a managed VPS environment.",
+    intro:
+      "A migration succeeds when the old environment, new server, data movement, DNS timing, access handoff, and rollback plan are understood before the cutover window opens.",
+    relatedSlugs: ["managed-vps-buyers-guide", "server-security-hardening-baseline", "billing-renewal-guide", "workflow-automation-readiness"],
+    sections: [
+      {
+        heading: "Inventory the Current Stack",
+        points: [
+          "List domains, DNS zones, application paths, databases, cron jobs, SSL certificates, and third-party integrations.",
+          "Confirm what must move, what can be retired, and what should stay with the current provider.",
+          "Capture panel access, SSH/SFTP access, database credentials, and registrar access before scheduling migration.",
+        ],
+      },
+      {
+        heading: "Prepare the Target VPS",
+        points: [
+          "Choose the operating image, web server stack, database version, PHP or runtime versions, and firewall baseline.",
+          "Provision backups and monitoring before production traffic is moved.",
+          "Stage the application on the new VPS and validate paths, permissions, services, and environment variables.",
+        ],
+      },
+      {
+        heading: "Plan Cutover and Rollback",
+        points: [
+          "Lower DNS TTL before migration when possible and document the final switch timing.",
+          "Keep the old environment available until traffic, forms, payments, logins, and background jobs are verified.",
+          "Define a rollback decision point before the migration window begins.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "delegate-access-handoff-guide",
+    title: "Delegate Access Handoff Guide",
+    eyebrow: "Guide",
+    description:
+      "How to prepare account access, delegate permissions, admin visibility, service credentials, and operational notes without routing secrets through ad hoc email.",
+    intro:
+      "Delegate access works best when each person has the right role, customer context, and service notes. The goal is controlled handoff without asking for unnecessary recipient emails during checkout.",
+    relatedSlugs: ["billing-renewal-guide", "server-security-hardening-baseline", "managed-vps-buyers-guide", "vps-migration-planning-guide"],
+    sections: [
+      {
+        heading: "Separate Account and Service Access",
+        points: [
+          "Keep billing ownership, service administration, and technical handoff as separate responsibilities.",
+          "Use delegate access for people who need to review or act on customer services without owning the full account.",
+          "Avoid sending credentials to random recipient emails when the portal can hold the operational record.",
+        ],
+      },
+      {
+        heading: "Prepare the Delegate Role",
+        points: [
+          "Confirm the delegate's business role, service scope, and whether they need billing, support, or technical visibility.",
+          "Document what the delegate should be allowed to see before provisioning begins.",
+          "Review delegate access after staff changes, completed migrations, or major support incidents.",
+        ],
+      },
+      {
+        heading: "Keep Handoff Auditable",
+        points: [
+          "Record service notes, IP details, credential status, and provisioning changes inside the managed customer record.",
+          "Use support tickets for follow-up instead of scattering operational context across inboxes.",
+          "Rotate credentials after emergency access, vendor changes, or completed temporary work.",
+        ],
+      },
+    ],
+  },
 ];
 
 export const techStackGroups = [
@@ -546,6 +618,9 @@ export const techStackGroups = [
       { name: "Twilio", logo: "/partners/twilio.svg", descriptor: "Programmable voice and messaging" },
       { name: "Telnyx", logo: "/partners/telnyx.svg", descriptor: "Carrier voice and SMS APIs" },
       { name: "VICIdial", logo: "/partners/vicidial.svg", descriptor: "Contact center dialer" },
+      { name: "3CX", logo: "/partners/3cx.svg", descriptor: "Business phone system" },
+      { name: "Zoiper", logo: "/partners/zoiper.svg", descriptor: "SIP softphone" },
+      { name: "FreePBX", logo: "/partners/freepbx.svg", descriptor: "PBX administration" },
       { name: "Broadvoice", logo: "/partners/broadvoice.svg", descriptor: "Cloud business phone" },
     ],
   },
@@ -567,6 +642,9 @@ export const featuredTechPartners = [
   "OpenClaw",
   "Nextcloud",
   "VICIdial",
+  "3CX",
+  "Zoiper",
+  "FreePBX",
   "Zapier",
   "OpenAI",
   "Claude",
@@ -588,6 +666,9 @@ export const featuredPartnerLogos = [
   { name: "OpenClaw", logo: "/partners/openclaw.svg" },
   { name: "Nextcloud", logo: "/partners/nextcloud.svg" },
   { name: "VICIdial", logo: "/partners/vicidial.svg" },
+  { name: "3CX", logo: "/partners/3cx.svg" },
+  { name: "Zoiper", logo: "/partners/zoiper.svg" },
+  { name: "FreePBX", logo: "/partners/freepbx.svg" },
   { name: "Zapier", logo: "/partners/zapier.svg" },
   { name: "OpenAI", logo: "/partners/openai.svg" },
   { name: "Claude", logo: "/partners/claude.svg" },

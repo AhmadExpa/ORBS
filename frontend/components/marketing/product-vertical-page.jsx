@@ -11,8 +11,6 @@ import {
   Workflow,
 } from "lucide-react";
 import {
-  formatCurrency,
-  getPurchasePath,
   getSignupPath,
   getServiceVertical,
   productPlanSeeds,
@@ -20,7 +18,8 @@ import {
 } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
-import { ServiceLogo, ServiceLogoCluster, TechLogoPills, getBrandForName, getCategoryBrand } from "./service-branding";
+import { PlanCardDeck } from "./plan-card-deck";
+import { ServiceLogo, ServiceLogoCluster, getCategoryBrand } from "./service-branding";
 
 const verticalIconMap = {
   "managed-servers": Server,
@@ -144,15 +143,6 @@ const verticalProof = {
 
 function absoluteUrl(path) {
   return `${siteConfig.publicUrl}${path}`;
-}
-
-function categoryNameFor(slug) {
-  return serviceCategories.find((category) => category.slug === slug)?.name || slug;
-}
-
-function brandForPlan(plan) {
-  const planBrand = getBrandForName(plan.name);
-  return planBrand.logo ? planBrand : getCategoryBrand(plan.categorySlug);
 }
 
 function JsonLd({ data }) {
@@ -376,38 +366,7 @@ export function ProductVerticalPage({ slug }) {
               </Link>
             </div>
 
-            <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {plans.map((plan, index) => (
-                <article
-                  key={plan.slug}
-                  className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.35)]"
-                  style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{categoryNameFor(plan.categorySlug)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-[-0.015em] text-slate-950">{plan.name}</h3>
-                    </div>
-                    <ServiceLogo brand={brandForPlan(plan)} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
-                    <p className="shrink-0 text-sm font-semibold text-slate-950">
-                      {plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`}
-                    </p>
-                  </div>
-                  <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
-                  <TechLogoPills items={plan.techStack} limit={4} className="mt-5" />
-                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-950/[0.07] pt-4">
-                    <Link href={`/services/${plan.categorySlug}`} className="text-sm font-semibold text-slate-600 transition hover:text-slate-950">
-                      Service details
-                    </Link>
-                    <Link href={getPurchasePath(plan)}>
-                      <Button variant="ghost" className="min-h-10 rounded-md px-4 py-2">
-                        {plan.contactSalesOnly ? "Contact" : "Configure"}
-                      </Button>
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <PlanCardDeck categorySlug={vertical.categorySlugs[0]} categoryName={vertical.name} plans={plans} className="mt-8" />
           </div>
 
           <aside className="space-y-4">

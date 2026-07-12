@@ -1,7 +1,6 @@
-<svg viewBox="0 0 196 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
   <title id="title">Managed CDN</title>
-  <rect x="2" y="10" width="44" height="44" rx="11" fill="#0891b2"/>
-  <path d="M12 36c1-10 7-17 16-17s15 7 16 17M15 36h27M20 23c-2 6-2 11 0 17M36 23c2 6 2 11 0 17" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
-  <text x="60" y="27" fill="#101828" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800">Managed</text>
-  <text x="60" y="48" fill="#0891b2" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800">CDN</text>
+  <rect width="64" height="64" rx="16" fill="#ecfeff"/>
+  <rect x="13" y="13" width="38" height="38" rx="11" fill="#0891b2"/>
+  <path d="M20 36c1-10 6-16 12-16s11 6 12 16M20 36h24M25 23c-2 6-2 12 0 18M39 23c2 6 2 12 0 18" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
 </svg>

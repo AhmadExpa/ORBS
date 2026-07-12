@@ -1,1 +1,6 @@
-<svg viewBox="0 0 180 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title"><title id="title">Development Support</title><rect width="180" height="64" rx="18" fill="#f8fafc"/><rect x="12" y="12" width="42" height="40" rx="10" fill="#334155"/><path d="M29 25l-8 7 8 7M37 25l8 7-8 7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="66" y="30" fill="#0f172a" font-family="Arial, sans-serif" font-size="17" font-weight="800">Development</text><text x="66" y="47" fill="#334155" font-family="Arial, sans-serif" font-size="16" font-weight="700">Support</text></svg>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">Development Support</title>
+  <rect width="64" height="64" rx="16" fill="#f8fafc"/>
+  <rect x="13" y="13" width="38" height="38" rx="11" fill="#334155"/>
+  <path d="m29 24-8 8 8 8M35 24l8 8-8 8" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

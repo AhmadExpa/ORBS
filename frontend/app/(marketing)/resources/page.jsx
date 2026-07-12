@@ -3,7 +3,7 @@ import { resourcePages } from "@/lib/marketing-content";
 
 export const metadata = {
   title: "Resources",
-  description: "ElevenOrbits guides for managed VPS, private AI deployment, workflow automation, Vicidial operations, security hardening, and billing.",
+  description: "ElevenOrbits guides for managed VPS, migrations, delegate access, private AI deployment, automation, Vicidial operations, security hardening, and billing.",
   alternates: {
     canonical: "/resources",
   },

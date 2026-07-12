@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { CheckCircle2, ClipboardList, LifeBuoy, Settings2 } from "lucide-react";
-import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent, formatCurrency } from "@/lib/shared";
+import { ClipboardList, LifeBuoy, Settings2 } from "lucide-react";
+import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
-import { ServiceLogo, ServiceLogoCluster, ServiceVisualPanel, TechLogoPills, getCategoryBrand } from "./service-branding";
+import { PlanCardDeck } from "./plan-card-deck";
+import { ServiceLogo, ServiceLogoCluster, ServiceVisualPanel, getCategoryBrand } from "./service-branding";
 
 function JsonLd({ data }) {
   return (
@@ -172,52 +173,7 @@ export function ServicePage({ slug }) {
               </CardContent>
             </Card>
           ) : (
-            plans.map((plan, index) => (
-              <Card
-                key={plan.slug}
-                className="eo-premium-card eo-reveal-soft rounded-lg"
-                style={{ "--eo-delay": `${Math.min(index * 45, 220)}ms` }}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle>{plan.name}</CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                    </div>
-                    <ServiceLogo brand={categoryBrand} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
-                      <p className="text-3xl font-semibold text-slate-950">
-                        {plan.contactSalesOnly ? plan.displayPriceLabel : formatCurrency(plan.monthlyPrice)}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {plan.contactSalesOnly ? "Custom pricing" : "monthly billing available"}
-                      </p>
-                    </div>
-                    <Link href={getPurchasePath(plan)}>
-                      <Button>{plan.contactSalesOnly ? "Contact Sales" : "Configure"}</Button>
-                    </Link>
-                  </div>
-                  {plan.techStack?.length ? (
-                    <div>
-                      <p className="text-sm font-semibold text-slate-500">Tech Stack</p>
-                      <TechLogoPills items={plan.techStack} limit={6} className="mt-3" />
-                    </div>
-                  ) : null}
-                  <ul className="grid gap-2 text-sm text-slate-600 md:grid-cols-2">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex gap-2">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))
+            <PlanCardDeck categorySlug={slug} categoryName={category.name} plans={plans} />
           )}
         </div>
         <div className="space-y-6">

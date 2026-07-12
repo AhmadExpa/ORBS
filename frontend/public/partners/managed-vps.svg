@@ -1,1 +1,6 @@
-<svg viewBox="0 0 160 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title"><title id="title">Managed VPS</title><rect width="160" height="64" rx="18" fill="#fff7ed"/><rect x="12" y="12" width="42" height="40" rx="10" fill="#ff7a1a"/><path d="M23 24h20M23 32h20M23 40h13" stroke="#fff" stroke-width="4" stroke-linecap="round"/><text x="66" y="29" fill="#0f172a" font-family="Arial, sans-serif" font-size="16" font-weight="700">Managed</text><text x="66" y="46" fill="#ff7a1a" font-family="Arial, sans-serif" font-size="20" font-weight="800">VPS</text></svg>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">Managed VPS</title>
+  <rect width="64" height="64" rx="16" fill="#fff7ed"/>
+  <rect x="14" y="12" width="36" height="40" rx="10" fill="#ff7a1a"/>
+  <path d="M23 24h18M23 32h18M23 40h12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>

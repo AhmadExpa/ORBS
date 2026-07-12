@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, Layers3, ShieldCheck } from "lucide-react";
+import { ArrowRight, Clock3, Layers3, ShieldCheck } from "lucide-react";
 import { featuredPartnerLogos } from "@/lib/marketing-content";
-import { getPurchasePath, productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
+import { productPlanSeeds, serviceCategories, formatCurrency } from "@/lib/shared";
 import { Button, cn } from "@/lib/ui";
-import { ServiceLogo, TechLogoPills, getBrandForName, getCategoryBrand } from "@/components/marketing/service-branding";
+import { PlanCardDeck } from "@/components/marketing/plan-card-deck";
+import { ServiceLogo, getCategoryBrand } from "@/components/marketing/service-branding";
 
 export const metadata = {
   title: "Pricing | ElevenOrbits",
@@ -59,54 +60,6 @@ function getStartingPrice(plans) {
 
   const lowest = pricedPlans.reduce((min, plan) => (plan.monthlyPrice < min.monthlyPrice ? plan : min), pricedPlans[0]);
   return `${formatCurrency(lowest.monthlyPrice)}/mo`;
-}
-
-function getBillingLabel(plan) {
-  if (plan.contactSalesOnly) {
-    return "Custom engagement";
-  }
-
-  return `Billing: ${plan.billingCycles.join(" / ")}`;
-}
-
-function PlanRow({ plan }) {
-  const primaryFeatures = plan.features.slice(0, 3);
-  const price = plan.contactSalesOnly ? plan.displayPriceLabel : `${formatCurrency(plan.monthlyPrice)}/mo`;
-  const planBrand = getBrandForName(plan.name);
-  const brand = planBrand.logo ? planBrand : getCategoryBrand(plan.categorySlug);
-
-  return (
-    <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1.1fr)_170px_minmax(0,1.25fr)_190px] md:items-center lg:px-7">
-      <div className="flex items-start gap-3">
-        <ServiceLogo brand={brand} imageClassName="h-7 w-8" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" />
-        <div>
-          <h3 className="text-lg font-semibold tracking-tight text-slate-950">{plan.name}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{plan.description}</p>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-3xl font-semibold tracking-tight text-slate-950">{price}</p>
-        <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{getBillingLabel(plan)}</p>
-      </div>
-
-      <div className="space-y-3">
-        {primaryFeatures.map((feature) => (
-          <div key={feature} className="flex gap-2 text-sm leading-5 text-slate-700">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-            <span>{feature}</span>
-          </div>
-        ))}
-        {plan.techStack?.length ? (
-          <TechLogoPills items={plan.techStack} limit={4} className="pt-1" />
-        ) : null}
-      </div>
-
-      <Link href={getPurchasePath(plan)} className="w-full md:w-auto">
-        <Button className="w-full rounded-md">{plan.contactSalesOnly ? "Contact Sales" : "Choose Plan"}</Button>
-      </Link>
-    </div>
-  );
 }
 
 export default function PricingPage() {
@@ -196,10 +149,8 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-slate-200">
-                {plans.map((plan) => (
-                  <PlanRow key={plan.slug} plan={plan} />
-                ))}
+              <div className="bg-slate-50 p-5 lg:p-7">
+                <PlanCardDeck categorySlug={category.slug} categoryName={category.name} plans={plans} />
               </div>
             </section>
           ))}

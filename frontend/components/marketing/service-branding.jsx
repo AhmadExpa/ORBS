@@ -1,4 +1,28 @@
-import { CheckCircle2 } from "lucide-react";
+import {
+  Boxes,
+  BrainCircuit,
+  Cable,
+  CheckCircle2,
+  CloudCog,
+  Code2,
+  Container,
+  Cpu,
+  Database,
+  Globe,
+  HardDrive,
+  Headphones,
+  LockKeyhole,
+  Monitor,
+  PhoneCall,
+  RadioTower,
+  Route,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Terminal,
+  Webhook,
+  Workflow,
+} from "lucide-react";
 import { serviceCategories } from "@/lib/shared";
 import { cn } from "@/lib/ui";
 
@@ -29,7 +53,7 @@ export const categoryBranding = {
     logo: "/partners/vicidial.svg",
     accentClassName: "border-slate-200 bg-slate-50 text-slate-800",
     panelClassName: "from-slate-50 via-white to-indigo-50",
-    tools: ["VICIdial", "Asterisk", "SIP routing", "Twilio", "Jira"],
+    tools: ["VICIdial", "3CX", "FreePBX", "Zoiper", "Asterisk"],
   },
   workflows: {
     name: "n8n Workflows",
@@ -104,11 +128,20 @@ export const brandLogos = {
   "gpu-ready": categoryBranding["ai-servers"],
   vicidial: categoryBranding.vicidial,
   "vicidial management": categoryBranding.vicidial,
-  asterisk: { name: "Asterisk" },
+  "3cx": { name: "3CX", logo: "/partners/3cx.svg" },
+  freepbx: { name: "FreePBX", logo: "/partners/freepbx.svg" },
+  zoiper: { name: "Zoiper", logo: "/partners/zoiper.svg" },
+  asterisk: { name: "Asterisk", logo: "/partners/asterisk.svg" },
   n8n: { name: "n8n", logo: "/partners/n8n.svg" },
-  webhooks: { name: "Webhooks" },
+  webhooks: { name: "Webhooks", icon: Webhook, iconClassName: "border-rose-200 bg-rose-50 text-rose-600" },
+  webhook: { name: "Webhook", icon: Webhook, iconClassName: "border-rose-200 bg-rose-50 text-rose-600" },
+  "webhook orchestration": { name: "Webhook orchestration", icon: Webhook, iconClassName: "border-rose-200 bg-rose-50 text-rose-600" },
+  "webhook routing": { name: "Webhook routing", icon: Route, iconClassName: "border-rose-200 bg-rose-50 text-rose-600" },
   zapier: { name: "Zapier", logo: "/partners/zapier.svg" },
   deepseek: { name: "DeepSeek", logo: "/partners/deepseek.svg" },
+  "deepseek api": { name: "DeepSeek API", logo: "/partners/deepseek.svg" },
+  "open-source deepseek": { name: "Open-source DeepSeek", logo: "/partners/deepseek.svg" },
+  "deepseek openai integration": { name: "DeepSeek / OpenAI integration", icon: Sparkles, iconClassName: "border-violet-200 bg-violet-50 text-violet-700" },
   clawbot: { name: "Clawbot", logo: "/partners/clawbot.svg" },
   openai: { name: "OpenAI", logo: "/partners/openai.svg" },
   claude: { name: "Claude", logo: "/partners/claude.svg" },
@@ -118,14 +151,20 @@ export const brandLogos = {
   veeam: { name: "Veeam", logo: "/partners/veeam.svg" },
   "managed cdn": categoryBranding.cdn,
   cdn: categoryBranding.cdn,
+  "cdn edge caching": { name: "CDN edge caching", icon: Globe, iconClassName: "border-cyan-200 bg-cyan-50 text-cyan-700" },
+  "priority edge caching": { name: "Priority edge caching", icon: Globe, iconClassName: "border-cyan-200 bg-cyan-50 text-cyan-700" },
+  "enterprise cdn": { name: "Enterprise CDN", icon: CloudCog, iconClassName: "border-cyan-200 bg-cyan-50 text-cyan-700" },
   "object storage": categoryBranding["object-storage"],
   "o7 bucket": categoryBranding["object-storage"],
-  "s3-compatible api": categoryBranding["object-storage"],
+  "s3-compatible api": { name: "S3-compatible API", icon: Database, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "cors policy": { name: "CORS policy", icon: ShieldCheck, iconClassName: "border-sky-200 bg-sky-50 text-sky-700" },
+  "custom domain": { name: "Custom domain", icon: Globe, iconClassName: "border-sky-200 bg-sky-50 text-sky-700" },
   "hermes agent": categoryBranding["hermes-ai-hosting"],
   "hermes ai": categoryBranding["hermes-ai-hosting"],
   openclaw: categoryBranding["openclaw-hosting"],
   nextcloud: categoryBranding["nextcloud-hosting"],
   "development support": categoryBranding["development-support"],
+  github: { name: "GitHub", logo: "/partners/github.svg" },
   jira: { name: "Jira", logo: "/partners/jira.svg" },
   twilio: { name: "Twilio", logo: "/partners/twilio.svg" },
   telnyx: { name: "Telnyx", logo: "/partners/telnyx.svg" },
@@ -138,6 +177,35 @@ export const brandLogos = {
   microsoft: { name: "Microsoft", logo: "/partners/microsoft.svg" },
   azure: { name: "Microsoft Azure", logo: "/partners/azure.svg" },
   hp: { name: "HP", logo: "/partners/hp.svg" },
+  ubuntu: { name: "Ubuntu", logo: "/partners/ubuntu.svg" },
+  almalinux: { name: "AlmaLinux", logo: "/partners/almalinux.svg" },
+  "ubuntu almalinux": { name: "Ubuntu / AlmaLinux", logo: "/partners/ubuntu.svg" },
+  "almalinux ubuntu": { name: "AlmaLinux / Ubuntu", logo: "/partners/almalinux.svg" },
+  "ubuntu debian": { name: "Ubuntu / Debian", logo: "/partners/ubuntu.svg" },
+  nginx: { name: "Nginx", logo: "/partners/nginx.svg" },
+  apache: { name: "Apache", logo: "/partners/apache.svg" },
+  "nginx apache": { name: "Nginx / Apache", logo: "/partners/nginx.svg" },
+  docker: { name: "Docker", logo: "/partners/docker.svg" },
+  "kubernetes docker": { name: "Kubernetes / Docker", logo: "/partners/kubernetes.svg" },
+  "container orchestration": { name: "Container orchestration", icon: Container, iconClassName: "border-blue-200 bg-blue-50 text-blue-700" },
+  proxmox: { name: "Proxmox", logo: "/partners/proxmox.svg" },
+  "kvm proxmox": { name: "KVM / Proxmox", logo: "/partners/proxmox.svg" },
+  kubernetes: { name: "Kubernetes", logo: "/partners/kubernetes.svg" },
+  ollama: { name: "Ollama", icon: BrainCircuit, iconClassName: "border-slate-200 bg-slate-50 text-slate-700" },
+  "vllm ollama": { name: "vLLM / Ollama", icon: BrainCircuit, iconClassName: "border-slate-200 bg-slate-50 text-slate-700" },
+  "pytorch vllm": { name: "PyTorch / vLLM", icon: BrainCircuit, iconClassName: "border-orange-200 bg-orange-50 text-orange-700" },
+  "managed firewall": { name: "Managed firewall", icon: Shield, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "managed firewall and backups": { name: "Managed firewall and backups", icon: ShieldCheck, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "firewall policy review": { name: "Firewall policy review", icon: ShieldCheck, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "os hardening": { name: "OS hardening", icon: LockKeyhole, iconClassName: "border-slate-200 bg-slate-50 text-slate-700" },
+  fail2ban: { name: "Fail2Ban / WAF", icon: ShieldCheck, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  waf: { name: "WAF", icon: Shield, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "waf rules": { name: "WAF rules", icon: Shield, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "waf reverse proxy": { name: "WAF / reverse proxy", icon: Shield, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  "sip routing": { name: "SIP routing", icon: Route, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" },
+  "sip trunk setup": { name: "SIP trunk setup", icon: Cable, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" },
+  "call recording review": { name: "Call recording review", icon: RadioTower, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" },
+  "qa workflow support": { name: "QA workflow support", icon: Headphones, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" },
 };
 
 function normalizeBrandName(value) {
@@ -148,9 +216,47 @@ function normalizeBrandName(value) {
     .trim();
 }
 
-function getInitials(label) {
-  const parts = String(label || "EO").replace(/[^a-zA-Z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
-  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "EO";
+function getIconForLabel(label) {
+  const normalized = normalizeBrandName(label);
+
+  if (/\b(vcpu|cpu|gpu|cuda|cluster|compute)\b/.test(normalized)) {
+    return { icon: Cpu, iconClassName: "border-violet-200 bg-violet-50 text-violet-700" };
+  }
+  if (/\b(ram|memory)\b/.test(normalized)) {
+    return { icon: Boxes, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" };
+  }
+  if (/\b(ssd|nvme|disk|storage|bucket|backup|snapshot|retention|archive)\b/.test(normalized)) {
+    return { icon: HardDrive, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  }
+  if (/\b(bandwidth|edge|cdn|ddos|ssl|domain|cors|cloud)\b/.test(normalized)) {
+    return { icon: Globe, iconClassName: "border-cyan-200 bg-cyan-50 text-cyan-700" };
+  }
+  if (/\b(firewall|waf|security|hardening|edr|siem|policy|governed|controls|incident|response|patch)\b/.test(normalized)) {
+    return { icon: ShieldCheck, iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  }
+  if (/\b(monitoring|observability|analytics|model monitoring)\b/.test(normalized)) {
+    return { icon: Monitor, iconClassName: "border-sky-200 bg-sky-50 text-sky-700" };
+  }
+  if (/\b(webhook|workflow|queue|event|automation|integration|routing)\b/.test(normalized)) {
+    return { icon: Workflow, iconClassName: "border-rose-200 bg-rose-50 text-rose-700" };
+  }
+  if (/\b(api|custom apis|release|runbook|application|architecture|troubleshooting|support|registry|artifact)\b/.test(normalized)) {
+    return { icon: Code2, iconClassName: "border-slate-200 bg-slate-50 text-slate-700" };
+  }
+  if (/\b(phone|call|sip|voip|vicidial|asterisk|queue)\b/.test(normalized)) {
+    return { icon: PhoneCall, iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700" };
+  }
+  if (/\b(ai|model|prompt|vector|deepseek|openai|vllm|ollama|private model)\b/.test(normalized)) {
+    return { icon: BrainCircuit, iconClassName: "border-violet-200 bg-violet-50 text-violet-700" };
+  }
+  if (/\b(container|docker|kubernetes)\b/.test(normalized)) {
+    return { icon: Container, iconClassName: "border-blue-200 bg-blue-50 text-blue-700" };
+  }
+  if (/\b(windows|ubuntu|debian|linux|almalinux|os)\b/.test(normalized)) {
+    return { icon: Terminal, iconClassName: "border-orange-200 bg-orange-50 text-orange-700" };
+  }
+
+  return { icon: Sparkles, iconClassName: "border-slate-200 bg-white text-slate-700" };
 }
 
 export function getCategoryBrand(categorySlug) {
@@ -166,7 +272,7 @@ export function getBrandForName(name) {
   }
 
   const matchedKey = Object.keys(brandLogos).find((key) => normalized.includes(key) || key.includes(normalized));
-  return matchedKey ? brandLogos[matchedKey] : { name };
+  return matchedKey ? brandLogos[matchedKey] : { name, ...getIconForLabel(name) };
 }
 
 export function getServiceBrands(categorySlugs = [], techItems = []) {
@@ -188,11 +294,13 @@ export function getServiceBrands(categorySlugs = [], techItems = []) {
 export function ServiceLogo({ brand, name, showLabel = false, className, imageClassName, labelClassName }) {
   const resolved = brand || getBrandForName(name);
   const label = resolved?.name || name || "Service";
-  const shouldShowLabel = showLabel && !resolved?.logo;
-  const logoSizeClassName = imageClassName || (showLabel ? "h-11 w-32" : "h-10 w-28");
+  const shouldShowLabel = showLabel;
+  const logoSizeClassName = imageClassName || (showLabel ? "h-9 w-9" : "h-10 w-28");
+  const Icon = resolved?.icon || getIconForLabel(label).icon;
+  const iconClassName = resolved?.iconClassName || getIconForLabel(label).iconClassName;
 
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
+    <span className={cn("inline-flex min-w-0 items-center gap-2", className)} aria-label={label}>
       {resolved?.logo ? (
         <img
           src={resolved.logo}
@@ -204,11 +312,11 @@ export function ServiceLogo({ brand, name, showLabel = false, className, imageCl
           className={cn("shrink-0 object-contain", logoSizeClassName)}
         />
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white">
-          <span className="text-xs font-semibold text-slate-800">{getInitials(label)}</span>
+        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-md border", iconClassName)}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
       )}
-      {shouldShowLabel ? <span className={cn("truncate text-sm font-semibold text-slate-800", labelClassName)}>{label}</span> : null}
+      {shouldShowLabel ? <span className={cn("min-w-0 text-sm font-semibold text-slate-800", labelClassName)}>{label}</span> : null}
     </span>
   );
 }
@@ -235,7 +343,7 @@ export function TechLogoPills({ items = [], limit = 5, className }) {
         return (
           <span key={item} className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-700">
             <ServiceLogo brand={brand} imageClassName="h-6 w-12" className="[&>span:first-child]:h-7 [&>span:first-child]:w-7" />
-            {brand.logo ? null : <span className="truncate">{item}</span>}
+            <span className="truncate">{item}</span>
           </span>
         );
       })}
@@ -264,7 +372,7 @@ export function ServiceVisualPanel({ title = "Managed delivery stack", descripti
       <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-5">
         {brands.slice(0, 6).map((brand) => (
           <div key={brand.logo || brand.name} className="flex min-h-14 items-center justify-center">
-            <ServiceLogo brand={brand} showLabel imageClassName="h-12 w-36 max-w-full" className="[&>span:first-child]:h-11 [&>span:first-child]:w-11" labelClassName="text-xs" />
+            <ServiceLogo brand={brand} showLabel imageClassName="h-10 w-10" className="w-full justify-start [&>span:first-child]:h-11 [&>span:first-child]:w-11" labelClassName="text-xs leading-5" />
           </div>
         ))}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import {
@@ -24,14 +24,31 @@ import {
   X,
 } from "lucide-react";
 import { Button, cn } from "@/lib/ui";
-import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds, serviceVerticals } from "@/lib/shared";
+import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds } from "@/lib/shared";
 import { industryPages, resourcePages } from "@/lib/marketing-content";
+import { ServiceLogoCluster } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
 
 const planMap = new Map(productPlanSeeds.map((plan) => [plan.slug, plan]));
 
+const industryRecommendationSlugs = {
+  "Managed Servers": ["vps", "vds"],
+  "Cybersecurity Services": ["cybersecurity"],
+  "Workflow Automation": ["workflows"],
+  "VoIP and Vicidial Services": ["vicidial"],
+  "Development Support": ["development-support"],
+  "AI Services": ["ai-servers", "ai-solutions", "workflows"],
+  "Managed CDN": ["cdn"],
+  "Object Storage": ["object-storage"],
+  "Self-Hosted App Services": ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
+};
+
 function plansFor(slugs) {
   return slugs.map((slug) => planMap.get(slug)).filter(Boolean);
+}
+
+function slugsForIndustryRecommendations(items = []) {
+  return [...new Set(items.flatMap((item) => industryRecommendationSlugs[item] || []))];
 }
 
 const serviceChoices = [
@@ -238,7 +255,6 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                 <button
                   key={choice.id}
                   type="button"
-                  onMouseEnter={() => setActiveChoiceId(choice.id)}
                   onFocus={() => setActiveChoiceId(choice.id)}
                   onClick={() => setActiveChoiceId(choice.id)}
                   className={cn(
@@ -334,7 +350,7 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
   );
 }
 
-function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, active = false, onMouseEnter, onFocus, onClick }) {
+function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, active = false, onFocus, onClick }) {
   const content = (
     <>
       {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-white/75" : "text-slate-400")} /> : null}
@@ -354,7 +370,6 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
           "group flex items-start gap-3 rounded-md px-3 py-2.5 transition",
           active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
         )}
-        onMouseEnter={onMouseEnter}
         onFocus={onFocus}
         onClick={onNavigate}
       >
@@ -370,7 +385,6 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
         "group flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition",
         active ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
       )}
-      onMouseEnter={onMouseEnter}
       onFocus={onFocus}
       onClick={onClick}
     >
@@ -379,23 +393,17 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
   );
 }
 
-function RecommendedServiceLinks({ labels, onNavigate }) {
+function IndustryFitPanel({ industry, onNavigate }) {
   return (
-    <div className="grid gap-2">
-      {labels.map((label) => {
-        const match = serviceVerticals.find((vertical) => vertical.name === label || vertical.shortName === label || label.includes(vertical.shortName));
-        return (
-          <Link
-            key={label}
-            href={match ? `/${match.slug}` : "/services"}
-            className="group flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-sky-200 hover:bg-sky-50/50"
-            onClick={onNavigate}
-          >
-            {label}
-            <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
-          </Link>
-        );
-      })}
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+      <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(industry.recommended)} max={5} />
+      <p className="mt-4 text-sm leading-6 text-slate-600">
+        {industry.fit}
+      </p>
+      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
+        Open industry page
+        <ArrowRight className="ml-1 h-4 w-4" />
+      </Link>
     </div>
   );
 }
@@ -423,7 +431,6 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
                 label={industry.title}
                 description={industry.eyebrow}
                 active={industry.slug === activeIndustry.slug}
-                onMouseEnter={() => setActiveIndustrySlug(industry.slug)}
                 onFocus={() => setActiveIndustrySlug(industry.slug)}
                 onClick={() => setActiveIndustrySlug(industry.slug)}
               />
@@ -431,12 +438,8 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
           </div>
         </SimpleColumn>
 
-        <SimpleColumn eyebrow="Recommended services">
-          <RecommendedServiceLinks labels={activeIndustry.recommended} onNavigate={onNavigate} />
-          <Link href={`/industries/${activeIndustry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
-            Open industry page
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
+        <SimpleColumn eyebrow="Operational fit">
+          <IndustryFitPanel industry={activeIndustry} onNavigate={onNavigate} />
         </SimpleColumn>
 
         <SimpleColumn eyebrow="More" className="border-l border-slate-200 bg-slate-50">
@@ -464,7 +467,6 @@ function LearnMegaMenu({ activeResourceSlug, setActiveResourceSlug, onNavigate }
                 label={resource.title}
                 description={resource.eyebrow}
                 active={resource.slug === activeResource.slug}
-                onMouseEnter={() => setActiveResourceSlug(resource.slug)}
                 onFocus={() => setActiveResourceSlug(resource.slug)}
                 onClick={() => setActiveResourceSlug(resource.slug)}
               />
@@ -536,6 +538,7 @@ function MobileLink({ href, label, description, onClick, icon: Icon }) {
 
 export function SiteHeader() {
   const { user } = useUser();
+  const headerRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileOpenSection, setMobileOpenSection] = useState("services");
@@ -592,6 +595,33 @@ export function SiteHeader() {
     };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    if (!activeDesktopMenu) {
+      return;
+    }
+
+    function handlePointerDown(event) {
+      if (headerRef.current?.contains(event.target)) {
+        return;
+      }
+      setActiveDesktopMenu(null);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setActiveDesktopMenu(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeDesktopMenu]);
+
   function closeMobileMenu() {
     setMobileMenuOpen(false);
     setMobileOpenSection("services");
@@ -612,8 +642,14 @@ export function SiteHeader() {
     setActiveDesktopMenu(null);
   }
 
+  function toggleDesktopMenu(menuId) {
+    setMobileMenuOpen(false);
+    setActiveDesktopMenu((current) => (current === menuId ? null : menuId));
+  }
+
   return (
     <header
+      ref={headerRef}
       className={cn(
         "sticky top-0 z-50 border-b text-white backdrop-blur-xl transition-all duration-300",
         elevated
@@ -621,7 +657,14 @@ export function SiteHeader() {
           : "border-white/10 bg-[#101318]/95 shadow-none",
       )}
     >
-      {activeDesktopMenu ? <div className="fixed inset-x-0 top-[68px] z-30 hidden h-[calc(100vh-68px)] bg-slate-950/60 backdrop-blur-[2px] xl:block" aria-hidden="true" /> : null}
+      {activeDesktopMenu ? (
+        <button
+          type="button"
+          className="fixed inset-x-0 top-[68px] z-30 hidden h-[calc(100vh-68px)] cursor-default bg-slate-950/60 backdrop-blur-[2px] xl:block"
+          aria-label="Close menu"
+          onClick={closeDesktopMenu}
+        />
+      ) : null}
 
       <div className={cn("relative z-40 mx-auto flex w-full max-w-[1520px] items-center gap-5 px-4 transition-[padding] duration-300 sm:px-6 lg:px-8", elevated ? "py-3" : "py-4")}>
         <Link href="/" className="flex shrink-0 items-center" aria-label="ElevenOrbits home">
@@ -629,20 +672,15 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold xl:flex">
-          <Link href="/pricing" className="relative py-2 text-white/70 transition hover:text-white" onMouseEnter={closeDesktopMenu}>
+          <Link href="/pricing" className="relative py-2 text-white/70 transition hover:text-white">
             Pricing
           </Link>
           {desktopMenus.map((menu) => (
-            <div
-              key={menu.id}
-              className="relative"
-              onMouseEnter={() => setActiveDesktopMenu(menu.id)}
-              onMouseLeave={closeDesktopMenu}
-            >
+            <div key={menu.id} className="relative">
               <DesktopTrigger
                 label={menu.label}
                 active={activeDesktopMenu === menu.id}
-                onClick={() => setActiveDesktopMenu(menu.id)}
+                onClick={() => toggleDesktopMenu(menu.id)}
               />
               {activeDesktopMenu === "services" && menu.id === "services" ? (
                 <ServicesMegaMenu
@@ -667,7 +705,7 @@ export function SiteHeader() {
               ) : null}
             </div>
           ))}
-          <Link href="/contact" className="relative py-2 text-white/70 transition hover:text-white" onMouseEnter={closeDesktopMenu}>
+          <Link href="/contact" className="relative py-2 text-white/70 transition hover:text-white">
             Contact
           </Link>
         </nav>

@@ -492,9 +492,9 @@ export function LandingPage() {
               </h2>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/90 shadow-[0_34px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur">
-                <div className="grid gap-px bg-[color:var(--marketing-line)] md:grid-cols-3">
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="grid gap-4">
+                <div className="grid gap-4 md:grid-cols-3">
                   {[
                     {
                       title: "Structured delivery",
@@ -515,7 +515,7 @@ export function LandingPage() {
                     const Icon = item.icon;
 
                     return (
-                      <div key={item.title} className="bg-white px-7 py-8">
+                      <div key={item.title} className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white px-6 py-7 shadow-[0_22px_58px_-48px_rgba(15,23,42,0.22)]">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
                         <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
                           <Icon className="h-5 w-5" />
@@ -527,7 +527,7 @@ export function LandingPage() {
                   })}
                 </div>
 
-                <div className="border-t border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-7 md:p-8">
+                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-orange-100 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-7 shadow-[0_26px_70px_-52px_rgba(249,115,22,0.22)] md:p-8">
                   <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">

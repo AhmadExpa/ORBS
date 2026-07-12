@@ -24,10 +24,23 @@ const resourceSlugs = {
   "vicidial-operations-checklist": ["vicidial"],
   "server-security-hardening-baseline": ["cybersecurity", "vps"],
   "billing-renewal-guide": ["vps", "development-support"],
+  "vps-migration-planning-guide": ["vps", "vds", "development-support"],
+  "delegate-access-handoff-guide": ["development-support", "cybersecurity", "vps"],
 };
 
 function slugsForRecommendations(items = []) {
   return [...new Set(items.flatMap((item) => recommendationSlugs[item] || []))];
+}
+
+function relatedResourcesFor(resource, resources = []) {
+  const orderedSlugs = resource.relatedSlugs?.length
+    ? resource.relatedSlugs
+    : resources.filter((item) => item.slug !== resource.slug).slice(0, 4).map((item) => item.slug);
+
+  return orderedSlugs
+    .map((slug) => resources.find((item) => item.slug === slug))
+    .filter(Boolean)
+    .slice(0, 5);
 }
 
 export function IndustryIndex({ industries }) {
@@ -82,7 +95,7 @@ export function IndustryDetail({ industry }) {
           </Link>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{industry.title}</h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{industry.description}</p>
-          <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={6} showLabels className="mt-7" />
+          <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={6} className="mt-7" />
         </div>
       </section>
       <section>
@@ -123,12 +136,10 @@ export function IndustryDetail({ industry }) {
             </section>
           </div>
           <aside className="eo-premium-card eo-reveal-soft h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Recommended Services</p>
-            <div className="mt-4 grid gap-2">
-              {industry.recommended.map((item) => (
-                <span key={item} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">{item}</span>
-              ))}
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Operational Coverage</p>
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              The exact service mix depends on the account, workload, and support scope. These logos show the operating lanes usually involved.
+            </p>
             <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={5} className="mt-5" />
             <Link href="/services" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950">
               Compare services
@@ -182,7 +193,9 @@ export function ResourceIndex({ resources }) {
   );
 }
 
-export function ResourceDetail({ resource }) {
+export function ResourceDetail({ resource, resources = [] }) {
+  const relatedResources = relatedResourcesFor(resource, resources);
+
   return (
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
@@ -202,6 +215,22 @@ export function ResourceDetail({ resource }) {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Guide Summary</p>
             <p className="mt-4 text-sm leading-7 text-slate-600">{resource.intro}</p>
             <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={5} className="mt-5" />
+            {relatedResources.length ? (
+              <div className="mt-6 border-t border-slate-200 pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">More Guides</p>
+                <div className="mt-3 grid gap-2">
+                  {relatedResources.map((item) => (
+                    <Link
+                      key={item.slug}
+                      href={`/resources/${item.slug}`}
+                      className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm font-semibold leading-5 text-slate-700 transition hover:border-sky-200 hover:bg-sky-50/50 hover:text-slate-950"
+                    >
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </aside>
           <div className="space-y-8">
             {resource.sections.map((section, sectionIndex) => (

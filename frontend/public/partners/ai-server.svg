@@ -1,1 +1,9 @@
-<svg viewBox="0 0 160 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title"><title id="title">AI Server</title><rect width="160" height="64" rx="18" fill="#f5f3ff"/><rect x="12" y="12" width="42" height="40" rx="10" fill="#6d28d9"/><circle cx="27" cy="28" r="4" fill="#fff"/><circle cx="40" cy="24" r="4" fill="#fff"/><circle cx="39" cy="40" r="4" fill="#fff"/><path d="M30 29l7-4M30 30l7 8" stroke="#fff" stroke-width="3" stroke-linecap="round"/><text x="66" y="30" fill="#0f172a" font-family="Arial, sans-serif" font-size="18" font-weight="800">AI</text><text x="66" y="47" fill="#6d28d9" font-family="Arial, sans-serif" font-size="16" font-weight="700">Servers</text></svg>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">AI Server</title>
+  <rect width="64" height="64" rx="16" fill="#f5f3ff"/>
+  <rect x="13" y="13" width="38" height="38" rx="11" fill="#6d28d9"/>
+  <circle cx="26" cy="28" r="4" fill="#fff"/>
+  <circle cx="39" cy="24" r="4" fill="#fff"/>
+  <circle cx="39" cy="40" r="4" fill="#fff"/>
+  <path d="M29.5 28.5 36 25M29.5 31 36 38" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</svg>
