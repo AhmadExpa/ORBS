@@ -438,69 +438,126 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
   );
 }
 
-function LearnMegaMenu({ activeResourceSlug, setActiveResourceSlug, onNavigate }) {
-  const activeResource = resourcePages.find((resource) => resource.slug === activeResourceSlug) || resourcePages[0];
+function LearnMegaMenu({ onNavigate }) {
+  // Map eyebrow types to colors
+  const typeColor = {
+    Guide: { dot: "bg-sky-400", text: "text-sky-400", badge: "bg-sky-400/10 text-sky-400" },
+    Checklist: { dot: "bg-emerald-400", text: "text-emerald-400", badge: "bg-emerald-400/10 text-emerald-400" },
+    Baseline: { dot: "bg-amber-400", text: "text-amber-400", badge: "bg-amber-400/10 text-amber-400" },
+  };
+
+  const featured = resourcePages[0];
+  const rest = resourcePages.slice(1);
 
   return (
     <MegaFrame>
-      <div className="grid bg-white xl:grid-cols-[420px_minmax(0,1fr)_300px]">
-        <SimpleColumn eyebrow="Resources" className="border-r border-slate-200">
-          <div className="grid gap-1">
-            {resourcePages.map((resource) => (
-              <SimpleLinkCard
-                key={resource.slug}
-                label={resource.title}
-                description={resource.eyebrow}
-                active={resource.slug === activeResource.slug}
-                onFocus={() => setActiveResourceSlug(resource.slug)}
-                onClick={() => setActiveResourceSlug(resource.slug)}
-              />
-            ))}
-          </div>
-        </SimpleColumn>
-
-        <SimpleColumn eyebrow="Guides">
-          <div className="grid gap-2">
-            {resourcePages.map((resource) => (
-              <Link
-                key={resource.slug}
-                href={`/resources/${resource.slug}`}
+      <div className="grid bg-[#0d1117] xl:grid-cols-[280px_minmax(0,1fr)_220px]">
+        {/* ── Left: Featured resource ── */}
+        <section className="flex flex-col justify-between gap-6 border-r border-white/[0.07] p-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">Featured</p>
+            <Link
+              href={`/resources/${featured.slug}`}
+              className="group mt-4 block"
+              onClick={onNavigate}
+            >
+              <span
                 className={cn(
-                  "group flex items-center justify-between gap-3 rounded-md border px-4 py-3 transition",
-                  resource.slug === activeResource.slug
-                    ? "border-sky-300 bg-sky-50 text-sky-900"
-                    : "border-slate-200 bg-slate-50 text-slate-950 hover:border-sky-200 hover:bg-sky-50/50",
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest",
+                  (typeColor[featured.eyebrow] || typeColor.Guide).badge,
                 )}
-                onClick={onNavigate}
-                onFocus={() => setActiveResourceSlug(resource.slug)}
-                onMouseEnter={() => setActiveResourceSlug(resource.slug)}
               >
+                <span className={cn("h-1.5 w-1.5 rounded-full", (typeColor[featured.eyebrow] || typeColor.Guide).dot)} />
+                {featured.eyebrow}
+              </span>
+              <h3 className="mt-3 text-lg font-bold leading-snug text-white transition-colors group-hover:text-sky-300">
+                {featured.title}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-white/40 line-clamp-3">
+                {featured.description}
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-sky-400 transition group-hover:gap-2.5">
+                Read guide <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+          </div>
+
+          <Link
+            href="/resources"
+            className="group mt-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+            onClick={onNavigate}
+          >
+            <BookOpen className="h-4 w-4 text-white/40" />
+            Browse all resources
+            <ArrowRight className="ml-auto h-3.5 w-3.5 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/60" />
+          </Link>
+        </section>
+
+        {/* ── Center: All guides grid ── */}
+        <section className="p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">All Resources</p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {rest.map((resource) => {
+              const tc = typeColor[resource.eyebrow] || typeColor.Guide;
+              return (
+                <Link
+                  key={resource.slug}
+                  href={`/resources/${resource.slug}`}
+                  className="group flex flex-col gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 transition hover:border-white/15 hover:bg-white/[0.07]"
+                  onClick={onNavigate}
+                >
+                  <span className={cn("flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest", tc.text)}>
+                    <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tc.dot)} />
+                    {resource.eyebrow}
+                  </span>
+                  <span className="text-sm font-semibold leading-snug text-white/85 transition group-hover:text-white">
+                    {resource.title}
+                  </span>
+                  <span className="text-xs leading-5 text-white/35 line-clamp-2">{resource.description}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Right: Company links ── */}
+        <section className="flex flex-col border-l border-white/[0.07] p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">Company</p>
+          <div className="mt-4 grid gap-1">
+            {companyLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                onClick={onNavigate}
+              >
+                <item.icon className="h-4 w-4 shrink-0 text-white/25 transition group-hover:text-white/50" />
                 <span>
-                  <span className="block text-sm font-semibold">{resource.title}</span>
-                  <span className="mt-0.5 block text-xs text-slate-500">{resource.eyebrow}</span>
+                  <span className="block text-sm font-semibold">{item.label}</span>
+                  <span className="block text-xs text-white/30">{item.description}</span>
                 </span>
-                <ArrowRight className={cn("h-4 w-4 shrink-0 transition group-hover:translate-x-0.5", resource.slug === activeResource.slug ? "text-sky-400" : "text-slate-300 group-hover:text-slate-700")} />
+                <ArrowRight className="ml-auto h-3 w-3 shrink-0 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-white/40" />
               </Link>
             ))}
           </div>
-          <Link href="/resources" className="mt-4 inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-950" onClick={onNavigate}>
-            All resources
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </SimpleColumn>
 
-
-        <SimpleColumn eyebrow="Company" className="border-l border-slate-200 bg-slate-50">
-          <div className="grid gap-2">
-            {companyLinks.map((item) => (
-              <SimpleLinkCard key={item.href} href={item.href} label={item.label} description={item.description} icon={item.icon} onNavigate={onNavigate} />
-            ))}
+          <div className="mt-auto pt-6">
+            <Link
+              href="/contact"
+              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500/20 to-indigo-500/20 px-4 py-3.5 text-sm font-semibold text-white/80 ring-1 ring-white/10 transition hover:from-sky-500/30 hover:to-indigo-500/30 hover:text-white"
+              onClick={onNavigate}
+            >
+              <Headset className="h-4 w-4 text-sky-400" />
+              Talk to sales
+              <ArrowRight className="ml-auto h-3.5 w-3.5 text-white/30 transition group-hover:translate-x-0.5" />
+            </Link>
           </div>
-        </SimpleColumn>
+        </section>
       </div>
     </MegaFrame>
   );
 }
+
 
 function MobileSection({ title, open, onToggle, children }) {
   return (
@@ -543,7 +600,6 @@ export function SiteHeader() {
   const [activeDesktopMenu, setActiveDesktopMenu] = useState(null);
   const [activeServiceChoiceId, setActiveServiceChoiceId] = useState(defaultServiceChoice.id);
   const [activeIndustrySlug, setActiveIndustrySlug] = useState(industryPages[0]?.slug || "");
-  const [activeResourceSlug, setActiveResourceSlug] = useState(resourcePages[0]?.slug || "");
   const [hasScrolled, setHasScrolled] = useState(false);
   const greetingName = user?.firstName || user?.fullName || user?.username || "there";
   const elevated = hasScrolled || mobileMenuOpen;
@@ -695,11 +751,7 @@ export function SiteHeader() {
                 />
               ) : null}
               {activeDesktopMenu === "learn" && menu.id === "learn" ? (
-                <LearnMegaMenu
-                  activeResourceSlug={activeResourceSlug}
-                  setActiveResourceSlug={setActiveResourceSlug}
-                  onNavigate={closeDesktopMenu}
-                />
+                <LearnMegaMenu onNavigate={closeDesktopMenu} />
               ) : null}
             </div>
           ))}

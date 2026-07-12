@@ -48,25 +48,39 @@ function renewalLabel(value) {
 
 function KpiCard({ icon: Icon, label, value, helper, tone = "neutral", href }) {
   const tones = {
-    neutral: "text-slate-400",
-    blue: "text-brand-500",
-    green: "text-emerald-500",
-    amber: "text-accent-500",
-    rose: "text-rose-500",
+    neutral: { icon: "text-slate-500", bg: "bg-slate-50 border-slate-100" },
+    blue: { icon: "text-sky-600", bg: "bg-sky-50 border-sky-100" },
+    green: { icon: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
+    amber: { icon: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
+    rose: { icon: "text-rose-600", bg: "bg-rose-50 border-rose-100" },
   };
+  const toneStyle = tones[tone] || tones.neutral;
+
   const body = (
-    <Card className={cn("group h-full p-5 transition-shadow", href && "hover:shadow-card-hover")}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-medium text-slate-500">{label}</p>
-        <Icon className={cn("h-4 w-4", tones[tone])} />
+    <div className={cn(
+      "group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md",
+      href && "cursor-pointer"
+    )}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
+          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 tabular-nums">{value}</p>
+        </div>
+        <span className={cn("flex h-12 w-12 items-center justify-center rounded-xl border transition-colors", toneStyle.bg)}>
+          <Icon className={cn("h-6 w-6", toneStyle.icon)} />
+        </span>
       </div>
-      <p className="mt-3 text-[28px] font-semibold leading-none tracking-[-0.02em] text-slate-900 tabular-nums">{value}</p>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {helper ? <p className="text-xs font-medium text-slate-400">{helper}</p> : <span />}
-        {href ? <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition-colors group-hover:text-slate-500" /> : null}
+      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+        <p className="text-xs font-semibold text-slate-400">{helper || "\u00A0"}</p>
+        {href ? (
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-colors group-hover:bg-slate-900 group-hover:text-white">
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        ) : null}
       </div>
-    </Card>
+    </div>
   );
+
   return href ? (
     <Link href={href} className="block">
       {body}
@@ -205,52 +219,68 @@ export function PortalDashboardPage() {
             </div>
           ) : null}
 
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-            <div className="grid min-w-0 gap-px bg-slate-200 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
-              <div className="min-w-0 bg-slate-950 p-6 text-white md:p-7">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/45">{todayLabel}</p>
-                <h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.035em] md:text-4xl">
-                  {firstName ? `${firstName}, your managed workspace is ready.` : "Your managed workspace is ready."}
-                </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-white/65">
-                  Review operational health, renewal exposure, payment coverage, and open support work without leaving the portal.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <Link href="/portal/services">
-                    <Button className="border-white bg-white text-slate-950 hover:bg-slate-100">
-                      <Plus className="h-4 w-4" />
-                      Order an app
-                    </Button>
-                  </Link>
-                  <Link href="/portal/support">
-                    <Button variant="ghost" className="border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
-                      <LifeBuoy className="h-4 w-4" />
-                      Open support
-                    </Button>
-                  </Link>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-[#0b0f19] text-white shadow-lg">
+            <div className="grid min-w-0 lg:grid-cols-[1.4fr_0.6fr]">
+              {/* Left Side: Welcome + Main Actions */}
+              <div className="relative overflow-hidden p-6 md:p-8">
+                {/* Decorative background glow */}
+                <div className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-indigo-500/10 blur-[80px]" />
+                <div className="pointer-events-none absolute bottom-0 right-1/4 h-48 w-48 rounded-full bg-sky-500/10 blur-[60px]" />
+                
+                <div className="relative z-10">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-300">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Workspace Live
+                  </span>
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">{todayLabel}</p>
+                  <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl text-white">
+                    {firstName ? `${firstName}, your managed workspace is ready.` : "Your managed workspace is ready."}
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+                    Review operational health, renewal exposure, payment coverage, and open support work without leaving the portal.
+                  </p>
+                  
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Link href="/portal/services">
+                      <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-100 active:scale-95 shadow-sm">
+                        <Plus className="h-4 w-4" />
+                        Order an app
+                      </button>
+                    </Link>
+                    <Link href="/portal/support">
+                      <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10 active:scale-95">
+                        <LifeBuoy className="h-4 w-4 text-slate-400" />
+                        Open support
+                      </button>
+                    </Link>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid min-w-0 gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="bg-white p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                      <Wallet className="h-5 w-5" />
+              {/* Right Side: Quick Stats (Wallet + Next Renewal) */}
+              <div className="flex flex-col justify-stretch border-t border-white/[0.08] lg:border-l lg:border-t-0 bg-white/[0.02]">
+                {/* Wallet Coverage */}
+                <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b border-white/[0.08]">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                      <Wallet className="h-6 w-6" />
                     </span>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Wallet coverage</p>
-                      <p className="mt-1 text-xl font-semibold text-slate-950">{formatCurrency(walletBalance)}</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Wallet coverage</p>
+                      <p className="mt-1 text-2xl font-black text-white">{formatCurrency(walletBalance)}</p>
                     </div>
                   </div>
                 </div>
-                <div className="bg-white p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                      <CalendarClock className="h-5 w-5" />
+
+                {/* Next Renewal */}
+                <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                      <CalendarClock className="h-6 w-6" />
                     </span>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Next renewal</p>
-                      <p className="mt-1 text-xl font-semibold text-slate-950">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Next renewal</p>
+                      <p className="mt-1 text-lg font-bold text-white">
                         {nextRenewal ? renewalLabel(nextRenewal.renewalDate) : "No upcoming renewals"}
                       </p>
                     </div>

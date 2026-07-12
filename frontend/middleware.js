@@ -9,7 +9,9 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  if (isPortalRoute(req)) {
+  const hasDelegateSession = req.cookies.has("eo_delegate_session");
+
+  if (isPortalRoute(req) && !hasDelegateSession) {
     await auth.protect();
   }
 
