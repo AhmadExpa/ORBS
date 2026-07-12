@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { SignedIn, SignedOut, SignUp } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { ArrowRight, CreditCard, ServerCog, SlidersHorizontal } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { LogoSpinner } from "@/components/shared/logo-spinner";
@@ -34,6 +36,11 @@ export default async function SignupPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const redirectTo = resolveRedirect(resolvedSearchParams);
   const loginUrl = `/login?redirect_url=${encodeURIComponent(redirectTo)}`;
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect(redirectTo);
+  }
 
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_46%,#eef2f6_100%)] px-4 py-6 sm:px-6 lg:px-8">

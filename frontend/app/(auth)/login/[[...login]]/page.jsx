@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { LoginModePanel } from "@/components/auth/login-mode-panel";
@@ -16,6 +18,11 @@ export default async function LoginPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const redirectTo = resolveRedirect(resolvedSearchParams);
   const signupUrl = `/signup?redirect_url=${encodeURIComponent(redirectTo)}`;
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect(redirectTo);
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_46%,#eef2f6_100%)] px-0 py-0 sm:px-6 sm:py-6 lg:px-8">
