@@ -292,7 +292,7 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
             </span>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">{activeChoice.eyebrow}</p>
-              <h3 className="mt-1 text-2xl font-semibold tracking-[-0.035em] text-slate-950">{activeChoice.label}</h3>
+              <h3 className="mt-1 text-2xl font-semibold leading-tight text-slate-950">{activeChoice.label}</h3>
             </div>
           </div>
 
@@ -509,7 +509,7 @@ function MobileSection({ title, open, onToggle, children }) {
     <section className="border-t border-white/10 py-5">
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-4 rounded-md py-2 text-left text-3xl font-semibold tracking-[-0.04em]"
+        className="flex w-full items-center justify-between gap-4 rounded-md py-2 text-left text-2xl font-semibold leading-tight sm:text-3xl"
         aria-expanded={open}
         onClick={onToggle}
       >
@@ -523,12 +523,12 @@ function MobileSection({ title, open, onToggle, children }) {
 
 function MobileLink({ href, label, description, onClick, icon: Icon }) {
   return (
-    <Link href={href} className="flex items-start justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-4" onClick={onClick}>
+    <Link href={href} className="flex min-w-0 items-start justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 sm:p-4" onClick={onClick}>
       <span className="flex min-w-0 gap-3">
         {Icon ? <Icon className="mt-1 h-4 w-4 shrink-0 text-white/50" /> : null}
         <span className="min-w-0">
-          <span className="block text-xl font-semibold tracking-[-0.03em] text-white">{label}</span>
-          {description ? <span className="mt-1 block text-sm leading-6 text-white/60">{description}</span> : null}
+          <span className="block break-words text-base font-semibold leading-snug text-white sm:text-lg">{label}</span>
+          {description ? <span className="mt-1 block break-words text-sm leading-6 text-white/60">{description}</span> : null}
         </span>
       </span>
       <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-white/40" />
@@ -666,9 +666,9 @@ export function SiteHeader() {
         />
       ) : null}
 
-      <div className={cn("relative z-40 mx-auto flex w-full max-w-[1520px] items-center gap-5 px-4 transition-[padding] duration-300 sm:px-6 lg:px-8", elevated ? "py-3" : "py-4")}>
+      <div className={cn("relative z-40 mx-auto flex w-full max-w-[1520px] items-center gap-3 px-3 transition-[padding] duration-300 sm:gap-5 sm:px-6 lg:px-8", elevated ? "py-3" : "py-4")}>
         <Link href="/" className="flex shrink-0 items-center" aria-label="ElevenOrbits home">
-          <BrandLogo className="h-11 w-[196px] md:h-12 md:w-[230px]" imageClassName="w-full brightness-0 invert" priority />
+          <BrandLogo className="h-9 w-[158px] sm:h-11 sm:w-[196px] md:h-12 md:w-[230px]" imageClassName="w-full brightness-0 invert" priority />
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold xl:flex">
@@ -725,7 +725,7 @@ export function SiteHeader() {
           </SignedOut>
           <SignedIn>
             <p className="hidden text-sm font-medium text-white/70 md:block">Hi, {greetingName}</p>
-            <Link href="/portal">
+            <Link href="/portal" className="hidden sm:block">
               <Button variant="ghost" className="min-h-10 rounded-md px-4 py-2 text-white hover:bg-white/10 hover:text-white">Portal</Button>
             </Link>
             <UserButton />
@@ -749,16 +749,16 @@ export function SiteHeader() {
               id="site-mobile-menu"
               role="dialog"
               aria-modal="true"
-              className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950 text-white xl:hidden"
+              className="fixed inset-0 z-[100] overflow-x-hidden overflow-y-auto bg-slate-950 text-white xl:hidden"
             >
-              <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-5 py-5">
-                <div className="flex items-center justify-between gap-4">
-                  <Link href="/" aria-label="ElevenOrbits home" onClick={closeMobileMenu}>
-                    <BrandLogo className="h-10 w-[188px]" imageClassName="brightness-0 invert" priority />
+              <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-4 sm:px-5 sm:py-5">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <Link href="/" className="min-w-0 shrink" aria-label="ElevenOrbits home" onClick={closeMobileMenu}>
+                    <BrandLogo className="h-9 w-[168px] sm:h-10 sm:w-[188px]" imageClassName="brightness-0 invert" priority />
                   </Link>
                   <button
                     type="button"
-                    className="flex h-11 w-11 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white sm:h-11 sm:w-11"
                     aria-label="Close menu"
                     onClick={closeMobileMenu}
                   >
@@ -766,7 +766,7 @@ export function SiteHeader() {
                   </button>
                 </div>
 
-                <nav className="mt-9 flex-1">
+                <nav className="mt-7 min-w-0 flex-1 sm:mt-9">
                   <MobileSection
                     title="Services"
                     open={mobileOpenSection === "services"}

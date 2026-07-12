@@ -14,7 +14,7 @@ import {
 import { getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
 import { siteConfig } from "@/lib/constants/site";
 import { Button, cn } from "@/lib/ui";
-import { ServiceLogoCluster, ServiceVisualPanel, TechLogoPills } from "./service-branding";
+import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
 import { TechStackShowcase } from "./tech-stack-showcase";
 
 const highlightSlugs = [
@@ -191,36 +191,28 @@ function categoryNameFor(slug) {
 
 function FaqSection() {
   return (
-    <section id="faq" className="relative scroll-mt-28 border-t border-[color:var(--marketing-line)]">
-      <div className="pointer-events-none absolute inset-0 marketing-grid opacity-40" />
-      <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-        <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <div className="eo-premium-card eo-reveal-up rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff8f2_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-56px_rgba(255,122,26,0.28)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--marketing-accent)]">07 / Customer Guidance</p>
-            <h2 className="mt-5 text-4xl font-semibold leading-[0.98] tracking-[-0.05em] text-slate-950 md:text-5xl">
+    <section id="faq" className="relative scroll-mt-24 border-t border-[color:var(--marketing-line)] bg-white">
+      <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start">
+          <div className="min-w-0 rounded-lg border border-orange-200 bg-orange-50/70 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--marketing-accent)]">Customer Guidance</p>
+            <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
               Direct answers before a customer opens the portal.
             </h2>
-            <p className="mt-5 text-sm leading-7 text-slate-600">
-              Public guidance focuses on how services are bought, provisioned, billed, and supported, so the portal only starts once the customer is ready to configure.
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              Public guidance focuses on how services are bought, provisioned, billed, and supported before a customer configures the portal order.
             </p>
-            <div className="mt-7 flex flex-wrap justify-center gap-2">
-              {["FAQs", "Support", "Billing", "Onboarding"].map((item) => (
-                <span key={item} className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                  {item}
-                </span>
-              ))}
-            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
             {faqItems.map((item, index) => (
               <div
                 key={item.question}
-                className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-200 bg-white/90 p-6 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.2)]"
+                className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-42px_rgba(15,23,42,0.2)]"
                 style={{ "--eo-delay": `${index * 45}ms` }}
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">FAQ 0{index + 1}</p>
-                <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950">{item.question}</h3>
+                <h3 className="mt-4 text-lg font-semibold leading-snug text-slate-950">{item.question}</h3>
                 <p className="mt-4 text-sm leading-7 text-slate-600">{item.answer}</p>
               </div>
             ))}
@@ -233,157 +225,89 @@ function FaqSection() {
 
 export function LandingPage() {
   const pricingHighlights = productPlanSeeds.filter((plan) => highlightSlugs.includes(plan.slug));
-  const featuredPlans = pricingHighlights.slice(0, 3);
-  const supportingPlans = pricingHighlights.slice(3);
 
   return (
-    <div className="relative overflow-hidden pb-16">
+    <div className="relative overflow-x-clip bg-white pb-14">
       <div className="pointer-events-none absolute inset-0 marketing-glow opacity-90" />
 
-      <section id="overview" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
+      <section id="overview" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-80" />
-        <div className="mx-auto max-w-[1520px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.18fr)_420px]">
-            <div className="eo-premium-card eo-reveal-up relative overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/82 shadow-[0_36px_90px_-58px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-              <div className="pointer-events-none absolute inset-0 marketing-stage" />
-              <div className="pointer-events-none absolute inset-y-0 right-[18%] hidden w-px bg-[color:var(--marketing-line)] xl:block" />
-              <div className="relative p-8 md:p-10 xl:p-12">
-                <div className="grid gap-8 xl:grid-cols-[150px_minmax(0,1fr)]">
-                  <div className="hidden xl:flex xl:flex-col xl:justify-between">
-                    <div className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">
-                        01
-                      </p>
-                      <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Company Overview</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="h-2 w-24 rounded-full bg-slate-950" />
-                      <p className="text-sm leading-7 text-slate-500">
-                        Managed infrastructure, AI systems, workflow operations, and commercial control.
-                      </p>
-                    </div>
-                  </div>
+        <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8 lg:py-14">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch">
+            <div className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-58px_rgba(15,23,42,0.28)] backdrop-blur md:p-8 lg:p-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">ElevenOrbits Operating Systems</p>
+              <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                Managed hosting, AI infrastructure, and workflow delivery.
+              </h1>
+              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
+                ElevenOrbits gives businesses a structured operating layer for infrastructure, AI deployment, billing control, support routing, and service handoff.
+              </p>
 
-                  <div>
-                    <div className="flex flex-wrap items-start justify-between gap-5">
-                      <div className="max-w-5xl">
-                        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">
-                          ElevenOrbits Operating Systems
-                        </p>
-                        <h1 className="mt-6 text-[clamp(3.2rem,8vw,7.4rem)] font-semibold leading-[0.94] tracking-[-0.065em] text-slate-950">
-                          Managed hosting,
-                          <span className="block">AI infrastructure,</span>
-                          <span className="block text-[color:var(--marketing-accent)]">and workflow delivery.</span>
-                        </h1>
-                      </div>
+              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <Link href={getSignupPath()} className="min-w-0">
+                  <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black">Get Started</Button>
+                </Link>
+                <Link href="/#pricing" className="min-w-0">
+                  <Button variant="ghost" className="w-full justify-center bg-white">Review Pricing</Button>
+                </Link>
+                <a href={`mailto:${siteConfig.salesEmail}`} className="min-w-0">
+                  <Button variant="ghost" className="w-full justify-center bg-white">Email Sales</Button>
+                </a>
+              </div>
 
-                      <div className="eo-reveal-soft max-w-xs rounded-lg border border-slate-200/90 bg-white/90 p-5 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]" style={{ "--eo-delay": "120ms" }}>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                          Portal-Driven Service Model
-                        </p>
-                        <p className="mt-4 text-sm leading-7 text-slate-600">
-                          Signup starts the relationship. Orders, billing, support, renewals, and fulfillment continue inside one controlled platform.
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="mt-8 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">
-                      ElevenOrbits is designed for businesses that want real operational ownership behind their infrastructure. We combine managed hosting,
-                      AI deployment, support routing, billing control, and structured delivery into one professional operating layer.
-                    </p>
-
-                    <div className="mt-9 flex flex-wrap gap-3">
-                      <Link href={getSignupPath()}>
-                        <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">
-                          Get Started
-                        </Button>
-                      </Link>
-                      <Link href="/#pricing">
-                        <Button variant="ghost" className="min-w-[170px] justify-center bg-white/90">
-                          Review Pricing
-                        </Button>
-                      </Link>
-                      <a href={`mailto:${siteConfig.salesEmail}`}>
-                        <Button variant="ghost" className="min-w-[170px] justify-center bg-white/90">
-                          Email Sales
-                        </Button>
-                      </a>
-                    </div>
-
-                    <div className="mt-10 border-t border-[color:var(--marketing-line)] pt-6">
-                      <ServiceLogoCluster categorySlugs={heroBrandSlugs} max={10} showLabels />
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-8 border-t border-[color:var(--marketing-line)] pt-6">
+                <ServiceLogoCluster categorySlugs={heroBrandSlugs} max={8} />
               </div>
             </div>
 
-            <div className="grid gap-6">
-              <div className="eo-premium-card eo-reveal-soft relative overflow-hidden rounded-lg border border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)] shadow-[0_28px_80px_-52px_rgba(255,122,26,0.3)]" style={{ "--eo-delay": "140ms" }}>
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,122,26,0.12),transparent_58%)]" />
-                <div className="relative border-b border-orange-200 px-7 py-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">
-                    Executive Note
-                  </p>
-                </div>
-                <div className="relative px-7 py-8">
-                  <p className="text-3xl font-semibold tracking-[-0.04em] text-slate-950">
-                    The product is not just compute. It is the operating control around it.
-                  </p>
-                  <p className="mt-5 text-sm leading-7 text-slate-600">
-                    ElevenOrbits keeps provisioning, card payment activity, support, credential assignment, and service continuity inside one accountable delivery model.
-                  </p>
-                  <ServiceLogoCluster categorySlugs={["vps", "workflows", "vicidial", "cdn", "hermes-ai-hosting"]} className="mt-6" />
-                  <p className="mt-6 text-sm font-semibold text-slate-950">ElevenOrbits Team</p>
-                </div>
+            <aside className="grid min-w-0 gap-4">
+              <div className="min-w-0 rounded-lg border border-orange-200 bg-orange-50/80 p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--marketing-accent)]">Service Model</p>
+                <p className="mt-4 text-2xl font-semibold leading-tight text-slate-950">
+                  The product is the operating control around the compute.
+                </p>
+                <p className="mt-4 text-sm leading-7 text-slate-600">
+                  Orders, payment activity, support, credential assignment, and service continuity stay in one accountable delivery model.
+                </p>
               </div>
 
-              <div className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.26)] backdrop-blur" style={{ "--eo-delay": "220ms" }}>
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Operating Signals</p>
-                  <ShieldCheck className="h-5 w-5 text-[color:var(--marketing-accent)]" />
+              <div className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white p-5 shadow-[0_22px_60px_-52px_rgba(15,23,42,0.22)]">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Operating Signals</p>
+                  <ShieldCheck className="h-5 w-5 shrink-0 text-[color:var(--marketing-accent)]" />
                 </div>
-                <div className="mt-5 rounded-lg border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#fff6ef_100%)] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Service Standard</p>
-                  <p className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.03em] text-slate-950">
-                    Clear ownership from selection to handoff.
-                  </p>
-                  <p className="mt-4 text-sm leading-7 text-slate-600">
-                    Every order keeps plan details, payment state, fulfillment notes, and support context connected to the customer account.
-                  </p>
-                </div>
-                <div className="mt-5 space-y-3">
+                <div className="mt-4 grid gap-3">
                   {heroSignals.map((item, index) => (
                     <div
                       key={item.label}
-                      className="eo-reveal-soft rounded-md border border-slate-200 bg-slate-50/90 px-4 py-4"
+                      className="min-w-0 rounded-md border border-slate-200 bg-slate-50 px-4 py-3"
                       style={{ "--eo-delay": `${260 + index * 45}ms` }}
                     >
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
-                      <p className="mt-3 text-sm leading-7 text-slate-700">{item.value}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">{item.value}</p>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            </aside>
           </div>
         </div>
 
         <div className="border-t border-[color:var(--marketing-line)]">
-          <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-px border-x border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] md:grid-cols-2 xl:grid-cols-4">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+            <div className="grid min-w-0 gap-4 py-8 md:grid-cols-2 xl:grid-cols-4">
               {operatingHighlights.map((item, index) => {
                 const Icon = item.icon;
 
                 return (
-                  <div key={item.title} className="eo-reveal-soft bg-white/80 px-6 py-7 backdrop-blur" style={{ "--eo-delay": `${index * 55}ms` }}>
+                  <div key={item.title} className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white px-5 py-6" style={{ "--eo-delay": `${index * 55}ms` }}>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[color:var(--marketing-panel-warm)] text-[color:var(--marketing-accent)]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--marketing-panel-warm)] text-[color:var(--marketing-accent)]">
                         <Icon className="h-5 w-5" />
                       </span>
-                      <p className="text-base font-semibold text-slate-950">{item.title}</p>
+                      <p className="text-base font-semibold leading-snug text-slate-950">{item.title}</p>
                     </div>
-                    <p className="mt-5 text-sm leading-7 text-slate-600">{item.description}</p>
+                    <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
                   </div>
                 );
               })}
@@ -392,22 +316,21 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="services" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
+      <section id="services" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
-        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-10 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="space-y-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">02 / Services</p>
-              <h2 className="text-4xl font-semibold leading-[0.96] tracking-[-0.05em] text-slate-950 md:text-6xl">
-                Service families
-                <span className="block">built around real operating work.</span>
+        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid min-w-0 gap-8">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Services</p>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+                Service families built around real operating work.
               </h2>
-              <p className="text-sm leading-7 text-slate-600">
+              <p className="mt-4 text-sm leading-7 text-slate-600">
                 Each service lane is framed around the way customers actually buy, run, secure, and support their systems over time.
               </p>
             </div>
 
-            <div className="grid gap-px overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-[color:var(--marketing-line)] xl:grid-cols-4">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {serviceFamilies.map((family, index) => {
                 const theme = familyThemes[family.name];
                 const Icon = theme.icon;
@@ -417,7 +340,7 @@ export function LandingPage() {
                     key={family.name}
                     href={`/${family.pageSlug || `services/${family.categorySlugs[0]}`}`}
                     className={cn(
-                      "eo-premium-card eo-reveal-soft group relative flex min-h-[470px] flex-col overflow-hidden px-7 py-8 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-54px_rgba(15,23,42,0.28)]",
+                      "group relative flex min-w-0 flex-col overflow-hidden rounded-lg border px-5 py-6 transition duration-200 hover:shadow-[0_24px_70px_-54px_rgba(15,23,42,0.28)]",
                       theme.cardClassName,
                     )}
                     style={{ "--eo-delay": `${index * 70}ms` }}
@@ -429,14 +352,14 @@ export function LandingPage() {
                         <Icon className="h-5 w-5" />
                       </div>
 
-                      <div className="mt-10">
-                        <p className="max-w-[13rem] text-4xl font-semibold leading-[1.02] tracking-[-0.045em]">{family.name}</p>
-                        <p className={cn("mt-5 text-sm leading-7", theme.descriptionClassName)}>{family.description}</p>
+                      <div className="mt-8">
+                        <p className="text-2xl font-semibold leading-tight">{family.name}</p>
+                        <p className={cn("mt-4 text-sm leading-7", theme.descriptionClassName)}>{family.description}</p>
                       </div>
 
-                      <div className={cn("mt-8 h-1.5 w-16 rounded-full", theme.dividerClassName)} />
+                      <div className={cn("mt-6 h-1.5 w-14 rounded-full", theme.dividerClassName)} />
 
-                      <div className="mt-8 space-y-6">
+                      <div className="mt-6 space-y-5">
                         <ServiceLogoCluster categorySlugs={family.categorySlugs} max={5} />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">Includes</p>
@@ -459,7 +382,7 @@ export function LandingPage() {
                         </div>
                       </div>
 
-                      <div className="mt-auto flex items-center gap-2 pt-10 text-sm font-semibold">
+                      <div className="mt-auto flex items-center gap-2 pt-8 text-sm font-semibold">
                         Explore services
                         <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-1" />
                       </div>
@@ -472,29 +395,23 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="managed" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
+      <section id="managed" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
-        <div className="mx-auto max-w-[1680px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-8">
-            <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-end">
-              <div className="space-y-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">
-                  03 / Why ElevenOrbits
-                </p>
-                <p className="text-sm leading-7 text-slate-600">
-                  The value is the operating layer around the service: provisioning, billing structure, support ownership, and controlled change execution.
-                </p>
-              </div>
-
-              <h2 className="max-w-6xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-slate-950">
-                Why teams choose
-                <span className="block">a managed operating layer.</span>
+        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid min-w-0 gap-8">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Why ElevenOrbits</p>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+                Why teams choose a managed operating layer.
               </h2>
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                The value is the operating layer around the service: provisioning, billing structure, support ownership, and controlled change execution.
+              </p>
             </div>
 
-            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="grid gap-4">
-                <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="grid min-w-0 gap-4">
+                <div className="grid min-w-0 gap-4 md:grid-cols-3">
                   {[
                     {
                       title: "Structured delivery",
@@ -515,25 +432,25 @@ export function LandingPage() {
                     const Icon = item.icon;
 
                     return (
-                      <div key={item.title} className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white px-6 py-7 shadow-[0_22px_58px_-48px_rgba(15,23,42,0.22)]">
+                      <div key={item.title} className="min-w-0 rounded-lg border border-[color:var(--marketing-line)] bg-white px-5 py-6 shadow-[0_18px_48px_-42px_rgba(15,23,42,0.18)]">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">0{index + 1}</p>
                         <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
                           <Icon className="h-5 w-5" />
                         </span>
-                        <h3 className="mt-6 text-xl font-semibold tracking-tight text-slate-950">{item.title}</h3>
+                        <h3 className="mt-6 text-lg font-semibold leading-snug text-slate-950">{item.title}</h3>
                         <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-orange-100 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-7 shadow-[0_26px_70px_-52px_rgba(249,115,22,0.22)] md:p-8">
-                  <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-                    <div>
+                <div className="min-w-0 rounded-lg border border-orange-100 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-6 shadow-[0_22px_60px_-52px_rgba(249,115,22,0.2)]">
+                  <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                    <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--marketing-accent)]">
                         Customer Journey
                       </p>
-                      <p className="mt-4 text-3xl font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950">
+                      <p className="mt-4 text-2xl font-semibold leading-tight text-slate-950">
                         Create the order. We take the delivery forward.
                       </p>
                       <p className="mt-4 text-sm leading-7 text-slate-600">
@@ -556,14 +473,14 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <aside className="min-w-0 space-y-5">
                 <ServiceVisualPanel
                   title="Partner-backed delivery"
                   description="Visible logos represent the platforms and managed products customers see across service pages, pricing, and portal order flows."
                   categorySlugs={["vps", "cdn", "object-storage", "workflows", "vicidial", "hermes-ai-hosting"]}
-                  className="eo-premium-card eo-reveal-soft"
+                  className="eo-reveal-soft"
                 />
-                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-7 shadow-[0_28px_80px_-58px_rgba(12,108,242,0.24)]" style={{ "--eo-delay": "90ms" }}>
+                <div className="rounded-lg border border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)] p-6 shadow-[0_22px_60px_-52px_rgba(12,108,242,0.22)]" style={{ "--eo-delay": "90ms" }}>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Governance Signals</p>
                   <div className="mt-6 space-y-4">
                     {governanceSignals.map((item) => {
@@ -586,16 +503,16 @@ export function LandingPage() {
                   </div>
                 </div>
 
-                <div className="eo-premium-card eo-reveal-soft rounded-lg border border-slate-900 bg-slate-950 p-7 text-white shadow-[0_34px_90px_-62px_rgba(15,23,42,0.58)]" style={{ "--eo-delay": "160ms" }}>
+                <div className="rounded-lg border border-slate-900 bg-slate-950 p-6 text-white shadow-[0_26px_70px_-58px_rgba(15,23,42,0.55)]" style={{ "--eo-delay": "160ms" }}>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">ElevenOrbits Standard</p>
-                  <p className="mt-5 text-3xl font-semibold leading-[1.05] tracking-[-0.04em]">
+                  <p className="mt-5 text-2xl font-semibold leading-tight">
                     Professional systems deserve professional operational ownership.
                   </p>
                   <p className="mt-4 text-sm leading-7 text-white/70">
                     We lead with clarity, service structure, and governance because serious business systems need more than surface-level marketing.
                   </p>
                 </div>
-              </div>
+              </aside>
             </div>
           </div>
         </div>
@@ -603,102 +520,75 @@ export function LandingPage() {
 
       <TechStackShowcase compact />
 
-      <section id="pricing" className="relative scroll-mt-28 border-b border-[color:var(--marketing-line)]">
+      <section id="pricing" className="relative scroll-mt-24 border-b border-[color:var(--marketing-line)]">
         <div className="pointer-events-none absolute inset-0 marketing-grid opacity-45" />
-        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-10 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="space-y-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">05 / Pricing</p>
-              <h2 className="text-4xl font-semibold leading-[0.96] tracking-[-0.05em] text-slate-950 md:text-6xl">
-                Commercial starting points
-                <span className="block">for managed delivery.</span>
-              </h2>
-              <p className="text-sm leading-7 text-slate-600">
-                These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, saved-card billing, and renewals.
-              </p>
+        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid min-w-0 gap-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Pricing</p>
+                <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+                  Commercial starting points for managed delivery.
+                </h2>
+                <p className="mt-4 text-sm leading-7 text-slate-600">
+                  These plans establish the launch baseline while admin controls continue to govern discounts, add-ons, saved-card billing, and renewals.
+                </p>
+              </div>
               <Link href={getSignupPath()}>
-                <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">Open Portal</Button>
+                <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black sm:w-auto">Open Portal</Button>
               </Link>
             </div>
 
-            <div className="space-y-5">
-              <div className="grid gap-5 xl:grid-cols-3">
-                {featuredPlans.map((plan, index) => (
-                  <div
-                    key={plan.slug}
-                    className={cn(
-                      "eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] p-7 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.22)]",
-                      index === 0 && "border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)]",
-                      index === 1 && "border-slate-200 bg-white/90",
-                      index === 2 && "border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)]",
-                    )}
-                    style={{ "--eo-delay": `${index * 65}ms` }}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{categoryNameFor(plan.categorySlug)}</p>
-                    <h3 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-slate-950">{plan.name}</h3>
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
+            <div className="grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {pricingHighlights.map((plan, index) => (
+                <div
+                  key={plan.slug}
+                  className={cn(
+                    "min-w-0 rounded-lg border border-[color:var(--marketing-line)] p-6 shadow-[0_22px_60px_-52px_rgba(15,23,42,0.2)]",
+                    index === 0 && "border-orange-200 bg-[linear-gradient(180deg,#fff7f1_0%,#fffdf9_100%)]",
+                    index === 1 && "border-slate-200 bg-white/90",
+                    index >= 2 && "border-sky-200 bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_100%)]",
+                  )}
+                  style={{ "--eo-delay": `${index * 65}ms` }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{categoryNameFor(plan.categorySlug)}</p>
+                  <h3 className="mt-4 text-2xl font-semibold leading-tight text-slate-950">{plan.name}</h3>
+                  <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
 
-                    <div className="mt-7 flex items-end gap-3">
-                      <p className="text-5xl font-semibold tracking-[-0.05em] text-slate-950">
-                        {plan.contactSalesOnly ? plan.displayPriceLabel : formatCurrency(plan.monthlyPrice)}
-                      </p>
-                      <p className="pb-1 text-sm text-slate-500">{plan.contactSalesOnly ? "custom" : "monthly"}</p>
-                    </div>
-
-                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      {plan.yearlyDiscountPercent ? `${plan.yearlyDiscountPercent}% yearly savings available` : "Flexible billing options"}
+                  <div className="mt-7 flex items-end gap-3">
+                    <p className="text-4xl font-semibold text-slate-950">
+                      {plan.contactSalesOnly ? plan.displayPriceLabel : formatCurrency(plan.monthlyPrice)}
                     </p>
-
-                    <div className="mt-7 space-y-3">
-                      {plan.features.slice(0, 3).map((feature) => (
-                        <div key={feature} className="rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700">
-                          {feature}
-                        </div>
-                      ))}
-                    </div>
+                    <p className="pb-1 text-sm text-slate-500">{plan.contactSalesOnly ? "custom" : "monthly"}</p>
                   </div>
-                ))}
-              </div>
 
-              <div className="grid gap-5 lg:grid-cols-3">
-                {supportingPlans.map((plan) => (
-                  <div
-                    key={plan.slug}
-                    className="eo-premium-card eo-reveal-soft rounded-lg border border-[color:var(--marketing-line)] bg-white/90 p-5 shadow-[0_20px_60px_-52px_rgba(15,23,42,0.22)]"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                          {categoryNameFor(plan.categorySlug)}
-                        </p>
-                        <p className="mt-2 text-lg font-semibold tracking-tight text-slate-950">{plan.name}</p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    {plan.yearlyDiscountPercent ? `${plan.yearlyDiscountPercent}% yearly savings available` : "Flexible billing options"}
+                  </p>
+
+                  <div className="mt-7 space-y-3">
+                    {plan.features.slice(0, 3).map((feature) => (
+                      <div key={feature} className="rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700">
+                        {feature}
                       </div>
-                      <p className="text-lg font-semibold text-slate-950">
-                        {plan.contactSalesOnly ? plan.displayPriceLabel : formatCurrency(plan.monthlyPrice)}
-                      </p>
-                    </div>
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{plan.description}</p>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <TechLogoPills items={plan.techStack} limit={2} />
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section id="contact" className="relative scroll-mt-28">
+      <section id="contact" className="relative scroll-mt-24">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-70" />
-        <div className="mx-auto max-w-[1520px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="eo-premium-card eo-reveal-up overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white/90 shadow-[0_38px_96px_-64px_rgba(15,23,42,0.3)] backdrop-blur">
-            <div className="grid gap-px bg-[color:var(--marketing-line)] xl:grid-cols-[1.08fr_0.92fr]">
-              <div className="bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-8 md:p-10 xl:p-12">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--marketing-accent)]">06 / Contact</p>
-                <h2 className="mt-6 text-[clamp(3rem,7vw,6.5rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-slate-950">
-                  Let&apos;s talk
-                  <span className="block text-[color:var(--marketing-accent)]">about the next environment.</span>
+        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="overflow-hidden rounded-lg border border-[color:var(--marketing-line)] bg-white shadow-[0_28px_86px_-64px_rgba(15,23,42,0.3)]">
+            <div className="grid min-w-0 gap-px bg-[color:var(--marketing-line)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+              <div className="min-w-0 bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_100%)] p-6 md:p-8 lg:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--marketing-accent)]">Contact</p>
+                <h2 className="mt-5 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+                  Let&apos;s talk about the next environment.
                 </h2>
                 <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
                   Tell us what you need to host, automate, protect, or support. We will help shape the operating model, service path, and commercial starting
@@ -707,18 +597,18 @@ export function LandingPage() {
 
                 <div className="mt-8 rounded-lg border border-slate-200 bg-white/90 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Routing Standard</p>
-                  <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950">Start with the right team.</p>
+                  <p className="mt-3 text-xl font-semibold text-slate-950">Start with the right team.</p>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
                     Sales, servers, AI and automation, and support requests route through dedicated inboxes so each conversation starts with the right context.
                   </p>
                 </div>
 
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href={getSignupPath()}>
-                    <Button className="min-w-[170px] justify-center bg-slate-950 border-slate-950 hover:bg-black">Start Account</Button>
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  <Link href={getSignupPath()} className="min-w-0">
+                    <Button className="w-full justify-center bg-slate-950 border-slate-950 hover:bg-black">Start Account</Button>
                   </Link>
-                  <a href={`mailto:${siteConfig.salesEmail}`}>
-                    <Button variant="ghost" className="min-w-[170px] justify-center bg-white/90">
+                  <a href={`mailto:${siteConfig.salesEmail}`} className="min-w-0">
+                    <Button variant="ghost" className="w-full justify-center bg-white/90">
                       Contact Sales
                     </Button>
                   </a>
@@ -738,7 +628,7 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="grid gap-px bg-[color:var(--marketing-line)] sm:grid-cols-2">
+              <div className="grid min-w-0 gap-px bg-[color:var(--marketing-line)] sm:grid-cols-2">
                 {contactCards.map((card) => (
                   <a key={card.key} href={`mailto:${card.email}`} className="group bg-white/95 px-6 py-7 transition duration-200 hover:bg-white">
                     <div className="flex items-center justify-between gap-4">
