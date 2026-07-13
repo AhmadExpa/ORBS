@@ -30,7 +30,7 @@ const authAppearance = {
   },
 };
 
-function AgentLoginForm() {
+export function AgentLoginForm({ redirectTo = "/agent/services", variant = "card" }) {
   const { showToast } = useActionToast();
   const [form, setForm] = useState({ username: "", password: "" });
   const [state, setState] = useState({ loading: false, error: "" });
@@ -51,7 +51,7 @@ function AgentLoginForm() {
         title: "Signed in",
         description: "Opening your assigned services.",
       });
-      window.location.assign("/agent/services");
+      window.location.assign(redirectTo);
     } catch (error) {
       setState({ loading: false, error: error.message });
       showToast({
@@ -64,7 +64,13 @@ function AgentLoginForm() {
   }
 
   return (
-    <form className="w-full max-w-full space-y-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5" onSubmit={handleSubmit}>
+    <form
+      className={cn(
+        "w-full max-w-full space-y-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5",
+        variant === "standalone" && "border-white/10 bg-white/[0.97] shadow-[0_28px_80px_-54px_rgba(15,23,42,0.85)]",
+      )}
+      onSubmit={handleSubmit}
+    >
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Agent Portal</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Log in as agent.</h3>
@@ -136,7 +142,17 @@ export function LoginModePanel({ redirectTo, signupUrl }) {
       </div>
 
       {mode === "agent" ? (
-        <AgentLoginForm />
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Agent Portal</p>
+          <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">Agent access is separate.</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Agents use a scoped workspace for assigned services and support tickets.
+          </p>
+          <Link href="/agent/login" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-black">
+            Open Agent Portal
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       ) : (
         <>
           <SignedOut>

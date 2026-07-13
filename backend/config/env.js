@@ -80,13 +80,40 @@ function expandCorsOrigins(origin) {
   return [...origins];
 }
 
+const resolvedAppUrl = normalizeAppOrigin(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL);
+const resolvedBackendUrl = normalizePublicApiOrigin(process.env.BACKEND_URL || process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL);
+const resolvedPublicApiUrl = normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL);
+
+function resolveSessionCookieDomain() {
+  const configuredDomain = String(process.env.SESSION_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || "").trim();
+  if (configuredDomain) {
+    return configuredDomain;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return "";
+  }
+
+  try {
+    const appHost = new URL(resolvedAppUrl).hostname;
+    const backendHost = new URL(resolvedBackendUrl).hostname;
+    if (appHost.endsWith("elevenorbits.com") && backendHost.endsWith("elevenorbits.com")) {
+      return ".elevenorbits.com";
+    }
+  } catch {
+    // Leave unset when origins cannot be parsed.
+  }
+
+  return "";
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
-  appUrl: normalizeAppOrigin(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL),
+  appUrl: resolvedAppUrl,
   corsOrigins: expandCorsOrigins(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL),
-  backendUrl: normalizePublicApiOrigin(process.env.BACKEND_URL || process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL),
-  publicApiUrl: normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL),
+  backendUrl: resolvedBackendUrl,
+  publicApiUrl: resolvedPublicApiUrl,
   databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || "",
   jwtSecret: process.env.JWT_SECRET || "change-me",
   supportEmail: process.env.SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com",
@@ -103,6 +130,7 @@ export const env = {
   // hostname check to be relaxed without disabling transport encryption.
   smtpTlsRejectUnauthorized: String(process.env.SMTP_TLS_REJECT_UNAUTHORIZED || "true").toLowerCase() !== "false",
   smtpTlsServername: process.env.SMTP_TLS_SERVERNAME || "",
+  sessionCookieDomain: resolveSessionCookieDomain(),
   clerkSecretKey: process.env.CLERK_SECRET_KEY || "",
   adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL || "admin@elevenorbits.com",
   adminBootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD || "change-me",

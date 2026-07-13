@@ -2,7 +2,8 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isPortalRoute = createRouteMatcher(["/portal(.*)"]);
-const isAuthPage = createRouteMatcher(["/login(.*)", "/signup(.*)"]);
+const isAgentRoute = createRouteMatcher(["/agent(.*)"]);
+const isAuthPage = createRouteMatcher(["/login(.*)", "/signup(.*)", "/agent/login"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isAuthPage(req)) {
@@ -11,7 +12,15 @@ export default clerkMiddleware(async (auth, req) => {
 
   const hasDelegateSession = req.cookies.has("eo_delegate_session");
 
-  if (isPortalRoute(req) && !hasDelegateSession) {
+  if (isAgentRoute(req) && !hasDelegateSession) {
+    return NextResponse.redirect(new URL("/agent/login", req.url));
+  }
+
+  if (isPortalRoute(req) && hasDelegateSession) {
+    return NextResponse.redirect(new URL("/agent/services", req.url));
+  }
+
+  if (isPortalRoute(req)) {
     await auth.protect();
   }
 

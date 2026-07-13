@@ -96,7 +96,7 @@ invoicesRouter.get(
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
 
-    const invoices = await Invoice.find({ userId: req.auth.user._id }).sort({ issuedAt: -1 });
+    const invoices = await Invoice.find({ userId: req.auth.user._id, status: { $ne: "deleted" } }).sort({ issuedAt: -1 });
     res.json({ invoices });
   }),
 );
@@ -105,7 +105,7 @@ invoicesRouter.post(
   "/regenerate",
   requireCustomer,
   asyncHandler(async (req, res) => {
-    const invoices = await Invoice.find({ userId: req.auth.user._id }).sort({ issuedAt: -1 });
+    const invoices = await Invoice.find({ userId: req.auth.user._id, status: { $ne: "deleted" } }).sort({ issuedAt: -1 });
     const regeneratedInvoices = [];
 
     for (const invoice of invoices) {
@@ -126,7 +126,7 @@ invoicesRouter.get(
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
 
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id, status: { $ne: "deleted" } });
     if (!invoice) {
       throw new HttpError(404, "Invoice not found.");
     }
@@ -138,7 +138,7 @@ invoicesRouter.post(
   "/:id/regenerate",
   requireCustomer,
   asyncHandler(async (req, res) => {
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id, status: { $ne: "deleted" } });
     if (!invoice) {
       throw new HttpError(404, "Invoice not found.");
     }
@@ -154,7 +154,7 @@ invoicesRouter.get(
   asyncHandler(async (req, res) => {
     await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
 
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id, status: { $ne: "deleted" } });
     if (!invoice) {
       throw new HttpError(404, "Invoice not found.");
     }
@@ -226,7 +226,7 @@ invoicesRouter.delete(
   asyncHandler(async (req, res) => {
     const reason = String(req.body.reason || "").trim();
 
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id });
+    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.auth.user._id, status: { $ne: "deleted" } });
     if (!invoice) {
       throw new HttpError(404, "Invoice not found.");
     }

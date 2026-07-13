@@ -24,7 +24,7 @@ export function ContractGate({ children }) {
     return children;
   }
 
-  if (contractQuery.isLoading && !contractQuery.data) {
+  if (!contractQuery.data && !contractQuery.isError) {
     return <PageLoader title="Contract Required" subtitle="Checking your Managed Service Agreement status..." cardCount={1} lines={4} />;
   }
 

@@ -13,7 +13,7 @@ function applyCustomerCancellationMetadata(metadata = {}, reason) {
 }
 
 async function voidPendingInvoice({ invoice, customer, planName }) {
-  if (!invoice || invoice.status !== "pending") {
+  if (!invoice || !["pending", "rejected"].includes(invoice.status)) {
     return invoice;
   }
 
@@ -79,6 +79,7 @@ export async function cancelCustomerSubscription({
 export async function cancelCustomerOrder({
   orderId,
   userId,
+  customer,
   reason = "Customer requested cancellation after approval.",
 }) {
   const order = await Order.findOne({ _id: orderId, userId }).populate("productPlanId");
@@ -87,8 +88,8 @@ export async function cancelCustomerOrder({
     throw new HttpError(404, "Order not found.");
   }
 
-  if (order.status === "cancelled") {
-    throw new HttpError(400, "This order is already cancelled.");
+  if (["cancelled", "deleted", "rejected"].includes(order.status)) {
+    throw new HttpError(400, "This order can no longer be cancelled.");
   }
 
   const [subscription, invoice] = await Promise.all([
@@ -96,8 +97,13 @@ export async function cancelCustomerOrder({
     Invoice.findOne({ orderId: order._id }),
   ]);
 
-  if (order.status !== "approved" || invoice?.status !== "paid") {
-    throw new HttpError(400, "Only paid and approved orders can be cancelled from the portal.");
+  const paidApprovedOrder = order.status === "approved" && invoice?.status === "paid";
+  const cancellableUnpaidOrder =
+    ["draft", "pending_verification", "trial_requested"].includes(order.status) ||
+    ["pending", "rejected", "void"].includes(invoice?.status);
+
+  if (!paidApprovedOrder && !cancellableUnpaidOrder) {
+    throw new HttpError(400, "This order cannot be cancelled from the portal.");
   }
 
   order.status = "cancelled";
@@ -111,12 +117,19 @@ export async function cancelCustomerOrder({
     await subscription.save();
   }
 
+  await voidPendingInvoice({
+    invoice,
+    customer,
+    planName: subscription?.productPlanId?.name || order.productPlanId?.name || "Managed Service",
+  });
+
   return { order, subscription, invoice };
 }
 
 export async function deleteCustomerSubscriptionFromPortal({
   subscriptionId,
   userId,
+  reason = "Customer requested deletion from portal.",
 }) {
   const subscription = await Subscription.findOne({ _id: subscriptionId, userId }).populate("productPlanId");
 
@@ -133,6 +146,12 @@ export async function deleteCustomerSubscriptionFromPortal({
   }
 
   subscription.customerDeletedAt = new Date();
+  subscription.metadata = {
+    ...(subscription.metadata || {}),
+    deletedAt: subscription.customerDeletedAt.toISOString(),
+    deletedBy: "customer",
+    deleteReason: reason,
+  };
   await subscription.save();
 
   return { subscription };

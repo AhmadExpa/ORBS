@@ -68,13 +68,16 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const containerRef = useRef(null);
+  const routeIsAgent = isAgentPortal || pathname?.startsWith("/agent");
 
   const contractQuery = useCustomerQuery({
     queryKey: ["portal-contract-current"],
     path: "/contracts/current",
+    enabled: !routeIsAgent,
   });
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
-  const portalLocked = !contractQuery.isLoading && !isContractSubmittedForPortal(contractStatus);
+  const hasContractStatus = !routeIsAgent && contractQuery.isSuccess && Boolean(contractQuery.data);
+  const portalLocked = hasContractStatus && !isContractSubmittedForPortal(contractStatus);
 
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-profile"],
@@ -83,7 +86,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   });
   const activeSection = getActiveSection(pathname);
   const isDelegate = profileQuery.data?.actorType === "delegate";
-  const isAgent = isAgentPortal || isDelegate || pathname?.startsWith("/agent");
+  const isAgent = routeIsAgent || isDelegate;
 
   const visibleGroups = isAgent
     ? [
@@ -157,10 +160,21 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
     <ButtonThemeProvider value="hubspot">
       <div className="flex min-h-screen flex-col bg-canvas text-slate-900">
         {/* Refined dark top navigation — anchors the app and frames the light content */}
-        <header ref={containerRef} className="sticky top-0 z-40 border-b border-white/10 bg-[#0f1115]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0f1115]/85">
+        <header
+          ref={containerRef}
+          className={cn(
+            "sticky top-0 z-40 border-b border-white/10 backdrop-blur",
+            isAgent ? "bg-[#07111f]/95 supports-[backdrop-filter]:bg-[#07111f]/88" : "bg-[#0f1115]/95 supports-[backdrop-filter]:bg-[#0f1115]/85",
+          )}
+        >
           <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-1 px-4 md:px-6">
-            <Link href="/portal" aria-label="ElevenOrbits portal" className="mr-3 flex shrink-0 items-center">
+            <Link href={isAgent ? "/agent/services" : "/portal"} aria-label={isAgent ? "ElevenOrbits agent portal" : "ElevenOrbits portal"} className="mr-3 flex shrink-0 items-center gap-3">
               <BrandLogo className="h-7 w-[150px]" imageClassName="brightness-0 invert" priority />
+              {isAgent ? (
+                <span className="hidden rounded-full border border-sky-300/25 bg-sky-300/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-100 sm:inline-flex">
+                  Agent Portal
+                </span>
+              ) : null}
             </Link>
 
             {/* Desktop nav */}

@@ -49,12 +49,24 @@ function normalizeUsername(username) {
 }
 
 function delegateCookieOptions() {
-  return {
+  const options = {
     httpOnly: true,
     sameSite: "lax",
     secure: env.nodeEnv === "production",
+    path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   };
+
+  if (env.sessionCookieDomain) {
+    options.domain = env.sessionCookieDomain;
+  }
+
+  return options;
+}
+
+function delegateClearCookieOptions() {
+  const { maxAge, ...options } = delegateCookieOptions();
+  return options;
 }
 
 function serializeDelegate(delegate) {
@@ -161,7 +173,7 @@ delegateAuthRouter.post(
 delegateAuthRouter.post(
   "/logout",
   asyncHandler(async (req, res) => {
-    res.clearCookie(DELEGATE_SESSION_COOKIE);
+    res.clearCookie(DELEGATE_SESSION_COOKIE, delegateClearCookieOptions());
     res.json({ success: true });
   }),
 );

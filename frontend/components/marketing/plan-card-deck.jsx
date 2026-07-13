@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Cpu, HardDrive, Network, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Cpu, HardDrive, Network, ShieldCheck, Zap } from "lucide-react";
 import { formatCurrency, getAvailableBillingCycles, getBillingCycleDiscountPercent, getPurchasePath } from "@/lib/shared";
 import { cn } from "@/lib/ui";
 import { ServiceLogo, TechLogoPills, getBrandForName, getCategoryBrand } from "./service-branding";
@@ -80,9 +80,7 @@ function PlanCard({ plan, featured = false }) {
     >
       {featured ? (
         <div className="-mx-6 -mt-6 mb-5 flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-500 px-4 py-2.5">
-          <Sparkles className="h-3.5 w-3.5 text-white/90" />
           <span className="text-xs font-bold uppercase tracking-widest text-white">Most Popular</span>
-          <Sparkles className="h-3.5 w-3.5 text-white/90" />
         </div>
       ) : null}
 

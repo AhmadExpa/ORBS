@@ -39,8 +39,9 @@ export function AppShell({
     enabled: authMode === "clerk",
   });
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
-  const portalLocked = authMode === "clerk" && !isContractSubmittedForPortal(contractStatus);
-  const canLoadPortalSnapshot = authMode === "clerk" && isContractSubmittedForPortal(contractStatus);
+  const hasContractStatus = authMode === "clerk" && contractQuery.isSuccess && Boolean(contractQuery.data);
+  const portalLocked = hasContractStatus && !isContractSubmittedForPortal(contractStatus);
+  const canLoadPortalSnapshot = authMode === "clerk" && hasContractStatus && isContractSubmittedForPortal(contractStatus);
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-sidebar-profile"],
     path: "/profile/me",

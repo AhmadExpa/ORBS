@@ -10,7 +10,11 @@ export default async function PortalLayout({ children }) {
   const cookieStore = await cookies();
   const hasDelegateSession = Boolean(cookieStore.get("eo_delegate_session")?.value);
 
-  if (!userId && !hasDelegateSession) {
+  if (!userId && hasDelegateSession) {
+    redirect("/agent/services");
+  }
+
+  if (!userId) {
     redirect("/login");
   }
 

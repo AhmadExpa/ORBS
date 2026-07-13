@@ -280,7 +280,7 @@ function RecommendationCard({ recommendation, isLoading }) {
   );
 }
 
-function ServerUsageSection({ subscriptions }) {
+function ServerUsageSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-sky-200 bg-white">
       <CardHeader className="border-b border-sky-100 bg-slate-50">
@@ -342,7 +342,7 @@ function ServerUsageSection({ subscriptions }) {
 
               <div className="mt-5 flex items-center justify-between gap-4">
                 <p className="text-sm text-slate-500">{getCategoryName(subscription)}</p>
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Server</Button>
                 </Link>
               </div>
@@ -354,7 +354,7 @@ function ServerUsageSection({ subscriptions }) {
   );
 }
 
-function AiAutomationSection({ subscriptions }) {
+function AiAutomationSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-sky-200">
       <CardHeader className="bg-gradient-to-r from-sky-50 via-white to-emerald-50">
@@ -422,7 +422,7 @@ function AiAutomationSection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5">
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Workload</Button>
                 </Link>
               </div>
@@ -434,7 +434,7 @@ function AiAutomationSection({ subscriptions }) {
   );
 }
 
-function EdgeStorageSection({ subscriptions }) {
+function EdgeStorageSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-cyan-200">
       <CardHeader className="bg-gradient-to-r from-cyan-50 via-white to-emerald-50">
@@ -502,7 +502,7 @@ function EdgeStorageSection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5">
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Edge Service</Button>
                 </Link>
               </div>
@@ -514,7 +514,7 @@ function EdgeStorageSection({ subscriptions }) {
   );
 }
 
-function AppHostingSection({ subscriptions }) {
+function AppHostingSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-indigo-200">
       <CardHeader className="bg-gradient-to-r from-indigo-50 via-white to-cyan-50">
@@ -591,7 +591,7 @@ function AppHostingSection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5">
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Hosted App</Button>
                 </Link>
               </div>
@@ -603,7 +603,7 @@ function AppHostingSection({ subscriptions }) {
   );
 }
 
-function OperationsSection({ subscriptions }) {
+function OperationsSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-amber-200">
       <CardHeader className="bg-gradient-to-r from-amber-50 via-white to-orange-50">
@@ -661,7 +661,7 @@ function OperationsSection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5">
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Service Coverage</Button>
                 </Link>
               </div>
@@ -673,7 +673,7 @@ function OperationsSection({ subscriptions }) {
   );
 }
 
-function SecuritySection({ subscriptions }) {
+function SecuritySection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card className="overflow-hidden border-emerald-200">
       <CardHeader className="bg-gradient-to-r from-emerald-50 via-white to-teal-50">
@@ -734,7 +734,7 @@ function SecuritySection({ subscriptions }) {
               ) : null}
 
               <div className="mt-5">
-                <Link href={`/portal/services/${subscription._id}`}>
+                <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                   <Button variant="ghost">Open Security Plan</Button>
                 </Link>
               </div>
@@ -746,7 +746,7 @@ function SecuritySection({ subscriptions }) {
   );
 }
 
-function GeneralServicesSection({ subscriptions }) {
+function GeneralServicesSection({ subscriptions, serviceBasePath = "/portal" }) {
   return (
     <Card>
       <CardHeader>
@@ -772,7 +772,7 @@ function GeneralServicesSection({ subscriptions }) {
               <p>Renewal: {formatRenewalText(subscription)}</p>
             </div>
             <div className="mt-5">
-              <Link href={`/portal/services/${subscription._id}`}>
+              <Link href={`${serviceBasePath}/services/${subscription._id}`}>
                 <Button variant="ghost">Open Service</Button>
               </Link>
             </div>
@@ -802,6 +802,7 @@ export default function PortalServicesPage() {
   const subscriptions = subscriptionsQuery.data?.subscriptions || [];
   const currentSubscriptions = getCurrentSubscriptions(subscriptions);
   const recommendation = getRecommendation(catalogQuery.data?.plans || [], currentSubscriptions);
+  const serviceBasePath = isDelegate ? "/agent" : "/portal";
 
   const serverSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "servers");
   const aiSubscriptions = currentSubscriptions.filter((subscription) => getServiceSection(subscription) === "ai");
@@ -849,13 +850,13 @@ export default function PortalServicesPage() {
           </Card>
         ) : null}
 
-        {serverSubscriptions.length ? <ServerUsageSection subscriptions={serverSubscriptions} /> : null}
-        {aiSubscriptions.length ? <AiAutomationSection subscriptions={aiSubscriptions} /> : null}
-        {edgeStorageSubscriptions.length ? <EdgeStorageSection subscriptions={edgeStorageSubscriptions} /> : null}
-        {appHostingSubscriptions.length ? <AppHostingSection subscriptions={appHostingSubscriptions} /> : null}
-        {operationsSubscriptions.length ? <OperationsSection subscriptions={operationsSubscriptions} /> : null}
-        {securitySubscriptions.length ? <SecuritySection subscriptions={securitySubscriptions} /> : null}
-        {generalSubscriptions.length ? <GeneralServicesSection subscriptions={generalSubscriptions} /> : null}
+        {serverSubscriptions.length ? <ServerUsageSection subscriptions={serverSubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {aiSubscriptions.length ? <AiAutomationSection subscriptions={aiSubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {edgeStorageSubscriptions.length ? <EdgeStorageSection subscriptions={edgeStorageSubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {appHostingSubscriptions.length ? <AppHostingSection subscriptions={appHostingSubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {operationsSubscriptions.length ? <OperationsSection subscriptions={operationsSubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {securitySubscriptions.length ? <SecuritySection subscriptions={securitySubscriptions} serviceBasePath={serviceBasePath} /> : null}
+        {generalSubscriptions.length ? <GeneralServicesSection subscriptions={generalSubscriptions} serviceBasePath={serviceBasePath} /> : null}
       </div>
     </div>
   );

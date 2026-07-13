@@ -18,7 +18,7 @@ This repository contains a Next.js frontend in `frontend/` and an Express backen
    cp frontend/.env.example frontend/.env.local
    ```
 
-3. Fill in database, Clerk, Stripe, Turnstile, Documenso, R2, and internal cron values. Do not commit real `.env` files.
+3. Fill in database, Clerk, Stripe, Turnstile, Documenso, R2, SMTP email, and internal cron values. Do not commit real `.env` files.
 
 4. Retrieve Documenso template and recipient IDs:
    ```bash

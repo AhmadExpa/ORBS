@@ -87,7 +87,9 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
       ) {
         clearDelegateSessionToken();
 
-        if (window.location.pathname.startsWith("/portal")) {
+        if (window.location.pathname.startsWith("/agent")) {
+          window.location.replace("/agent/login");
+        } else if (window.location.pathname.startsWith("/portal")) {
           window.location.replace("/login");
         }
 

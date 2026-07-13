@@ -1,35 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import {
   ArrowRight,
   BrainCircuit,
-  Headset,
-  Mail,
   PhoneCall,
-  ServerCog,
   ShieldCheck,
   Wallet,
-  Workflow,
   Search,
-  Terminal,
   Cpu,
   HardDrive,
-  Network,
   CheckCircle2,
-  ChevronRight,
-  Play,
-  Layers,
-  Activity,
   Lock,
   ArrowUpRight,
-  Info,
 } from "lucide-react";
-import { getBillingCycleDiscountPercent, getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies, formatCurrency } from "@/lib/shared";
-import { siteConfig } from "@/lib/constants/site";
-import { Button, cn } from "@/lib/ui";
-import { ServiceLogoCluster, ServiceVisualPanel } from "./service-branding";
+import { getSignupPath } from "@/lib/shared";
+import { cn } from "@/lib/ui";
 import { TechStackShowcase } from "./tech-stack-showcase";
 
 const tabsConfig = [
@@ -69,7 +57,6 @@ const faqItems = [
 export function LandingPage() {
   const [activeTab, setActiveTab] = useState("compute");
   const [searchQuery, setSearchQuery] = useState("");
-  const [consoleMetricTab, setConsoleMetricTab] = useState("cpu");
 
   // Group plans for quick technical specs (AWS-style)
   const computeSpecs = [
@@ -187,132 +174,18 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Right Hero Panel: AWS Platform Console Preview Mockup */}
-            <div className="relative min-w-0">
-              <div className="relative rounded-xl border border-slate-250 bg-white p-2 shadow-xl">
-                {/* Console Bar UI */}
-                <div className="flex items-center justify-between border-b border-slate-150 px-4 py-2 text-xs text-slate-500">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-3 w-3 rounded-full bg-slate-200" />
-                    <span className="h-3 w-3 rounded-full bg-slate-200" />
-                    <span className="h-3 w-3 rounded-full bg-slate-200" />
-                    <span className="ml-2 font-mono text-[10px] tracking-wide">elevenorbits-console-v2.9.1</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="font-semibold text-slate-600">Region: US-East (N. Virginia)</span>
-                  </div>
-                </div>
-
-                {/* Console Main Content Grid */}
-                <div className="grid min-h-[340px] grid-cols-[140px_minmax(0,1fr)] bg-[#f8f9fa] text-xs">
-                  {/* Left Console Sidebar */}
-                  <aside className="border-r border-slate-200 bg-[#f1f3f5] p-3 text-slate-655">
-                    <p className="font-semibold text-slate-800 uppercase tracking-[0.08em] text-[10px]">Lanes</p>
-                    <ul className="mt-3 space-y-2">
-                      <li className="flex items-center gap-2 rounded bg-white px-2 py-1.5 font-bold text-slate-900 shadow-sm border border-slate-200/60">
-                        <Cpu className="h-3.5 w-3.5 text-[#ff7a1a]" /> Compute
-                      </li>
-                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
-                        <BrainCircuit className="h-3.5 w-3.5" /> AI Servers
-                      </li>
-                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
-                        <PhoneCall className="h-3.5 w-3.5" /> VoIP Trunks
-                      </li>
-                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
-                        <Wallet className="h-3.5 w-3.5" /> Wallet billing
-                      </li>
-                      <li className="flex items-center gap-2 px-2 py-1.5 hover:text-slate-900 transition">
-                        <Headset className="h-3.5 w-3.5" /> Support Lane
-                      </li>
-                    </ul>
-                  </aside>
-
-                  {/* Console Working Panel */}
-                  <main className="p-4 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-slate-900">active_instance_vps_102</h3>
-                        <span className="rounded bg-orange-50 border border-orange-200 px-2 py-0.5 text-[10px] font-bold text-[#ff7a1a]">3-Day Trial Active</span>
-                      </div>
-
-                      {/* Micro Specs card */}
-                      <div className="mt-4 grid gap-2.5">
-                        <div className="rounded border border-slate-200 bg-white p-3 shadow-sm">
-                          <div className="flex items-center justify-between text-slate-600">
-                            <span className="font-semibold">Compute Profile</span>
-                            <span className="font-mono text-slate-850">4 vCPU / 8 GB RAM / 80 GB SSD</span>
-                          </div>
-                          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-slate-600">
-                            <span>Status</span>
-                            <span className="flex items-center gap-1 font-bold text-emerald-600">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              Running
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Console Tab switcher mockup */}
-                        <div className="flex border-b border-slate-200 mt-2 text-[11px]">
-                          <button onClick={() => setConsoleMetricTab("cpu")} className={cn("px-2.5 py-1 font-semibold", consoleMetricTab === "cpu" ? "border-b-2 border-[#ff7a1a] text-[#ff7a1a]" : "text-slate-500")}>CPU Utilization</button>
-                          <button onClick={() => setConsoleMetricTab("network")} className={cn("px-2.5 py-1 font-semibold", consoleMetricTab === "network" ? "border-b-2 border-[#ff7a1a] text-[#ff7a1a]" : "text-slate-500")}>Network I/O</button>
-                        </div>
-
-                        <div className="rounded border border-slate-200 bg-white p-2.5">
-                          {consoleMetricTab === "cpu" ? (
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] text-slate-500">
-                                <span>Core Usage Peak</span>
-                                <span>14.2% average load</span>
-                              </div>
-                              <div className="h-8 w-full bg-slate-50 rounded border border-slate-100 flex items-end gap-1 p-1">
-                                <span className="w-full bg-orange-200 h-1/4 rounded-sm" />
-                                <span className="w-full bg-orange-200 h-1/3 rounded-sm" />
-                                <span className="w-full bg-orange-300 h-1/2 rounded-sm" />
-                                <span className="w-full bg-orange-450 h-2/3 rounded-sm" />
-                                <span className="w-full bg-[#ff7a1a] h-4/5 rounded-sm" />
-                                <span className="w-full bg-orange-300 h-1/3 rounded-sm" />
-                                <span className="w-full bg-orange-200 h-1/4 rounded-sm" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] text-slate-500">
-                                <span>Active Traffic</span>
-                                <span>3.12 Mbps Tx / 842 Kbps Rx</span>
-                              </div>
-                              <div className="h-8 w-full bg-slate-50 rounded border border-slate-100 flex items-end gap-1 p-1">
-                                <span className="w-full bg-slate-200 h-1/2 rounded-sm" />
-                                <span className="w-full bg-slate-350 h-2/3 rounded-sm" />
-                                <span className="w-full bg-slate-200 h-1/3 rounded-sm" />
-                                <span className="w-full bg-slate-400 h-3/4 rounded-sm" />
-                                <span className="w-full bg-slate-950 h-4/5 rounded-sm" />
-                                <span className="w-full bg-slate-350 h-1/2 rounded-sm" />
-                                <span className="w-full bg-slate-200 h-1/4 rounded-sm" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Console Info Footer */}
-                    <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-[10px] text-slate-500">
-                      <span className="flex items-center gap-1"><Layers className="h-3 w-3" /> US-East Edge Pool</span>
-                      <span>Next renewal: In 27 days</span>
-                    </div>
-                  </main>
-                </div>
-              </div>
-
-              {/* Float Decorative badge */}
-              <div className="absolute -bottom-5 -left-5 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white p-3.5 shadow-lg md:flex">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                <div className="text-left">
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Firewall Status</p>
-                  <p className="text-xs font-bold text-slate-900">Active - Ports Protected</p>
-                </div>
-              </div>
+            {/* Right Hero Visual */}
+            <div className="relative min-w-0 lg:-mr-8 xl:-mr-16">
+              <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-orange-100/35 blur-3xl" />
+              <Image
+                src="/hero-server.png"
+                alt="ElevenOrbits managed infrastructure dashboard with servers, AI automation, VoIP, storage, and cybersecurity services"
+                width={1416}
+                height={1044}
+                priority
+                sizes="(min-width: 1280px) 720px, (min-width: 1024px) 52vw, 100vw"
+                className="relative z-10 h-auto w-full max-w-none drop-shadow-[0_28px_50px_rgba(15,23,42,0.10)]"
+              />
             </div>
 
           </div>

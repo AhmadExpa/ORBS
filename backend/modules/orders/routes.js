@@ -16,6 +16,16 @@ import { requireSubmittedContract } from "../../services/contract-service.js";
 
 export const ordersRouter = express.Router();
 
+const TRIAL_ELIGIBLE_SLUGS = new Set([
+  "object-storage",
+  "cybersecurity",
+  "ai-servers",
+  "vicidial",
+  "hermes-ai-hosting",
+  "openclaw-hosting",
+  "nextcloud-hosting",
+]);
+
 function findAddonOrThrow(addonsById, addonId, message) {
   if (!addonId) {
     return null;
@@ -71,6 +81,7 @@ async function buildQuote(body) {
   }
 
   const categorySlug = plan.categoryId?.slug || "";
+  const trialRequested = Boolean(payload.trialRequested);
   const serviceIntake = validateServiceIntakeAnswers(categorySlug, payload.serviceConfiguration?.answers || {}, {
     categoryName: plan.categoryId?.name || plan.name,
   });
@@ -91,6 +102,10 @@ async function buildQuote(body) {
       totalAmount: 0,
       contactSalesOnly: true,
     };
+  }
+
+  if (trialRequested && !TRIAL_ELIGIBLE_SLUGS.has(categorySlug)) {
+    throw new HttpError(400, "A 3-day trial is not available for this service.");
   }
 
   if (!getAvailableBillingCycles(plan).includes(payload.billingCycle)) {
@@ -179,6 +194,8 @@ async function buildQuote(body) {
     serviceConfiguration: serviceIntake.configuration,
     serviceIntakeDetails: buildServiceIntakeDetails(serviceIntake.configuration),
     finalNote,
+    trialRequested,
+    trialDays: trialRequested ? 3 : 0,
     billingCycle: payload.billingCycle,
     lineItems,
     totalAmount,
@@ -207,14 +224,45 @@ ordersRouter.post(
     }
 
     const { order, subscription, invoice } = await withTransaction(async () => {
+      const now = new Date();
+      const trialEndsAt = quote.trialRequested ? new Date(now.getTime() + quote.trialDays * 24 * 60 * 60 * 1000) : null;
+      const trialMetadata = {
+        trialRequested: quote.trialRequested,
+        trialDays: quote.trialDays,
+        ...(quote.trialRequested
+          ? {
+              trialRequestedAt: now.toISOString(),
+              trialEndsAt: trialEndsAt.toISOString(),
+              originalTotalAmount: quote.totalAmount,
+              originalLineItems: quote.lineItems,
+            }
+          : {}),
+      };
+      const orderTotalAmount = quote.trialRequested ? 0 : quote.totalAmount;
+      const orderStatus = quote.trialRequested ? "trial_requested" : "pending_verification";
+      const invoiceStatus = quote.trialRequested ? "void" : "pending";
+      const invoiceLineItems = quote.trialRequested
+        ? [
+            {
+              label: `3-day trial request for ${quote.plan.name}`,
+              amount: 0,
+              quantity: 1,
+            },
+          ]
+        : quote.lineItems.map((item) => ({
+            label: item.label,
+            amount: item.amount,
+            quantity: item.quantity || 1,
+          }));
+
       const order = await Order.create({
         userId: req.auth.user._id,
         productPlanId: quote.plan._id,
         addons: quote.addons.map((addon) => addon._id),
         billingCycle: quote.billingCycle,
-        totalAmount: quote.totalAmount,
-        status: "pending_verification",
-        lineItems: quote.lineItems,
+        totalAmount: orderTotalAmount,
+        status: orderStatus,
+        lineItems: invoiceLineItems,
         metadata: {
           regionAddonId: quote.regionAddon?._id || null,
           imageAddonId: quote.imageAddon?._id || null,
@@ -223,8 +271,7 @@ ordersRouter.post(
           configurationDetails: quote.configurationDetails,
           serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
-          trialRequested: Boolean(req.body.trialRequested),
-          trialDays: req.body.trialRequested ? 3 : 0,
+          ...trialMetadata,
         },
       });
 
@@ -234,7 +281,7 @@ ordersRouter.post(
         productPlanId: quote.plan._id,
         addons: quote.addons.map((addon) => addon._id),
         billingCycle: quote.billingCycle,
-        status: "pending_verification",
+        status: orderStatus,
         sharedDetails: [...quote.configurationDetails, ...quote.serviceIntakeDetails],
         metadata: {
           managedBy: "ElevenOrbits Team",
@@ -244,8 +291,7 @@ ordersRouter.post(
           storageQuantity: quote.storageQuantity || 0,
           serviceConfiguration: quote.serviceConfiguration,
           customerNote: quote.finalNote || "",
-          trialRequested: Boolean(req.body.trialRequested),
-          trialDays: req.body.trialRequested ? 3 : 0,
+          ...trialMetadata,
         },
       });
 
@@ -255,16 +301,13 @@ ordersRouter.post(
         subscriptionId: subscription._id,
         orderId: order._id,
         invoiceNumber,
-        amount: quote.totalAmount,
+        amount: orderTotalAmount,
         currency: env.stripeCurrency.toUpperCase(),
-        status: "pending",
-        paymentMethodType: "pending_confirmation",
-        lineItems: quote.lineItems.map((item) => ({
-          label: item.label,
-          amount: item.amount,
-          quantity: item.quantity || 1,
-        })),
+        status: invoiceStatus,
+        paymentMethodType: quote.trialRequested ? "trial_request" : "pending_confirmation",
+        lineItems: invoiceLineItems,
         billingCycle: quote.billingCycle,
+        metadata: trialMetadata,
       });
 
       await recordActivity({
@@ -275,7 +318,8 @@ ordersRouter.post(
         targetId: String(order._id),
         metadata: {
           billingCycle: quote.billingCycle,
-          totalAmount: quote.totalAmount,
+          totalAmount: orderTotalAmount,
+          trialRequested: quote.trialRequested,
         },
       });
 
@@ -294,12 +338,14 @@ ordersRouter.post(
     invoice.pdfStorageKey = pdfData.pdfStorageKey;
     invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
-    await sendInvoiceNotification({
-      customer: req.auth.user,
-      invoice,
-      planName: quote.plan.name,
-      eventType: "invoice_created",
-    });
+    if (!quote.trialRequested) {
+      await sendInvoiceNotification({
+        customer: req.auth.user,
+        invoice,
+        planName: quote.plan.name,
+        eventType: "invoice_created",
+      });
+    }
 
     res.status(201).json({
       order,
@@ -313,7 +359,7 @@ ordersRouter.get(
   "/:id",
   requireCustomer,
   asyncHandler(async (req, res) => {
-    const order = await Order.findOne({ _id: req.params.id, userId: req.auth.user._id })
+    const order = await Order.findOne({ _id: req.params.id, userId: req.auth.user._id, status: { $ne: "deleted" } })
       .populate("productPlanId addons")
       .lean();
 
@@ -337,6 +383,8 @@ ordersRouter.post(
     const result = await cancelCustomerOrder({
       orderId: req.params.id,
       userId: req.auth.user._id,
+      customer: req.auth.user,
+      reason: reason || "No reason provided",
     });
 
     await recordActivity({

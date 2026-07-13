@@ -6,7 +6,7 @@ test("VoIP service intake accepts required call-center essentials", () => {
   const result = validateServiceIntakeAnswers("vicidial", {
     callGoals: ["inbound", "outbound", "rvm"],
     currentSetup: "existing_vicidial",
-    agentCount: 25,
+    agentCountRange: "twenty_one_to_50",
     primaryRegion: "north_america",
     sipCarrierStatus: "have_carrier",
     didNumbers: ["have_numbers", "caller_id_rules"],
@@ -14,7 +14,7 @@ test("VoIP service intake accepts required call-center essentials", () => {
 
   assert.equal(result.ok, true);
   assert.equal(result.configuration.categorySlug, "vicidial");
-  assert.equal(result.configuration.answers.agentCount, 25);
+  assert.equal(result.configuration.answers.agentCountRange, "twenty_one_to_50");
   assert.equal(result.configuration.summary.some((item) => item.label === "Call direction and workload"), true);
   assert.equal(result.configuration.summary.some((item) => item.value.includes("RVM")), true);
 });

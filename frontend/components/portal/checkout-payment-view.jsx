@@ -14,6 +14,7 @@ import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
+import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
 
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
@@ -64,6 +65,7 @@ export function CheckoutPaymentView({ orderId }) {
     message: "",
     error: "",
   });
+  const [reasonAction, setReasonAction] = useState("");
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
@@ -85,16 +87,18 @@ export function CheckoutPaymentView({ orderId }) {
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const contractApproved = isContractApprovedForPayments(contractStatus);
   const lineItems = order?.lineItems || [];
+  const isTrialRequested = Boolean(order?.metadata?.trialRequested);
   const isCancelled = order?.status === "cancelled" || subscription?.status === "cancelled";
-  const isPaid = invoice?.status === "paid" || order?.status === "approved";
-  const canTriggerPayments = Boolean(order) && !isPaid && !isCancelled && contractApproved;
-  const canCancelOrder = order?.status === "approved" && invoice?.status === "paid" && !isCancelled;
+  const isPaid = !isTrialRequested && (invoice?.status === "paid" || order?.status === "approved");
+  const canTriggerPayments = Boolean(order) && !isTrialRequested && !isPaid && !isCancelled && contractApproved;
+  const canCancelOrder = Boolean(order) && !["cancelled", "deleted", "rejected"].includes(order.status);
+  const canDeleteOrder = order?.status === "cancelled";
   const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
   const refetchProfile = profileQuery.refetch;
   const customerNote = String(order?.metadata?.customerNote || "").trim();
 
-  const totalDue = useMemo(() => Number(invoice?.amount || order?.totalAmount || 0), [invoice?.amount, order?.totalAmount]);
+  const totalDue = useMemo(() => (isTrialRequested ? 0 : Number(invoice?.amount || order?.totalAmount || 0)), [invoice?.amount, isTrialRequested, order?.totalAmount]);
 
   async function syncOrderState() {
     await Promise.all([refetchOrder(), refetchProfile()]);
@@ -160,9 +164,8 @@ export function CheckoutPaymentView({ orderId }) {
     return "Your payment was received. The order details are being refreshed now.";
   }
 
-  async function handleOrderCancel() {
-    const confirmed = window.confirm("Cancel this paid order and unsubscribe the linked service?");
-    if (!confirmed) {
+  async function handleOrderCancel(reason) {
+    if (!orderId || state.isSubmitting) {
       return;
     }
 
@@ -179,6 +182,7 @@ export function CheckoutPaymentView({ orderId }) {
       const response = await apiFetch(`/orders/${orderId}/cancel`, {
         method: "POST",
         token,
+        body: { reason },
       });
 
       setState((current) => ({
@@ -195,6 +199,7 @@ export function CheckoutPaymentView({ orderId }) {
         description: response.message || "The order has been cancelled.",
       });
       await refetchOrder();
+      setReasonAction("");
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -208,6 +213,59 @@ export function CheckoutPaymentView({ orderId }) {
         action: "Order",
         title: "Cancellation failed",
         description: error.message || "The order could not be cancelled.",
+      });
+    }
+  }
+
+  async function handleOrderDelete(reason) {
+    if (!orderId || state.isSubmitting) {
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      isSubmitting: true,
+      action: "delete",
+      message: "",
+      error: "",
+    }));
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/orders/${orderId}`, {
+        method: "DELETE",
+        token,
+        body: { reason },
+      });
+
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        action: "",
+        message: response.message || "The order has been deleted.",
+        error: "",
+      }));
+      showToast({
+        type: "info",
+        action: "Order",
+        title: "Order deleted",
+        description: response.message || "The order has been deleted.",
+      });
+      setReasonAction("");
+      router.push("/portal/services");
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        isSubmitting: false,
+        action: "",
+        message: "",
+        error: error.message || "The order could not be deleted.",
+      }));
+      showToast({
+        type: "error",
+        action: "Order",
+        title: "Delete failed",
+        description: error.message || "The order could not be deleted.",
       });
     }
   }
@@ -287,21 +345,31 @@ export function CheckoutPaymentView({ orderId }) {
             <div className="rounded-xl border border-line bg-white p-5">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Card Payment</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {isTrialRequested ? "Trial Request" : "Card Payment"}
+                  </p>
                   <p className="mt-4 text-2xl font-semibold tracking-[-0.025em] text-slate-950">{formatCurrency(totalDue)}</p>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
-                    {contractApproved
+                    {isTrialRequested
+                      ? "No payment is due today. ElevenOrbits will review the 3-day trial request and follow up before activation."
+                      : contractApproved
                       ? "Complete this first purchase by card. A successful payment activates the order, saves the card for renewal fallback billing, and opens a confirmation page."
                       : "This order is ready for review, but payment remains locked until an ElevenOrbits administrator approves your signed agreement."}
                   </p>
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-                    Current saved card: <span className="font-semibold text-slate-950">{savedCardLabel(profile)}</span>
-                  </div>
+                  {!isTrialRequested ? (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                      Current saved card: <span className="font-semibold text-slate-950">{savedCardLabel(profile)}</span>
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   {isCancelled ? (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-700">
                       This order has been cancelled and is no longer billable.
+                    </div>
+                  ) : isTrialRequested ? (
+                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-700">
+                      3-day trial requested. Payment is not required at checkout.
                     </div>
                   ) : isPaid ? (
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-700">
@@ -327,8 +395,13 @@ export function CheckoutPaymentView({ orderId }) {
               {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {canCancelOrder ? (
-                  <Button type="button" variant="ghost" disabled={state.isSubmitting} onClick={handleOrderCancel}>
+                  <Button type="button" variant="ghost" disabled={state.isSubmitting} onClick={() => setReasonAction("cancel")}>
                     Cancel Order
+                  </Button>
+                ) : null}
+                {canDeleteOrder ? (
+                  <Button type="button" variant="ghost" disabled={state.isSubmitting} onClick={() => setReasonAction("delete")}>
+                    Delete Order
                   </Button>
                 ) : null}
                 {invoiceFileUrl ? (
@@ -355,7 +428,9 @@ export function CheckoutPaymentView({ orderId }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Renewal Strategy</span>
-              <span className="font-semibold text-right text-slate-900">Wallet first, saved-card fallback</span>
+              <span className="text-right font-semibold text-slate-900">
+                {isTrialRequested ? "Starts after trial approval" : "Wallet first, saved-card fallback"}
+              </span>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
               After approval, future renewals can check wallet balance first and use the saved card as a fallback when card billing is enabled.
@@ -366,6 +441,28 @@ export function CheckoutPaymentView({ orderId }) {
           </CardContent>
         </Card>
       </div>
+      <DeleteReasonModal
+        open={reasonAction === "cancel"}
+        title="Cancel order"
+        subtitle={`Cancel ${order?.productPlanId?.name || "this order"}? Any unpaid invoice attached to it will be voided.`}
+        confirmLabel="Cancel order"
+        reasonLabel="Reason for cancellation"
+        otherLabel="Please describe the cancellation reason"
+        isDeleting={state.isSubmitting && state.action === "cancel"}
+        onConfirm={handleOrderCancel}
+        onClose={() => !state.isSubmitting && setReasonAction("")}
+      />
+      <DeleteReasonModal
+        open={reasonAction === "delete"}
+        title="Delete cancelled order"
+        subtitle={`Remove ${order?.productPlanId?.name || "this order"} from your portal history? This action cannot be undone.`}
+        confirmLabel="Delete order"
+        reasonLabel="Reason for deletion"
+        otherLabel="Please describe the deletion reason"
+        isDeleting={state.isSubmitting && state.action === "delete"}
+        onConfirm={handleOrderDelete}
+        onClose={() => !state.isSubmitting && setReasonAction("")}
+      />
     </div>
   );
 }

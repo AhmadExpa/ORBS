@@ -196,15 +196,15 @@ function PlanCard({ plan, onNavigate }) {
   return (
     <Link
       href={href}
-      className="group rounded-md border border-white/10 bg-white/[0.02] px-3 py-2.5 transition hover:border-[#ff7a1a]/30 hover:bg-white/[0.05]"
+      className="group rounded-lg border border-slate-200 bg-white px-3.5 py-3 transition hover:border-[#ff7a1a]/40 hover:bg-orange-50/40 hover:shadow-sm"
       onClick={onNavigate}
     >
       <span className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-white">{plan.name}</span>
-          <span className="mt-0.5 block truncate text-xs text-white/60">{plan.displayPriceLabel || "Contact sales"}</span>
+          <span className="block truncate text-sm font-semibold text-slate-950">{plan.name}</span>
+          <span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{plan.displayPriceLabel || "Contact sales"}</span>
         </span>
-        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" />
+        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
       </span>
     </Link>
   );
@@ -213,7 +213,7 @@ function PlanCard({ plan, onNavigate }) {
 function MegaFrame({ children }) {
   return (
     <div className="fixed left-1/2 top-[62px] z-50 hidden w-[min(1120px,calc(100vw-3rem))] -translate-x-1/2 pt-4 xl:block">
-      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-white/10 bg-[#0d1117] shadow-[0_46px_120px_-56px_rgba(2,6,23,0.72)]">
+      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_42px_120px_-56px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/[0.03]">
         {children}
       </div>
     </div>
@@ -228,9 +228,9 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 
   return (
     <MegaFrame>
-      <div className="grid bg-[#0d1117] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
-        <section className="flex flex-col bg-slate-950 p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">Services</p>
+      <div className="grid bg-white xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+        <section className="flex flex-col border-r border-slate-200 bg-slate-50 p-5 text-slate-950">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">Services</p>
 
           <div className="mt-4 grid gap-1">
             {serviceChoices.map((choice) => {
@@ -243,48 +243,50 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                   onFocus={() => setActiveChoiceId(choice.id)}
                   onClick={() => setActiveChoiceId(choice.id)}
                   className={cn(
-                    "group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition",
-                    active ? "bg-white/[0.08] text-white shadow-sm border-l-2 border-[#ff7a1a]" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
+                    "group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition",
+                    active
+                      ? "border-[#ff7a1a]/40 bg-white text-slate-950 shadow-sm"
+                      : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950",
                   )}
                 >
-                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-white/[0.12] text-white" : "bg-white/[0.06] text-white/50")}>
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-slate-950 text-white" : "bg-slate-200/70 text-slate-500")}>
                     <ChoiceIcon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold">{choice.label}</span>
-                    <span className={cn("mt-0.5 block truncate text-xs", active ? "text-[#ff7a1a]" : "text-white/40")}>{choice.eyebrow}</span>
+                    <span className={cn("mt-0.5 block truncate text-xs", active ? "text-[#ff7a1a]" : "text-slate-500")}>{choice.eyebrow}</span>
                   </span>
-                  <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-[#ff7a1a]" : "text-white/25 group-hover:translate-x-0.5")} />
+                  <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-[#ff7a1a]" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-500")} />
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
-            <Link href="/services" className="rounded-md border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10" onClick={onNavigate}>
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4">
+            <Link href="/services" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-100" onClick={onNavigate}>
               All services
             </Link>
-            <Link href="/pricing" className="rounded-md bg-[#ff7a1a] px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#e66a12]" onClick={onNavigate}>
+            <Link href="/pricing" className="rounded-lg bg-[#ff7a1a] px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#e66a12]" onClick={onNavigate}>
               Pricing
             </Link>
           </div>
         </section>
 
-        <section className="min-w-0 bg-[#0d1117] p-6 text-white">
+        <section className="min-w-0 bg-white p-6 text-slate-950">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-white shadow-sm">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white shadow-sm">
               <Icon className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">{activeChoice.eyebrow}</p>
-              <h3 className="mt-1 text-2xl font-semibold leading-tight text-white">{activeChoice.label}</h3>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">{activeChoice.eyebrow}</p>
+              <h3 className="mt-1 text-2xl font-semibold leading-tight text-slate-950">{activeChoice.label}</h3>
             </div>
           </div>
 
           <div className="mt-5">
             <div className="flex items-end justify-between gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Choose</p>
-              <Link href={activeChoice.href} className="hidden text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12] sm:inline-flex" onClick={onNavigate}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Choose</p>
+              <Link href={activeChoice.href} className="hidden text-sm font-semibold text-[#0069a6] transition hover:text-[#004d7a] sm:inline-flex" onClick={onNavigate}>
                 View service
               </Link>
             </div>
@@ -294,31 +296,31 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="group flex items-start justify-between gap-4 rounded-md border border-white/10 bg-white/[0.02] px-3 py-3 transition hover:border-[#ff7a1a]/30 hover:bg-white/[0.05]"
+                  className="group flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 transition hover:border-[#ff7a1a]/40 hover:bg-white hover:shadow-sm"
                   onClick={onNavigate}
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-white">{item.label}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-white/40">{item.description}</span>
+                    <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
                   </span>
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" />
+                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-5">
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-5">
             <Link href={activeChoice.href} onClick={onNavigate}>
-              <Button variant="outline" className="min-h-10 w-full rounded-md border border-white/10 bg-transparent text-white hover:bg-white/10">View Service</Button>
+              <Button variant="outline" className="min-h-10 w-full rounded-lg border border-slate-300 bg-white text-slate-900 hover:bg-slate-100">View Service</Button>
             </Link>
             <Link href={getSignupPath()} onClick={onNavigate}>
-              <Button className="min-h-10 w-full rounded-md bg-[#ff7a1a] hover:bg-[#e66a12] text-white border-0">Start Account</Button>
+              <Button className="min-h-10 w-full rounded-lg border-0 bg-[#ff7a1a] text-white hover:bg-[#e66a12]">Start Account</Button>
             </Link>
           </div>
         </section>
 
-        <section className="border-l border-white/[0.07] bg-[#0b0e14] p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">Plans</p>
+        <section className="border-l border-slate-200 bg-slate-50 p-5 text-slate-950">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">Plans</p>
           <div className="mt-3 grid gap-2">
             {plans.map((plan) => (
               <PlanCard key={plan.slug} plan={plan} onNavigate={onNavigate} />
@@ -338,12 +340,12 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, active = false, onFocus, onClick }) {
   const content = (
     <>
-      {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-[#ff7a1a]" : "text-white/30")} /> : null}
+      {Icon ? <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "text-[#ff7a1a]" : "text-slate-400")} /> : null}
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold">{label}</span>
-        {description ? <span className={cn("mt-0.5 block truncate text-xs", active ? "text-white/65" : "text-white/40")}>{description}</span> : null}
+        {description ? <span className={cn("mt-0.5 block truncate text-xs", active ? "text-slate-600" : "text-slate-500")}>{description}</span> : null}
       </span>
-      <ArrowRight className={cn("ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 transition", active ? "text-[#ff7a1a]" : "text-white/20 group-hover:translate-x-0.5 group-hover:text-white/60")} />
+      <ArrowRight className={cn("ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 transition", active ? "text-[#ff7a1a]" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]")} />
     </>
   );
 
@@ -352,8 +354,10 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
       <Link
         href={href}
         className={cn(
-          "group flex items-start gap-3 rounded-md px-3 py-2.5 transition",
-          active ? "bg-[#ff7a1a]/10 text-white border border-[#ff7a1a]/30" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
+          "group flex items-start gap-3 rounded-lg border px-3 py-2.5 transition",
+          active
+            ? "border-[#ff7a1a]/40 bg-white text-slate-950 shadow-sm"
+            : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950",
         )}
         onFocus={onFocus}
         onClick={onNavigate}
@@ -367,8 +371,10 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
     <button
       type="button"
       className={cn(
-        "group flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition",
-        active ? "bg-[#ff7a1a]/10 text-white border border-[#ff7a1a]/30" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
+        "group flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition",
+        active
+          ? "border-[#ff7a1a]/40 bg-white text-slate-950 shadow-sm"
+          : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950",
       )}
       onFocus={onFocus}
       onClick={onClick}
@@ -380,12 +386,12 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
 
 function IndustryFitPanel({ industry, onNavigate }) {
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.02] p-4 text-white">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-950">
       <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(industry.recommended)} max={5} />
-      <p className="mt-4 text-sm leading-6 text-white/60">
+      <p className="mt-4 text-sm leading-6 text-slate-600">
         {industry.fit}
       </p>
-      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12]" onClick={onNavigate}>
+      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-[#0069a6] transition hover:text-[#004d7a]" onClick={onNavigate}>
         Open industry page
         <ArrowRight className="ml-1 h-4 w-4" />
       </Link>
@@ -396,7 +402,7 @@ function IndustryFitPanel({ industry, onNavigate }) {
 function SimpleColumn({ eyebrow, children, className }) {
   return (
     <section className={cn("p-5", className)}>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff7a1a]">{eyebrow}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">{eyebrow}</p>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -407,8 +413,8 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 
   return (
     <MegaFrame>
-      <div className="grid bg-[#0d1117] xl:grid-cols-[360px_minmax(0,1fr)_260px] text-white">
-        <SimpleColumn eyebrow="Industries" className="border-r border-white/[0.07]">
+      <div className="grid bg-white text-slate-950 xl:grid-cols-[360px_minmax(0,1fr)_260px]">
+        <SimpleColumn eyebrow="Industries" className="border-r border-slate-200 bg-slate-50">
           <div className="grid gap-1">
             {industryPages.map((industry) => (
               <SimpleLinkCard
@@ -427,7 +433,7 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
           <IndustryFitPanel industry={activeIndustry} onNavigate={onNavigate} />
         </SimpleColumn>
 
-        <SimpleColumn eyebrow="More" className="border-l border-white/[0.07] bg-[#0b0e14]">
+        <SimpleColumn eyebrow="More" className="border-l border-slate-200 bg-slate-50">
           <div className="grid gap-2">
             <SimpleLinkCard href="/industries" label="All Industries" description="Browse every sector." icon={Building2} onNavigate={onNavigate} />
             <SimpleLinkCard href="/contact" label="Talk to Sales" description="Get service guidance." icon={Headset} onNavigate={onNavigate} />
@@ -441,9 +447,9 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 function LearnMegaMenu({ onNavigate }) {
   // Map eyebrow types to colors
   const typeColor = {
-    Guide: { dot: "bg-[#ff7a1a]", text: "text-[#ff7a1a]", badge: "bg-[#ff7a1a]/15 text-[#ff7a1a]" },
-    Checklist: { dot: "bg-emerald-400", text: "text-emerald-400", badge: "bg-emerald-400/10 text-emerald-400" },
-    Baseline: { dot: "bg-amber-400", text: "text-amber-400", badge: "bg-amber-400/10 text-amber-400" },
+    Guide: { dot: "bg-[#ff7a1a]", text: "text-[#c45100]", badge: "bg-orange-50 text-[#c45100] ring-orange-200" },
+    Checklist: { dot: "bg-emerald-500", text: "text-emerald-700", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+    Baseline: { dot: "bg-amber-500", text: "text-amber-700", badge: "bg-amber-50 text-amber-700 ring-amber-200" },
   };
 
   const featured = resourcePages[0];
@@ -451,11 +457,11 @@ function LearnMegaMenu({ onNavigate }) {
 
   return (
     <MegaFrame>
-      <div className="grid bg-[#0d1117] xl:grid-cols-[280px_minmax(0,1fr)_220px]">
+      <div className="grid bg-white text-slate-950 xl:grid-cols-[280px_minmax(0,1fr)_220px]">
         {/* ── Left: Featured resource ── */}
-        <section className="flex flex-col justify-between gap-6 border-r border-white/[0.07] p-6">
+        <section className="flex flex-col justify-between gap-6 border-r border-slate-200 bg-slate-50 p-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">Featured</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#0069a6]">Featured</p>
             <Link
               href={`/resources/${featured.slug}`}
               className="group mt-4 block"
@@ -463,20 +469,20 @@ function LearnMegaMenu({ onNavigate }) {
             >
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest",
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ring-1",
                   (typeColor[featured.eyebrow] || typeColor.Guide).badge,
                 )}
               >
                 <span className={cn("h-1.5 w-1.5 rounded-full", (typeColor[featured.eyebrow] || typeColor.Guide).dot)} />
                 {featured.eyebrow}
               </span>
-              <h3 className="mt-3 text-lg font-bold leading-snug text-white transition-colors group-hover:text-[#ff7a1a]">
+              <h3 className="mt-3 text-lg font-bold leading-snug text-slate-950 transition-colors group-hover:text-[#c45100]">
                 {featured.title}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-white/40 line-clamp-3">
+              <p className="mt-2 text-sm leading-6 text-slate-600 line-clamp-3">
                 {featured.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#ff7a1a] transition group-hover:gap-2.5">
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0069a6] transition group-hover:gap-2.5 group-hover:text-[#004d7a]">
                 Read guide <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </Link>
@@ -484,18 +490,18 @@ function LearnMegaMenu({ onNavigate }) {
 
           <Link
             href="/resources"
-            className="group mt-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+            className="group mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#ff7a1a]/40 hover:bg-orange-50/40 hover:text-slate-950"
             onClick={onNavigate}
           >
-            <BookOpen className="h-4 w-4 text-white/40" />
+            <BookOpen className="h-4 w-4 text-slate-400" />
             Browse all resources
-            <ArrowRight className="ml-auto h-3.5 w-3.5 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/60" />
+            <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
           </Link>
         </section>
 
         {/* ── Center: All guides grid ── */}
         <section className="p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">All Resources</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#0069a6]">All Resources</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
             {rest.map((resource) => {
               const tc = typeColor[resource.eyebrow] || typeColor.Guide;
@@ -503,17 +509,17 @@ function LearnMegaMenu({ onNavigate }) {
                 <Link
                   key={resource.slug}
                   href={`/resources/${resource.slug}`}
-                  className="group flex flex-col gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 transition hover:border-white/15 hover:bg-white/[0.07]"
+                  className="group flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-[#ff7a1a]/40 hover:bg-white hover:shadow-sm"
                   onClick={onNavigate}
                 >
                   <span className={cn("flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest", tc.text)}>
                     <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tc.dot)} />
                     {resource.eyebrow}
                   </span>
-                  <span className="text-sm font-semibold leading-snug text-white/85 transition group-hover:text-[#ff7a1a]">
+                  <span className="text-sm font-semibold leading-snug text-slate-950 transition group-hover:text-[#c45100]">
                     {resource.title}
                   </span>
-                  <span className="text-xs leading-5 text-white/35 line-clamp-2">{resource.description}</span>
+                  <span className="text-xs leading-5 text-slate-500 line-clamp-2">{resource.description}</span>
                 </Link>
               );
             })}
@@ -521,22 +527,22 @@ function LearnMegaMenu({ onNavigate }) {
         </section>
 
         {/* ── Right: Company links ── */}
-        <section className="flex flex-col border-l border-white/[0.07] p-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">Company</p>
+        <section className="flex flex-col border-l border-slate-200 bg-slate-50 p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#0069a6]">Company</p>
           <div className="mt-4 grid gap-1">
             {companyLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                className="group flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-slate-600 transition hover:border-slate-200 hover:bg-white hover:text-slate-950"
                 onClick={onNavigate}
               >
-                <item.icon className="h-4 w-4 shrink-0 text-white/25 transition group-hover:text-white/50" />
+                <item.icon className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#0069a6]" />
                 <span>
                   <span className="block text-sm font-semibold">{item.label}</span>
-                  <span className="block text-xs text-white/30">{item.description}</span>
+                  <span className="block text-xs text-slate-500">{item.description}</span>
                 </span>
-                <ArrowRight className="ml-auto h-3 w-3 shrink-0 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-white/40" />
+                <ArrowRight className="ml-auto h-3 w-3 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
               </Link>
             ))}
           </div>
@@ -544,12 +550,12 @@ function LearnMegaMenu({ onNavigate }) {
           <div className="mt-auto pt-6">
             <Link
               href="/contact"
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff7a1a]/10 to-red-500/10 px-4 py-3.5 text-sm font-semibold text-white/80 ring-1 ring-white/10 transition hover:from-[#ff7a1a]/20 hover:to-red-500/20 hover:text-white"
+              className="group flex items-center gap-2 rounded-xl bg-white px-4 py-3.5 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-orange-50/60 hover:text-slate-950"
               onClick={onNavigate}
             >
               <Headset className="h-4 w-4 text-[#ff7a1a]" />
               Talk to sales
-              <ArrowRight className="ml-auto h-3.5 w-3.5 text-white/30 transition group-hover:translate-x-0.5" />
+              <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
             </Link>
           </div>
         </section>

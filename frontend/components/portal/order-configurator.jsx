@@ -92,6 +92,7 @@ import {
   getBillingCycleMonths,
   getServiceIntakeConfig,
   getStorageMinimumQuantity,
+  isServiceIntakeFieldVisible,
   validateServiceIntakeAnswers,
 } from "@/lib/shared";
 import { Topbar } from "@/components/shared/topbar";
@@ -480,6 +481,26 @@ function IntakeField({ field, value, error, onChange }) {
   );
 }
 
+function isIntakeFieldVisible(field, answers) {
+  return isServiceIntakeFieldVisible(field, answers);
+}
+
+function pruneHiddenIntakeAnswers(answers, config) {
+  if (!config) {
+    return answers;
+  }
+
+  const next = { ...answers };
+  (config.sections || []).forEach((section) => {
+    (section.fields || []).forEach((field) => {
+      if (!isIntakeFieldVisible(field, next)) {
+        delete next[field.key];
+      }
+    });
+  });
+  return next;
+}
+
 function ServiceRequirementsSection({ config, answers, errors, onChange }) {
   if (!config) {
     return null;
@@ -509,15 +530,17 @@ function ServiceRequirementsSection({ config, answers, errors, onChange }) {
                 </div>
               </div>
               <div className="mt-5 grid gap-4">
-                {section.fields.map((field) => (
-                  <IntakeField
-                    key={field.key}
-                    field={field}
-                    value={answers[field.key]}
-                    error={errors[field.key]}
-                    onChange={(value) => onChange(field.key, value)}
-                  />
-                ))}
+                {section.fields
+                  .filter((field) => isIntakeFieldVisible(field, answers))
+                  .map((field) => (
+                    <IntakeField
+                      key={field.key}
+                      field={field}
+                      value={answers[field.key]}
+                      error={errors[field.key]}
+                      onChange={(value) => onChange(field.key, value)}
+                    />
+                  ))}
               </div>
             </section>
           );
@@ -736,6 +759,7 @@ export function OrderConfigurator({ slug }) {
     () => summaryItems.reduce((sum, item) => sum + Number(item.amount || 0), 0),
     [summaryItems],
   );
+  const dueToday = trialRequested ? 0 : total;
   const monthlyTotal = useMemo(
     () => monthlySummaryItems.reduce((sum, item) => sum + Number(item.amount || 0), 0),
     [monthlySummaryItems],
@@ -750,8 +774,13 @@ export function OrderConfigurator({ slug }) {
 
   function updateServiceAnswer(key, value) {
     setServiceAnswers((current) => ({
-      ...current,
-      [key]: value,
+      ...pruneHiddenIntakeAnswers(
+        {
+          ...current,
+          [key]: value,
+        },
+        serviceIntakeConfig,
+      ),
     }));
     setServiceAnswerErrors((current) => {
       if (!current[key]) {
@@ -813,10 +842,12 @@ export function OrderConfigurator({ slug }) {
       showToast({
         type: "success",
         action: "Order",
-        title: "Order created",
-        description: "Your configuration has been saved and moved to checkout.",
+        title: trialRequested ? "Trial requested" : "Order created",
+        description: trialRequested
+          ? "Your 3-day trial request has been saved for ElevenOrbits review."
+          : "Your configuration has been saved and moved to checkout.",
       });
-      router.push(`/portal/checkout/${data.order._id}`);
+      router.push(trialRequested ? `/portal/checkout/${data.order._id}/thank-you` : `/portal/checkout/${data.order._id}`);
     } catch (requestError) {
       if (requestError.redirectUrl) {
         router.push(requestError.redirectUrl);
@@ -1275,7 +1306,7 @@ export function OrderConfigurator({ slug }) {
             />
             <SummaryRow
               label="Total Due Today"
-              value={plan.contactSalesOnly ? plan.displayPriceLabel || "Contact sales" : formatCurrency(total)}
+              value={plan.contactSalesOnly ? plan.displayPriceLabel || "Contact sales" : formatCurrency(dueToday)}
               emphasized
             />
 

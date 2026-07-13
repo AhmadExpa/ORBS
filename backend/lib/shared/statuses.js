@@ -1,20 +1,23 @@
 export const ORDER_STATUSES = [
   "draft",
   "pending_verification",
+  "trial_requested",
   "approved",
   "rejected",
   "cancelled",
+  "deleted",
 ];
 
 export const SUBSCRIPTION_STATUSES = [
   "pending_verification",
+  "trial_requested",
   "active",
   "suspended",
   "cancelled",
   "expired",
 ];
 
-export const INVOICE_STATUSES = ["pending", "paid", "rejected", "void"];
+export const INVOICE_STATUSES = ["pending", "paid", "rejected", "void", "deleted"];
 
 export const PAYMENT_STATUSES = [
   "pending_verification",

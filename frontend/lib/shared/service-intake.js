@@ -379,6 +379,79 @@ const lifecycleOptions = [
   { value: "not_sure", label: "Review with team", icon: "help-circle" },
 ];
 
+const hostnamePreferenceOptions = [
+  { value: "elevenorbits_assigns", label: "ElevenOrbits assigns", icon: "server" },
+  { value: "match_service_name", label: "Match service name", icon: "tag" },
+  { value: "migration_existing", label: "Keep existing hostname", icon: "upload-cloud" },
+  { value: "exact", label: "I have an exact hostname", icon: "file-text" },
+];
+
+const domainHandoffOptions = [
+  { value: "no_domain", label: "No public domain yet", icon: "x" },
+  { value: "connect_existing_later", label: "Connect existing domain later", icon: "globe" },
+  { value: "temporary_domain", label: "Use temporary service address", icon: "server" },
+  { value: "exact", label: "I have an exact domain", icon: "file-text" },
+];
+
+const appDomainHandoffOptions = [
+  { value: "connect_existing_later", label: "Connect existing domain later", icon: "globe" },
+  { value: "temporary_domain", label: "Use temporary service address", icon: "server" },
+  { value: "private_only", label: "Private access only", icon: "lock" },
+  { value: "exact", label: "I have an exact domain", icon: "file-text" },
+];
+
+const adminContactOptions = [
+  { value: "account_owner", label: "Use account owner", icon: "user" },
+  { value: "assign_later", label: "Assign after approval", icon: "calendar" },
+  { value: "team_contact", label: "Team contact will provide access", icon: "users" },
+  { value: "exact", label: "I have an exact admin email", icon: "mail" },
+];
+
+const userVolumeOptions = [
+  { value: "one_to_five", label: "1-5 users", icon: "users" },
+  { value: "six_to_25", label: "6-25 users", icon: "users" },
+  { value: "twenty_six_to_100", label: "26-100 users", icon: "briefcase" },
+  { value: "over_100", label: "100+ users", icon: "building" },
+  { value: "not_sure", label: "Review with team", icon: "help-circle" },
+];
+
+const agentVolumeOptions = [
+  { value: "one_to_five", label: "1-5 active agents", icon: "headphones" },
+  { value: "six_to_20", label: "6-20 active agents", icon: "headphones" },
+  { value: "twenty_one_to_50", label: "21-50 active agents", icon: "users" },
+  { value: "over_50", label: "50+ active agents", icon: "building" },
+  { value: "not_sure", label: "Review with team", icon: "help-circle" },
+];
+
+const campaignScopeOptions = [
+  { value: "none_yet", label: "No campaigns yet", icon: "x" },
+  { value: "one_to_three", label: "1-3 campaigns or queues", icon: "list-checks" },
+  { value: "four_to_10", label: "4-10 campaigns or queues", icon: "list-checks" },
+  { value: "over_10", label: "10+ campaigns or queues", icon: "building" },
+  { value: "not_sure", label: "Review with team", icon: "help-circle" },
+];
+
+const cdnOriginOptions = [
+  { value: "same_domain", label: "Same website domain", icon: "globe" },
+  { value: "app_server", label: "Application server", icon: "server" },
+  { value: "bucket_storage", label: "Bucket/storage origin", logo: "/partners/object-storage.svg" },
+  { value: "not_sure", label: "Review with team", icon: "help-circle" },
+  { value: "exact", label: "I have an exact origin", icon: "file-text" },
+];
+
+const cdnTargetOptions = [
+  { value: "same_domain", label: "Use existing domain", icon: "globe" },
+  { value: "new_cdn_subdomain", label: "Create CDN subdomain", icon: "server" },
+  { value: "temporary_domain", label: "Use temporary service address", icon: "server" },
+  { value: "exact", label: "I have an exact CDN domain", icon: "file-text" },
+];
+
+const bucketDomainOptions = [
+  { value: "no_custom_domain", label: "No custom domain", icon: "x" },
+  { value: "connect_later", label: "Connect custom domain later", icon: "calendar" },
+  { value: "exact", label: "I have an exact bucket domain", icon: "file-text" },
+];
+
 const serverBaseSections = [
   {
     id: "server-basics",
@@ -386,9 +459,26 @@ const serverBaseSections = [
     description: "Core provisioning details for the managed server.",
     icon: "server",
     fields: [
-      { key: "hostname", label: "Preferred hostname", type: "text", required: true, placeholder: "app01.example.com", icon: "server" },
+      { key: "hostnameMode", label: "Hostname preference", type: "select", required: true, options: hostnamePreferenceOptions, icon: "server" },
+      {
+        key: "hostname",
+        label: "Preferred hostname",
+        type: "text",
+        required: true,
+        placeholder: "app01.example.com",
+        icon: "server",
+        showWhen: { key: "hostnameMode", equals: "exact" },
+      },
       { key: "workload", label: "Primary workload", type: "select", required: true, options: workloadOptions, icon: "package" },
-      { key: "publicDomain", label: "Domain or app URL", type: "text", placeholder: "example.com", icon: "globe" },
+      { key: "publicDomainMode", label: "Domain or app URL", type: "select", options: domainHandoffOptions, icon: "globe" },
+      {
+        key: "publicDomain",
+        label: "Domain or app URL",
+        type: "text",
+        placeholder: "example.com",
+        icon: "globe",
+        showWhen: { key: "publicDomainMode", equals: "exact" },
+      },
       { key: "expectedUsers", label: "Expected users or traffic", type: "select", required: true, options: capacityOptions, icon: "users" },
     ],
   },
@@ -422,9 +512,27 @@ const appHostingSections = [
     description: "Domain, users, and access expectations for the hosted app.",
     icon: "cloud",
     fields: [
-      { key: "domain", label: "Domain or subdomain", type: "text", required: true, placeholder: "app.example.com", icon: "globe" },
-      { key: "adminContact", label: "Admin contact", type: "email", required: true, placeholder: "admin@example.com", icon: "mail" },
-      { key: "userCount", label: "Expected user count", type: "number", required: true, min: 1, suffix: "users", icon: "users" },
+      { key: "domainMode", label: "Domain or subdomain", type: "select", required: true, options: appDomainHandoffOptions, icon: "globe" },
+      {
+        key: "domain",
+        label: "Domain or subdomain",
+        type: "text",
+        required: true,
+        placeholder: "app.example.com",
+        icon: "globe",
+        showWhen: { key: "domainMode", equals: "exact" },
+      },
+      { key: "adminContactMode", label: "Admin contact", type: "select", required: true, options: adminContactOptions, icon: "mail" },
+      {
+        key: "adminContact",
+        label: "Admin contact email",
+        type: "email",
+        required: true,
+        placeholder: "admin@example.com",
+        icon: "mail",
+        showWhen: { key: "adminContactMode", equals: "exact" },
+      },
+      { key: "userCountRange", label: "Expected user count", type: "select", required: true, options: userVolumeOptions, icon: "users" },
       { key: "useCase", label: "Main use case", type: "select", required: true, options: appUseCaseOptions, icon: "file-text" },
     ],
   },
@@ -483,8 +591,8 @@ export const serviceIntakeConfigs = {
             { value: "existing_vicidial", label: "Existing Vicidial", logo: "/partners/vicidial.svg" },
             { value: "other_platform", label: "Other dialer / PBX", icon: "phone" },
           ], icon: "settings" },
-          { key: "agentCount", label: "Expected active agents", type: "number", required: true, min: 1, suffix: "agents", icon: "headphones" },
-          { key: "campaignCount", label: "Campaigns or queues", type: "number", min: 0, suffix: "campaigns", icon: "list-checks" },
+          { key: "agentCountRange", label: "Expected active agents", type: "select", required: true, options: agentVolumeOptions, icon: "headphones" },
+          { key: "campaignScope", label: "Campaigns or queues", type: "select", options: campaignScopeOptions, icon: "list-checks" },
           { key: "primaryRegion", label: "Primary country and timezone", type: "select", required: true, options: regionTimezoneOptions, icon: "globe" },
         ],
       },
@@ -548,6 +656,14 @@ export const serviceIntakeConfigs = {
             { value: "experimentation", label: "Experimentation", icon: "flask" },
           ], icon: "bot" },
           { key: "modelProvider", label: "Model/provider", type: "multiselect", required: true, options: modelProviderOptions, icon: "brain" },
+          {
+            key: "customModelRequest",
+            label: "Custom model request",
+            type: "textarea",
+            placeholder: "Model name, provider, Hugging Face repo, quantization, or compatibility notes.",
+            icon: "file-text",
+            showWhen: { key: "modelProvider", includes: "custom" },
+          },
           { key: "expectedUsage", label: "Expected usage", type: "select", required: true, options: aiUsageOptions, icon: "activity" },
           { key: "dataSensitivity", label: "Data sensitivity", type: "select", required: true, options: [
             { value: "public", label: "Public/non-sensitive", icon: "globe" },
@@ -628,6 +744,14 @@ export const serviceIntakeConfigs = {
           { key: "solutionGoal", label: "Solution goal", type: "select", required: true, options: aiSolutionGoalOptions, icon: "brain" },
           { key: "targetUsers", label: "Target users", type: "multiselect", required: true, options: targetUsersOptions, icon: "users" },
           { key: "modelPreference", label: "Model/provider preference", type: "multiselect", required: true, options: modelProviderOptions, icon: "bot" },
+          {
+            key: "customModelPreference",
+            label: "Custom model preference",
+            type: "textarea",
+            placeholder: "Model name, provider, private model, or compatibility notes.",
+            icon: "file-text",
+            showWhen: { key: "modelPreference", includes: "custom" },
+          },
           { key: "dataSensitivity", label: "Data sensitivity", type: "select", required: true, options: [
             { value: "public", label: "Public/non-sensitive", icon: "globe" },
             { value: "internal", label: "Internal business data", icon: "briefcase" },
@@ -736,8 +860,26 @@ export const serviceIntakeConfigs = {
         description: "Origin and delivery targets.",
         icon: "cloud",
         fields: [
-          { key: "originDomain", label: "Origin domain or URL", type: "text", required: true, placeholder: "origin.example.com", icon: "server" },
-          { key: "targetDomain", label: "CDN/custom domain", type: "text", required: true, placeholder: "cdn.example.com", icon: "globe" },
+          { key: "originType", label: "Origin domain or URL", type: "select", required: true, options: cdnOriginOptions, icon: "server" },
+          {
+            key: "originDomain",
+            label: "Origin domain or URL",
+            type: "text",
+            required: true,
+            placeholder: "origin.example.com",
+            icon: "server",
+            showWhen: { key: "originType", equals: "exact" },
+          },
+          { key: "targetDomainMode", label: "CDN/custom domain", type: "select", required: true, options: cdnTargetOptions, icon: "globe" },
+          {
+            key: "targetDomain",
+            label: "CDN/custom domain",
+            type: "text",
+            required: true,
+            placeholder: "cdn.example.com",
+            icon: "globe",
+            showWhen: { key: "targetDomainMode", equals: "exact" },
+          },
           { key: "contentType", label: "Content type", type: "select", required: true, options: [
             { value: "website_assets", label: "Website assets", icon: "image" },
             { value: "images_video", label: "Images/video", icon: "image" },
@@ -788,7 +930,22 @@ export const serviceIntakeConfigs = {
             { value: "gated_private", label: "Gated/private", icon: "lock" },
             { value: "public_custom_domain", label: "Public/custom domain", icon: "globe" },
           ], icon: "key" },
-          { key: "customDomain", label: "Custom domain", type: "text", placeholder: "files.example.com", icon: "globe" },
+          {
+            key: "customDomainMode",
+            label: "Custom domain",
+            type: "select",
+            options: bucketDomainOptions,
+            icon: "globe",
+            showWhen: { key: "accessStyle", includes: "public_custom_domain" },
+          },
+          {
+            key: "customDomain",
+            label: "Custom domain",
+            type: "text",
+            placeholder: "files.example.com",
+            icon: "globe",
+            showWhen: { key: "customDomainMode", equals: "exact" },
+          },
         ],
       },
       {
@@ -846,6 +1003,26 @@ export function getServiceIntakeFields(categorySlug) {
       sectionTitle: section.title,
     })),
   );
+}
+
+export function isServiceIntakeFieldVisible(field, answers = {}) {
+  if (!field.showWhen?.key) {
+    return true;
+  }
+
+  const controllingValue = answers[field.showWhen.key];
+
+  if (field.showWhen.includes !== undefined) {
+    return Array.isArray(controllingValue)
+      ? controllingValue.includes(field.showWhen.includes)
+      : String(controllingValue || "") === String(field.showWhen.includes);
+  }
+
+  if (field.showWhen.equals !== undefined) {
+    return String(controllingValue || "") === String(field.showWhen.equals);
+  }
+
+  return true;
 }
 
 function isEmptyValue(value) {
@@ -930,8 +1107,16 @@ export function validateServiceIntakeAnswers(categorySlug, rawAnswers = {}, { ca
 
   const normalizedAnswers = {};
   fields.forEach((field) => {
-    const value = normalizeAnswerValue(field, answers[field.key]);
-    normalizedAnswers[field.key] = value;
+    normalizedAnswers[field.key] = normalizeAnswerValue(field, answers[field.key]);
+  });
+
+  fields.forEach((field) => {
+    if (!isServiceIntakeFieldVisible(field, normalizedAnswers)) {
+      normalizedAnswers[field.key] = field.type === "multiselect" ? [] : "";
+      return;
+    }
+
+    const value = normalizedAnswers[field.key];
 
     if (field.required && isEmptyValue(value)) {
       errors[field.key] = `${field.label} is required.`;

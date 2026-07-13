@@ -46,10 +46,12 @@ subscriptionsRouter.post(
   "/:id/cancel",
   requireCustomer,
   asyncHandler(async (req, res) => {
+    const reason = String(req.body.reason || "").trim();
     const result = await cancelCustomerSubscription({
       subscriptionId: req.params.id,
       userId: req.auth.user._id,
       customer: req.auth.user,
+      reason: reason || "No reason provided",
     });
 
     await recordActivity({
@@ -61,6 +63,7 @@ subscriptionsRouter.post(
       metadata: {
         orderId: result.order?._id ? String(result.order._id) : "",
         invoiceId: result.invoice?._id ? String(result.invoice._id) : "",
+        reason: reason || "No reason provided",
       },
     });
 
@@ -78,9 +81,11 @@ subscriptionsRouter.delete(
   "/:id",
   requireCustomer,
   asyncHandler(async (req, res) => {
+    const reason = String(req.body.reason || "").trim();
     const result = await deleteCustomerSubscriptionFromPortal({
       subscriptionId: req.params.id,
       userId: req.auth.user._id,
+      reason: reason || "No reason provided",
     });
 
     await recordActivity({
@@ -91,6 +96,7 @@ subscriptionsRouter.delete(
       targetId: String(result.subscription._id),
       metadata: {
         status: result.subscription.status,
+        reason: reason || "No reason provided",
       },
     });
 

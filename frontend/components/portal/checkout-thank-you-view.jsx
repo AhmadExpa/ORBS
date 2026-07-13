@@ -19,8 +19,9 @@ export function CheckoutThankYouView({ orderId }) {
   const invoice = orderQuery.data?.invoice;
   const subscription = orderQuery.data?.subscription;
   const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
-  const totalPaid = Number(invoice?.amount || order?.totalAmount || 0);
-  const isPaid = invoice?.status === "paid" || order?.status === "approved";
+  const isTrialRequested = Boolean(order?.metadata?.trialRequested);
+  const totalPaid = isTrialRequested ? 0 : Number(invoice?.amount || order?.totalAmount || 0);
+  const isPaid = !isTrialRequested && (invoice?.status === "paid" || order?.status === "approved");
 
   if (orderQuery.isLoading) {
     return <PageLoader title="Payment Confirmation" subtitle="Confirming payment status..." cardCount={2} lines={3} />;
@@ -37,9 +38,11 @@ export function CheckoutThankYouView({ orderId }) {
   return (
     <div>
       <Topbar
-        title={isPaid ? "Payment Successful" : "Payment Status Updating"}
+        title={isTrialRequested ? "Trial Request Received" : isPaid ? "Payment Successful" : "Payment Status Updating"}
         subtitle={
-          isPaid
+          isTrialRequested
+            ? "Your 3-day trial request is attached to your account for ElevenOrbits review."
+            : isPaid
             ? "Your card payment was received. The service is now ready for provisioning follow-up in the portal."
             : "Stripe confirmed the checkout flow, and the portal is refreshing the final payment state."
         }
@@ -59,7 +62,9 @@ export function CheckoutThankYouView({ orderId }) {
                   Thank you. Your order is in the portal.
                 </h2>
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">
-                  The selected settings, invoice, and service record are attached to your account. The ElevenOrbits team will handle provisioning and add access details after setup.
+                  {isTrialRequested
+                    ? "The selected settings and trial request are attached to your account. The ElevenOrbits team will review the request before activation."
+                    : "The selected settings, invoice, and service record are attached to your account. The ElevenOrbits team will handle provisioning and add access details after setup."}
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href="/portal">
@@ -89,8 +94,12 @@ export function CheckoutThankYouView({ orderId }) {
                       <div className="flex items-center gap-3">
                         <ReceiptText className="h-5 w-5 text-slate-600" />
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Amount Paid</p>
-                          <p className="mt-1 text-2xl font-semibold text-slate-950">{formatCurrency(totalPaid)}</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            {isTrialRequested ? "Due Today" : "Amount Paid"}
+                          </p>
+                          <p className="mt-1 text-2xl font-semibold text-slate-950">
+                            {isTrialRequested ? "No charge" : formatCurrency(totalPaid)}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -116,7 +125,9 @@ export function CheckoutThankYouView({ orderId }) {
                       </div>
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500">Payment</span>
-                        <span className="font-semibold text-slate-950">{isPaid ? "Card received" : "Updating"}</span>
+                        <span className="font-semibold text-slate-950">
+                          {isTrialRequested ? "Trial requested" : isPaid ? "Card received" : "Updating"}
+                        </span>
                       </div>
                     </div>
                   </CardContent>

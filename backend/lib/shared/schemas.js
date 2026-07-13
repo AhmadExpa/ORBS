@@ -34,6 +34,7 @@ export const orderQuoteSchema = z.object({
     .passthrough()
     .optional(),
   finalNote: z.string().trim().max(2000).optional(),
+  trialRequested: z.boolean().optional().default(false),
   billingCycle: z.enum(["monthly", "six_month", "yearly"]),
 });
 

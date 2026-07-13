@@ -52,9 +52,9 @@ export function ContractCompletePage({ contractId }) {
         contract: response.contract,
       };
 
-      queryClient.setQueryData(["portal-sidebar-contract-gate"], summary);
-      queryClient.setQueryData(["portal-contract-gate"], summary);
-      queryClient.setQueryData(["portal-contract-current"], summary);
+      queryClient.setQueriesData({ queryKey: ["portal-sidebar-contract-gate"] }, summary);
+      queryClient.setQueriesData({ queryKey: ["portal-contract-gate"] }, summary);
+      queryClient.setQueriesData({ queryKey: ["portal-contract-current"] }, summary);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["portal-sidebar-contract-gate"] }),
         queryClient.invalidateQueries({ queryKey: ["portal-contract-gate"] }),

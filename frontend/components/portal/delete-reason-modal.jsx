@@ -18,6 +18,8 @@ export function DeleteReasonModal({
   title = "Confirm deletion",
   subtitle = "Please tell us why you are deleting this item.",
   confirmLabel = "Delete",
+  reasonLabel = "Reason for deletion",
+  otherLabel = "Please describe your reason",
   isDeleting = false,
   onConfirm,
   onClose,
@@ -80,9 +82,7 @@ export function DeleteReasonModal({
 
         {/* Reason selection */}
         <div className="px-6 py-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Reason for deletion
-          </p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{reasonLabel}</p>
           <div className="space-y-2">
             {PREDEFINED_REASONS.map((reason) => (
               <button
@@ -117,9 +117,7 @@ export function DeleteReasonModal({
           {/* Free-text box for "Other" */}
           {isOther ? (
             <div className="mt-3">
-              <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                Please describe your reason
-              </label>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">{otherLabel}</label>
               <textarea
                 autoFocus
                 disabled={isDeleting}
