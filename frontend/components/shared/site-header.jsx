@@ -118,17 +118,17 @@ const serviceChoices = [
   },
   {
     id: "ai",
-    label: "AI, n8n and DeepSeek",
-    eyebrow: "AI servers, workflows, API support",
+    label: "AI Services",
+    eyebrow: "AI servers, workflows, model support",
     href: "/ai-services",
     icon: Cpu,
     categorySlugs: ["ai-servers", "workflows", "ai-solutions"],
-    description: "Choose AI services for managed AI servers, n8n automation, DeepSeek API access, private deployment guidance, and practical rollout support.",
+    description: "Choose AI services for managed AI servers, n8n automation, model and API access, private deployment guidance, and practical rollout support.",
     chooseWhen: ["You need AI infrastructure or API guardrails", "n8n workflows should run on managed infrastructure", "AI workflows need operations support"],
     paths: [
       { label: "AI server hosting", description: "Managed compute and deployment support for model workloads.", href: "/ai-services" },
       { label: "n8n workflow operations", description: "Community Edition workflows with managed uptime and server capacity.", href: "/services/workflows" },
-      { label: "DeepSeek API access", description: "Managed access, guardrails, and implementation guidance.", href: "/services/ai-solutions" },
+      { label: "Model and API access", description: "Managed access, guardrails, and implementation guidance for supported model providers.", href: "/services/ai-solutions" },
       { label: "Private model planning", description: "Architecture review for private or open-source deployment.", href: "/contact" },
     ],
     planSlugs: ["ai-server-starter", "ai-server-scale", "workflow-starter", "workflow-growth", "deepseek-api-access", "open-source-deepseek-services"],
@@ -212,7 +212,7 @@ function PlanCard({ plan, onNavigate }) {
 
 function MegaFrame({ children }) {
   return (
-    <div className="fixed left-1/2 top-[60px] z-50 hidden w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 pt-4 xl:block">
+    <div className="fixed left-1/2 top-[60px] z-50 hidden w-[min(1240px,calc(100vw-2rem))] -translate-x-1/2 pt-4 xl:block">
       <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-[0_46px_130px_-58px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04]">
         {children}
       </div>
@@ -239,7 +239,7 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
           </div>
         </div>
 
-        <div className="grid xl:grid-cols-[300px_minmax(0,1fr)_285px]">
+        <div className="grid xl:grid-cols-[292px_minmax(0,1fr)_270px]">
           <section className="flex flex-col border-r border-slate-200 bg-[#f8fafc] p-4 text-slate-950">
             <div className="grid gap-1">
               {serviceChoices.map((choice) => {
@@ -283,18 +283,20 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 
           <section className="min-w-0 bg-white p-5 text-slate-950">
             <div className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-950 via-[#111827] to-slate-900 p-5 text-white shadow-[0_34px_110px_-82px_rgba(15,23,42,0.95)]">
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex min-w-0 items-start gap-3">
+              <div className="grid gap-5">
+                <div className="flex min-w-0 items-start gap-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-950">
                     <Icon className="h-6 w-6" />
                   </span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-300">{activeChoice.eyebrow}</p>
-                    <h3 className="mt-1 text-2xl font-extrabold leading-tight text-white">{activeChoice.label}</h3>
+                  <div className="min-w-0 flex-1">
+                    <p className="max-w-full text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-300">{activeChoice.eyebrow}</p>
+                    <h3 className="mt-1 text-3xl font-extrabold leading-tight text-white">{activeChoice.label}</h3>
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">{activeChoice.description}</p>
                   </div>
                 </div>
-                <ServiceLogoCluster categorySlugs={activeChoice.categorySlugs} max={4} className="hidden shrink-0 gap-2 2xl:flex" />
+                <div className="border-t border-white/10 pt-4">
+                  <ServiceLogoCluster categorySlugs={activeChoice.categorySlugs} max={4} className="gap-2" />
+                </div>
               </div>
             </div>
 
@@ -399,12 +401,14 @@ function IndustryFitPanel({ industry, onNavigate }) {
   return (
     <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
-      <div className="flex items-start justify-between gap-6">
+      <div className="grid gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#0069a6]">{industry.eyebrow}</p>
-          <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">{industry.title}</h3>
+          <h3 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-slate-950">{industry.title}</h3>
         </div>
-        <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(recommended)} max={4} className="shrink-0 gap-2" />
+        <div className="border-y border-slate-200 py-4">
+          <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(recommended)} max={4} className="gap-2" />
+        </div>
       </div>
 
       <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-slate-700">{industry.fit}</p>
