@@ -19,14 +19,6 @@ import { getLoginPath, getSignupPath } from "@/lib/shared";
 
 const contactServiceSlugs = ["vps", "vds", "cdn", "object-storage", "workflows", "vicidial", "cybersecurity", "hermes-ai-hosting"];
 
-const departmentServiceSlugs = {
-  general: ["vps", "workflows", "vicidial"],
-  sales: ["vps", "vds", "cdn", "object-storage", "hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
-  support: ["development-support", "vps", "vicidial"],
-  billing: ["vps", "vds", "object-storage"],
-  security: ["cybersecurity", "vps", "cdn"],
-};
-
 const routingCards = [
   {
     key: "sales",
@@ -34,7 +26,6 @@ const routingCards = [
     description: "Use this for managed cloud, AI services, call-center operations, cybersecurity, and contact-sales plans.",
     email: siteConfig.salesEmail,
     icon: Headphones,
-    serviceSlugs: departmentServiceSlugs.sales,
   },
   {
     key: "support",
@@ -42,7 +33,6 @@ const routingCards = [
     description: "Use this for existing services, operational issues, access handoff, provisioning notes, and ticket follow-up.",
     email: siteConfig.supportEmail,
     icon: LifeBuoy,
-    serviceSlugs: departmentServiceSlugs.support,
   },
   {
     key: "billing",
@@ -50,7 +40,6 @@ const routingCards = [
     description: "Use this for invoices, wallet top-ups, saved-card questions, renewal records, and payment confirmation.",
     email: siteConfig.billingEmail,
     icon: CreditCard,
-    serviceSlugs: departmentServiceSlugs.billing,
   },
   {
     key: "security",
@@ -58,7 +47,6 @@ const routingCards = [
     description: "Use this for cybersecurity service questions, access review, hardening, or incident-response coordination.",
     email: siteConfig.securityEmail,
     icon: ShieldCheck,
-    serviceSlugs: departmentServiceSlugs.security,
   },
 ];
 
@@ -112,7 +100,9 @@ function RoutingCard({ route }) {
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white">
           <Icon className="h-5 w-5" />
         </span>
-        <ServiceLogoCluster categorySlugs={route.serviceSlugs} max={3} className="justify-end gap-2" />
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+          {route.key}
+        </span>
       </div>
       <h2 className="mt-5 text-xl font-extrabold tracking-tight text-slate-950">{route.title}</h2>
       <p className="mt-3 text-sm leading-7 text-slate-600">{route.description}</p>
@@ -134,11 +124,10 @@ function DepartmentRow({ department }) {
         <h3 className="mt-2 text-lg font-extrabold text-slate-950">{department.title}</h3>
       </div>
       <p className="text-sm leading-7 text-slate-600">{department.description}</p>
-      <div className="flex min-w-0 flex-col gap-3 md:items-end">
-        <a href={`mailto:${department.email}`} className="max-w-full truncate text-sm font-extrabold text-[#0069a6] transition hover:text-[#004d7a]">
+      <div className="flex min-w-0 md:justify-end">
+        <a href={`mailto:${department.email}`} className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-extrabold text-[#0069a6] transition hover:border-slate-300 hover:bg-white hover:text-[#004d7a]">
           {department.email}
         </a>
-        <ServiceLogoCluster categorySlugs={departmentServiceSlugs[department.key] || contactServiceSlugs} max={3} className="gap-2" />
       </div>
     </div>
   );

@@ -36,6 +36,27 @@ const operatingModel = [
   "Keep accountability with ElevenOrbits while the partner mix evolves.",
 ];
 
+const compactDeliveryCards = [
+  {
+    title: "Vendor-backed delivery",
+    body: "Security, cloud, AI, and communications providers stay mapped to managed service outcomes.",
+    metric: "30+",
+    label: "partner stack",
+  },
+  {
+    title: "Operational handoff",
+    body: "Provisioning, support, renewals, and customer access stay tied to one ElevenOrbits record.",
+    metric: "1",
+    label: "managed record",
+  },
+  {
+    title: "Accountable support",
+    body: "Customers see a clear service lane while the backend stack can evolve behind the scenes.",
+    metric: "24/7",
+    label: "oversight model",
+  },
+];
+
 function LogoMark({ partner }) {
   const label = partner.wordmark || partner.name;
   const brand = partner.logo ? { name: partner.name, logo: partner.logo } : getBrandForName(label);
@@ -114,12 +135,48 @@ function CarouselLane({ group, index, compact = false }) {
   );
 }
 
+function CompactDeliveryPanel({ groups }) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_34px_110px_-78px_rgba(15,23,42,0.95)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#ff7a1a] via-white/50 to-transparent" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-52 w-52 rounded-full bg-[#ff7a1a]/20 blur-3xl" />
+      <div className="relative grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">Delivery coverage</p>
+          <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-tight">The stack is connected to managed outcomes.</h3>
+          <p className="mt-3 text-sm leading-7 text-white/60">
+            Logos are not decoration. They represent the provider mix behind customer orders, support handoff, billing continuity, and service operations.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {compactDeliveryCards.map((card) => (
+            <div key={card.title} className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <p className="text-2xl font-semibold tracking-tight text-white">{card.metric}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">{card.label}</p>
+              <p className="mt-4 text-sm font-semibold text-white">{card.title}</p>
+              <p className="mt-2 text-xs leading-5 text-white/55">{card.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="relative mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+        {groups.map((group) => (
+          <a key={group.slug} href={`#${group.slug}`} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:border-orange-300/40 hover:text-white">
+            {group.title}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TechStackShowcase({ compact = false }) {
   const visibleGroups = compact ? techStackGroups.filter((group) => compactGroupSlugs.has(group.slug)) : techStackGroups;
 
   return (
-    <section id="tech-stack" className="relative overflow-hidden bg-white">
-      <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-45" />
+    <section id="tech-stack" className={cn("relative overflow-hidden", compact ? "bg-[#f7f9fb]" : "bg-white")}>
+      <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-40" />
+      {compact ? <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white to-transparent" /> : null}
       <div className={cn("relative mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8", compact ? "py-14 lg:py-16" : "py-16 lg:py-20")}>
         <div
           className={cn(
@@ -221,6 +278,7 @@ export function TechStackShowcase({ compact = false }) {
                 <CarouselLane group={group} index={index} compact={compact} />
               </div>
             ))}
+            {compact ? <CompactDeliveryPanel groups={visibleGroups} /> : null}
           </div>
         </div>
       </div>
