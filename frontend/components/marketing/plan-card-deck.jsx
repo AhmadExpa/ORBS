@@ -212,6 +212,9 @@ function PlanGroup({ group }) {
         <div>
           <h3 className="text-2xl font-bold tracking-tight text-slate-950">{group.title}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">{group.description}</p>
+          <p className="mt-2 max-w-3xl text-xs font-semibold leading-6 text-slate-500">
+            Managed by ElevenOrbits: pricing reflects authentic sourcing, setup ownership, portal records, support routing, and renewal handling.
+          </p>
         </div>
 
         {totalPages > 1 ? (

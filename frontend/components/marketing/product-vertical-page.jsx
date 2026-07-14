@@ -1,9 +1,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgeCheck,
   Bot,
   CheckCircle2,
   Cloud,
+  Handshake,
+  Layers3,
   PhoneCall,
   Server,
   ShieldCheck,
@@ -346,6 +349,58 @@ export function ProductVerticalPage({ slug }) {
                 <p className="mt-4 text-sm font-medium leading-7 text-slate-700">{item}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200/80 bg-slate-950 text-white">
+        <div className="mx-auto grid max-w-[1520px] gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:px-8 lg:items-center">
+          <div className="eo-reveal-up">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">Why Managed Pricing</p>
+            <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.045em] md:text-5xl">
+              The price includes ownership, not just access to a vendor account.
+            </h2>
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/68">
+              ElevenOrbits sources from trusted, authentic sellers and technology providers, then manages the service for you. That is why the public pricing can sit above raw self-service offers: setup, support, billing records, renewals, and operational follow-up are included in the service model.
+            </p>
+            <Link href="/tech-stack" className="mt-7 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
+              Review Tech Stack
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                label: "Authentic sourcing",
+                detail: "Provider selection is tied to the documented ElevenOrbits technology ecosystem.",
+                icon: BadgeCheck,
+              },
+              {
+                label: "Managed for you",
+                detail: "Provisioning, access notes, support routing, and renewals stay with our team.",
+                icon: Handshake,
+              },
+              {
+                label: "Operational record",
+                detail: "Plans connect to portal orders, invoices, tickets, credentials, and service history.",
+                icon: Layers3,
+              },
+            ].map((item, index) => {
+              const ItemIcon = item.icon;
+
+              return (
+                <div
+                  key={item.label}
+                  className="eo-premium-card eo-reveal-soft rounded-lg border border-white/10 bg-white/[0.06] p-5"
+                  style={{ "--eo-delay": `${index * 60}ms` }}
+                >
+                  <ItemIcon className="h-5 w-5 text-orange-300" />
+                  <h3 className="mt-4 text-base font-semibold text-white">{item.label}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/62">{item.detail}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

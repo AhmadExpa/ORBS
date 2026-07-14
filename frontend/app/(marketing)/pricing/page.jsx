@@ -31,7 +31,7 @@ const categoryTone = {
 const confidenceItems = [
   {
     label: "Managed delivery",
-    value: "Every paid plan includes ElevenOrbits operational ownership, ticket routing, and change handling.",
+    value: "Every paid plan includes ElevenOrbits operational ownership, provisioning context, ticket routing, and change handling.",
     icon: ShieldCheck,
   },
   {
@@ -41,7 +41,7 @@ const confidenceItems = [
   },
   {
     label: "Partner ecosystem",
-    value: "The service catalog is backed by proven infrastructure, security, cloud, AI, and communications vendors.",
+    value: "Services are sourced through trusted, authentic providers and the partner ecosystem documented on the Tech Stack page.",
     icon: Layers3,
   },
 ];
@@ -97,7 +97,7 @@ export default function PricingPage() {
               Managed service pricing with clear delivery ownership.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300">
-              Compare managed hosting, dedicated servers, AI infrastructure, CDN, O7 Bucket storage, self-hosted apps, Vicidial operations, automation, support, and cybersecurity plans. Pricing can be adjusted from the admin dashboard after deployment.
+              Compare managed hosting, dedicated servers, AI infrastructure, CDN, O7 Bucket storage, self-hosted apps, Vicidial operations, automation, support, and cybersecurity plans. Pricing reflects authentic sourcing plus ElevenOrbits-managed setup, support, billing continuity, and operational follow-up.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/contact" className="inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_16px_36px_-22px_rgba(255,255,255,0.6)] transition hover:bg-slate-100">
@@ -140,7 +140,7 @@ export default function PricingPage() {
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Choose the service lane that matches the work.</h2>
           </div>
           <p className="max-w-xl text-sm leading-7 text-slate-600">
-            Each lane keeps pricing, support coverage, and technology stack visible before checkout so customers know what they are buying and what the ElevenOrbits team will operate.
+            Each lane keeps pricing, support coverage, and technology stack visible before checkout so customers know what they are buying, what we source, and what the ElevenOrbits team will operate.
           </p>
         </div>
 
@@ -165,6 +165,17 @@ export default function PricingPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Starting at</p>
                     <p className="mt-2 text-3xl font-semibold tracking-tight text-white">{getStartingPrice(plans)}</p>
                   </div>
+                </div>
+              </div>
+              <div className="border-b border-slate-200 bg-white px-5 py-4 lg:px-7">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                  <p className="text-sm leading-7 text-slate-600">
+                    This is managed service pricing, not a raw self-serve vendor listing. ElevenOrbits sources the underlying technology through trusted providers, then handles setup ownership, portal records, renewals, and support coordination for this lane.
+                  </p>
+                  <Link href="/tech-stack" className="inline-flex items-center gap-2 text-sm font-extrabold text-[#0069a6] transition hover:text-[#004d7a]">
+                    Tech Stack
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
               </div>
               <div className="bg-slate-50 p-5 lg:p-7">

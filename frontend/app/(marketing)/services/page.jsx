@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgeCheck,
   Bot,
   Cloud,
   Cpu,
@@ -76,6 +77,35 @@ export default function ServicesPage() {
             categorySlugs={serviceCategories.map((category) => category.slug)}
             className="eo-float-slow lg:justify-self-end"
           />
+        </div>
+      </section>
+
+      <section className="mt-10 overflow-hidden rounded-lg border border-slate-200 bg-slate-950 text-white shadow-[0_34px_110px_-82px_rgba(15,23,42,0.9)]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="border-b border-white/10 p-6 lg:border-b-0 lg:border-r lg:p-7">
+            <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">Managed Service Context</p>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight">ElevenOrbits manages the service for you.</h2>
+            <p className="mt-4 text-sm leading-7 text-white/68">
+              The catalog is intentionally different from raw self-serve provider pricing. We source through trusted, authentic sellers and technology partners, then include setup ownership, portal records, support routing, billing continuity, and renewal handling.
+            </p>
+            <Link href="/tech-stack" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:bg-slate-100">
+              Review Tech Stack
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid gap-4 p-6 md:grid-cols-3 lg:p-7">
+            {[
+              ["Authentic sourcing", "Partners and providers are visible through the ElevenOrbits technology stack.", BadgeCheck],
+              ["Managed ownership", "Provisioning, access handoff, service records, and support follow-up stay with us.", ShieldCheck],
+              ["Premium explained", "Pricing can be higher than unmanaged offers because the service includes operations, not only access.", Server],
+            ].map(([title, body, Icon]) => (
+              <div key={title} className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
+                <Icon className="h-5 w-5 text-orange-300" />
+                <h3 className="mt-4 text-sm font-extrabold text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/62">{body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

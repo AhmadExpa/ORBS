@@ -212,8 +212,8 @@ function PlanCard({ plan, onNavigate }) {
 
 function MegaFrame({ children }) {
   return (
-    <div className="fixed left-1/2 top-[62px] z-50 hidden w-[min(1120px,calc(100vw-3rem))] -translate-x-1/2 pt-4 xl:block">
-      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_42px_120px_-56px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/[0.03]">
+    <div className="fixed left-1/2 top-[60px] z-50 hidden w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 pt-4 xl:block">
+      <div className="max-h-[calc(100vh-6rem)] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-[0_46px_130px_-58px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04]">
         {children}
       </div>
     </div>
@@ -228,110 +228,119 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
 
   return (
     <MegaFrame>
-      <div className="grid bg-white xl:grid-cols-[320px_minmax(0,1fr)_300px]">
-        <section className="flex flex-col border-r border-slate-200 bg-slate-50 p-5 text-slate-950">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">Services</p>
-
-          <div className="mt-4 grid gap-1">
-            {serviceChoices.map((choice) => {
-              const ChoiceIcon = choice.icon;
-              const active = choice.id === activeChoice.id;
-              return (
-                <button
-                  key={choice.id}
-                  type="button"
-                  onFocus={() => setActiveChoiceId(choice.id)}
-                  onClick={() => setActiveChoiceId(choice.id)}
-                  className={cn(
-                    "group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition",
-                    active
-                      ? "border-[#ff7a1a]/40 bg-white text-slate-950 shadow-sm"
-                      : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950",
-                  )}
-                >
-                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", active ? "bg-slate-950 text-white" : "bg-slate-200/70 text-slate-500")}>
-                    <ChoiceIcon className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold">{choice.label}</span>
-                    <span className={cn("mt-0.5 block truncate text-xs", active ? "text-[#ff7a1a]" : "text-slate-500")}>{choice.eyebrow}</span>
-                  </span>
-                  <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-[#ff7a1a]" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-500")} />
-                </button>
-              );
-            })}
+      <div className="bg-white text-slate-950">
+        <div className="flex items-center justify-between gap-6 border-b border-slate-200 px-5 py-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0069a6]">Services</p>
+            <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-950">Choose the managed lane first, then configure the order.</h3>
           </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4">
-            <Link href="/services" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-100" onClick={onNavigate}>
-              All services
-            </Link>
-            <Link href="/pricing" className="rounded-lg bg-[#ff7a1a] px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#e66a12]" onClick={onNavigate}>
-              Pricing
-            </Link>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600">
+            Portal orders, contracts, billing, and support stay attached.
           </div>
-        </section>
+        </div>
 
-        <section className="min-w-0 bg-white p-6 text-slate-950">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white shadow-sm">
-              <Icon className="h-6 w-6" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">{activeChoice.eyebrow}</p>
-              <h3 className="mt-1 text-2xl font-semibold leading-tight text-slate-950">{activeChoice.label}</h3>
+        <div className="grid xl:grid-cols-[300px_minmax(0,1fr)_285px]">
+          <section className="flex flex-col border-r border-slate-200 bg-[#f8fafc] p-4 text-slate-950">
+            <div className="grid gap-1">
+              {serviceChoices.map((choice) => {
+                const ChoiceIcon = choice.icon;
+                const active = choice.id === activeChoice.id;
+                return (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    onFocus={() => setActiveChoiceId(choice.id)}
+                    onClick={() => setActiveChoiceId(choice.id)}
+                    className={cn(
+                      "group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition",
+                      active
+                        ? "border-slate-300 bg-white text-slate-950 shadow-sm"
+                        : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950",
+                    )}
+                  >
+                    <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", active ? "bg-slate-950 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
+                      <ChoiceIcon className="h-[18px] w-[18px]" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-extrabold">{choice.label}</span>
+                      <span className={cn("mt-0.5 block truncate text-xs font-semibold", active ? "text-[#ff7a1a]" : "text-slate-500")}>{choice.eyebrow}</span>
+                    </span>
+                    <ArrowRight className={cn("ml-auto h-3.5 w-3.5 transition", active ? "text-[#ff7a1a]" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-500")} />
+                  </button>
+                );
+              })}
             </div>
-          </div>
 
-          <div className="mt-5">
-            <div className="flex items-end justify-between gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Choose</p>
-              <Link href={activeChoice.href} className="hidden text-sm font-semibold text-[#0069a6] transition hover:text-[#004d7a] sm:inline-flex" onClick={onNavigate}>
-                View service
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4">
+              <Link href="/services" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-sm font-extrabold text-slate-800 transition hover:border-slate-400 hover:bg-slate-100" onClick={onNavigate}>
+                All services
+              </Link>
+              <Link href="/pricing" className="rounded-lg bg-[#ff7a1a] px-3 py-2.5 text-center text-sm font-extrabold text-white transition hover:bg-[#e66a12]" onClick={onNavigate}>
+                Pricing
               </Link>
             </div>
+          </section>
 
-            <div className="mt-3 grid gap-2">
+          <section className="min-w-0 bg-white p-5 text-slate-950">
+            <div className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-950 via-[#111827] to-slate-900 p-5 text-white shadow-[0_34px_110px_-82px_rgba(15,23,42,0.95)]">
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-950">
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-300">{activeChoice.eyebrow}</p>
+                    <h3 className="mt-1 text-2xl font-extrabold leading-tight text-white">{activeChoice.label}</h3>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">{activeChoice.description}</p>
+                  </div>
+                </div>
+                <ServiceLogoCluster categorySlugs={activeChoice.categorySlugs} max={4} className="hidden shrink-0 gap-2 2xl:flex" />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2 md:grid-cols-2">
               {pathItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="group flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 transition hover:border-[#ff7a1a]/40 hover:bg-white hover:shadow-sm"
+                  className="group flex min-h-[86px] items-start justify-between gap-4 rounded-lg border border-slate-200 bg-[#f8fafc] px-4 py-3 transition hover:border-[#ff7a1a]/40 hover:bg-white hover:shadow-sm"
                   onClick={onNavigate}
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-slate-950">{item.label}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.description}</span>
+                    <span className="block text-sm font-extrabold text-slate-950">{item.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span>
                   </span>
                   <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
                 </Link>
               ))}
             </div>
-          </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-5">
-            <Link href={activeChoice.href} onClick={onNavigate}>
-              <Button variant="outline" className="min-h-10 w-full rounded-lg border border-slate-300 bg-white text-slate-900 hover:bg-slate-100">View Service</Button>
-            </Link>
-            <Link href={getSignupPath()} onClick={onNavigate}>
-              <Button className="min-h-10 w-full rounded-lg border-0 bg-[#ff7a1a] text-white hover:bg-[#e66a12]">Start Account</Button>
-            </Link>
-          </div>
-        </section>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Link href={activeChoice.href} onClick={onNavigate}>
+                <Button variant="outline" className="min-h-10 w-full rounded-lg border border-slate-300 bg-white text-slate-900 hover:bg-slate-100">View Service</Button>
+              </Link>
+              <Link href={getSignupPath()} onClick={onNavigate}>
+                <Button className="min-h-10 w-full rounded-lg border-0 bg-[#ff7a1a] text-white hover:bg-[#e66a12]">Start Account</Button>
+              </Link>
+            </div>
+          </section>
 
-        <section className="border-l border-slate-200 bg-slate-50 p-5 text-slate-950">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0069a6]">Plans</p>
-          <div className="mt-3 grid gap-2">
-            {plans.map((plan) => (
-              <PlanCard key={plan.slug} plan={plan} onNavigate={onNavigate} />
-            ))}
-          </div>
+          <section className="border-l border-slate-200 bg-[#f8fafc] p-4 text-slate-950">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#0069a6]">Plans</p>
+              <div className="mt-3 grid gap-2">
+                {plans.slice(0, 5).map((plan) => (
+                  <PlanCard key={plan.slug} plan={plan} onNavigate={onNavigate} />
+                ))}
+              </div>
 
-          <Link href="/contact" className="mt-4 inline-flex text-sm font-semibold text-[#ff7a1a] transition hover:text-[#e66a12]" onClick={onNavigate}>
-            Custom quote
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </section>
+              <Link href="/contact" className="mt-4 inline-flex text-sm font-extrabold text-[#ff7a1a] transition hover:text-[#e66a12]" onClick={onNavigate}>
+                Custom quote
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </div>
+          </section>
+        </div>
       </div>
     </MegaFrame>
   );
@@ -385,13 +394,30 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
 }
 
 function IndustryFitPanel({ industry, onNavigate }) {
+  const recommended = industry.recommended || [];
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-950">
-      <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(industry.recommended)} max={5} />
-      <p className="mt-4 text-sm leading-6 text-slate-600">
-        {industry.fit}
-      </p>
-      <Link href={`/industries/${industry.slug}`} className="mt-4 inline-flex text-sm font-semibold text-[#0069a6] transition hover:text-[#004d7a]" onClick={onNavigate}>
+    <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
+      <div className="flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#0069a6]">{industry.eyebrow}</p>
+          <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">{industry.title}</h3>
+        </div>
+        <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(recommended)} max={4} className="shrink-0 gap-2" />
+      </div>
+
+      <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-slate-700">{industry.fit}</p>
+
+      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        {recommended.slice(0, 4).map((item) => (
+          <div key={item} className="rounded-lg border border-slate-200 bg-[#f8fafc] px-3 py-2.5 text-xs font-extrabold text-slate-700">
+            {item}
+          </div>
+        ))}
+      </div>
+
+      <Link href={`/industries/${industry.slug}`} className="mt-5 inline-flex items-center text-sm font-extrabold text-[#0069a6] transition hover:text-[#004d7a]" onClick={onNavigate}>
         Open industry page
         <ArrowRight className="ml-1 h-4 w-4" />
       </Link>
@@ -413,32 +439,46 @@ function SolutionsMegaMenu({ activeIndustrySlug, setActiveIndustrySlug, onNaviga
 
   return (
     <MegaFrame>
-      <div className="grid bg-white text-slate-950 xl:grid-cols-[360px_minmax(0,1fr)_260px]">
-        <SimpleColumn eyebrow="Industries" className="border-r border-slate-200 bg-slate-50">
-          <div className="grid gap-1">
-            {industryPages.map((industry) => (
-              <SimpleLinkCard
-                key={industry.slug}
-                label={industry.title}
-                description={industry.eyebrow}
-                active={industry.slug === activeIndustry.slug}
-                onFocus={() => setActiveIndustrySlug(industry.slug)}
-                onClick={() => setActiveIndustrySlug(industry.slug)}
-              />
-            ))}
+      <div className="bg-white text-slate-950">
+        <div className="flex items-center justify-between gap-6 border-b border-slate-200 px-5 py-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0069a6]">Industries</p>
+            <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-950">Match services to the way the team operates.</h3>
           </div>
-        </SimpleColumn>
+          <Link href="/industries" className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-extrabold text-slate-800 transition hover:bg-slate-50" onClick={onNavigate}>
+            All industries
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
 
-        <SimpleColumn eyebrow="Operational fit">
-          <IndustryFitPanel industry={activeIndustry} onNavigate={onNavigate} />
-        </SimpleColumn>
+        <div className="grid xl:grid-cols-[330px_minmax(0,1fr)_270px]">
+          <SimpleColumn eyebrow="Choose sector" className="border-r border-slate-200 bg-[#f8fafc]">
+            <div className="grid gap-1">
+              {industryPages.map((industry) => (
+                <SimpleLinkCard
+                  key={industry.slug}
+                  label={industry.title}
+                  description={industry.eyebrow}
+                  active={industry.slug === activeIndustry.slug}
+                  onFocus={() => setActiveIndustrySlug(industry.slug)}
+                  onClick={() => setActiveIndustrySlug(industry.slug)}
+                />
+              ))}
+            </div>
+          </SimpleColumn>
 
-        <SimpleColumn eyebrow="More" className="border-l border-slate-200 bg-slate-50">
-          <div className="grid gap-2">
-            <SimpleLinkCard href="/industries" label="All Industries" description="Browse every sector." icon={Building2} onNavigate={onNavigate} />
-            <SimpleLinkCard href="/contact" label="Talk to Sales" description="Get service guidance." icon={Headset} onNavigate={onNavigate} />
-          </div>
-        </SimpleColumn>
+          <SimpleColumn eyebrow="Operational fit">
+            <IndustryFitPanel industry={activeIndustry} onNavigate={onNavigate} />
+          </SimpleColumn>
+
+          <SimpleColumn eyebrow="Next actions" className="border-l border-slate-200 bg-[#f8fafc]">
+            <div className="grid gap-2">
+              <SimpleLinkCard href="/industries" label="Browse sectors" description="See every industry page." icon={Building2} onNavigate={onNavigate} />
+              <SimpleLinkCard href="/services" label="Compare services" description="Map lanes to products." icon={Server} onNavigate={onNavigate} />
+              <SimpleLinkCard href="/contact" label="Talk to Sales" description="Get service guidance." icon={Headset} onNavigate={onNavigate} />
+            </div>
+          </SimpleColumn>
+        </div>
       </div>
     </MegaFrame>
   );

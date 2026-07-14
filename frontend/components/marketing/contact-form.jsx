@@ -105,12 +105,13 @@ function ErrorDialog({ messages, onClose }) {
 
 function ThankYouPanel({ className, onReset }) {
   return (
-    <div className={cn("rounded-lg border border-emerald-200 bg-white p-6 shadow-[0_24px_70px_-54px_rgba(15,23,42,0.34)]", className)} role="status">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+    <div className={cn("relative overflow-hidden rounded-lg border border-emerald-200 bg-white p-6 shadow-[0_32px_100px_-72px_rgba(15,23,42,0.75)]", className)} role="status">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-slate-950 to-transparent" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
         <CheckCircle2 className="h-6 w-6" />
       </div>
-      <p className="mt-5 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">Message Sent</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Thank you for contacting ElevenOrbits.</h2>
+      <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-700">Message Sent</p>
+      <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950">Thank you for contacting ElevenOrbits.</h2>
       <p className="mt-4 text-sm leading-7 text-slate-600">
         Your request is now available to the team. The right department can review the service context and follow up through the managed contact flow.
       </p>
@@ -210,7 +211,8 @@ export function ContactForm({ className }) {
   }
 
   return (
-    <form className={cn("space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-[0_24px_70px_-54px_rgba(15,23,42,0.34)]", className)} onSubmit={handleSubmit}>
+    <form className={cn("relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-[0_34px_110px_-78px_rgba(15,23,42,0.88)] sm:p-6", className)} onSubmit={handleSubmit}>
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
@@ -219,26 +221,27 @@ export function ContactForm({ className }) {
       />
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Contact Form</p>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">Send the request to ElevenOrbits.</h2>
+        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#0069a6]">Contact Form</p>
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">Route a request to ElevenOrbits.</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Choose the department and service so the request reaches the right owner.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
           <FieldLabel htmlFor="contact-name">Name</FieldLabel>
-          <TextInput id="contact-name" value={form.name} onChange={(event) => updateField("name", event.target.value)} autoComplete="name" required />
+          <TextInput id="contact-name" value={form.name} onChange={(event) => updateField("name", event.target.value)} autoComplete="name" placeholder="Your name" required />
         </div>
         <div>
           <FieldLabel htmlFor="contact-email">Email</FieldLabel>
-          <TextInput id="contact-email" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} autoComplete="email" required />
+          <TextInput id="contact-email" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} autoComplete="email" placeholder="you@company.com" required />
         </div>
         <div>
           <FieldLabel htmlFor="contact-company">Company</FieldLabel>
-          <TextInput id="contact-company" value={form.company} onChange={(event) => updateField("company", event.target.value)} autoComplete="organization" />
+          <TextInput id="contact-company" value={form.company} onChange={(event) => updateField("company", event.target.value)} autoComplete="organization" placeholder="Company or team" />
         </div>
         <div>
           <FieldLabel htmlFor="contact-phone">Phone</FieldLabel>
-          <TextInput id="contact-phone" value={form.phone} onChange={(event) => updateField("phone", event.target.value)} autoComplete="tel" />
+          <TextInput id="contact-phone" value={form.phone} onChange={(event) => updateField("phone", event.target.value)} autoComplete="tel" placeholder="Optional" />
         </div>
         <div>
           <FieldLabel htmlFor="contact-department">Department</FieldLabel>
@@ -263,17 +266,17 @@ export function ContactForm({ className }) {
         </div>
       </div>
 
-      <div>
+      <div className="mt-4">
         <FieldLabel htmlFor="contact-subject">Subject</FieldLabel>
-        <TextInput id="contact-subject" value={form.subject} onChange={(event) => updateField("subject", event.target.value)} required />
+        <TextInput id="contact-subject" value={form.subject} onChange={(event) => updateField("subject", event.target.value)} placeholder="What should we help with?" required />
       </div>
 
-      <div>
+      <div className="mt-4">
         <FieldLabel htmlFor="contact-message">Message</FieldLabel>
-        <TextArea id="contact-message" className="min-h-36" value={form.message} onChange={(event) => updateField("message", event.target.value)} required />
+        <TextArea id="contact-message" className="min-h-36" value={form.message} onChange={(event) => updateField("message", event.target.value)} placeholder="Share the service, timeline, account email if available, and any details the team should know." required />
       </div>
 
-      <div className="min-h-[74px]">
+      <div className="mt-5 min-h-[74px]">
         {siteConfig.turnstileSiteKey ? (
           <div ref={turnstileRef} />
         ) : (
@@ -285,9 +288,9 @@ export function ContactForm({ className }) {
 
       <ErrorDialog messages={errorMessages} onClose={() => setErrorMessages([])} />
 
-      <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting || !siteConfig.turnstileSiteKey}>
+      <Button type="submit" className="mt-2 min-h-11 w-full justify-center bg-slate-950 text-white hover:bg-slate-800" disabled={isSubmitting || !siteConfig.turnstileSiteKey}>
         <Send className="h-4 w-4" />
-        {isSubmitting ? "Sending" : "Send Message"}
+        {isSubmitting ? "Sending" : "Send request"}
       </Button>
     </form>
   );

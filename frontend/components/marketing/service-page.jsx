@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, LifeBuoy, Settings2 } from "lucide-react";
+import { BadgeCheck, ClipboardList, LifeBuoy, Settings2, ShieldCheck } from "lucide-react";
 import { getPurchasePath, productPlanSeeds, serviceCategories, serviceMarketingContent } from "@/lib/shared";
 import { getDepartmentContactByServiceSlug, siteConfig } from "@/lib/constants/site";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from "@/lib/ui";
@@ -156,6 +156,55 @@ export function ServicePage({ slug }) {
             </div>
           );
         })}
+      </section>
+
+      <section className="mt-10 overflow-hidden rounded-lg border border-slate-200 bg-slate-950 text-white shadow-[0_34px_110px_-82px_rgba(15,23,42,0.9)]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+          <div className="border-b border-white/10 p-6 lg:border-b-0 lg:border-r lg:p-7">
+            <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">Managed Pricing Context</p>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight">This is not unmanaged commodity pricing.</h2>
+            <p className="mt-4 text-sm leading-7 text-white/70">
+              ElevenOrbits prices {category.name.toLowerCase()} as a managed service. The plan includes sourcing through trusted, authentic providers, setup ownership, portal records, billing continuity, and support follow-up handled by our team.
+            </p>
+            <Link href="/tech-stack" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:bg-slate-100">
+              View Tech Stack
+            </Link>
+          </div>
+          <div className="grid gap-4 p-6 sm:grid-cols-2 lg:p-7">
+            {[
+              {
+                title: "Authentic sourcing",
+                body: "We use the provider and partner ecosystem shown across the Tech Stack page instead of hiding the delivery chain.",
+                icon: BadgeCheck,
+              },
+              {
+                title: "Managed for you",
+                body: "Provisioning, access handoff, service notes, support routing, and renewal context stay with ElevenOrbits.",
+                icon: Settings2,
+              },
+              {
+                title: "Operational premium",
+                body: "Pricing may be higher than raw self-serve listings because the customer is buying an operated service, not only infrastructure.",
+                icon: ShieldCheck,
+              },
+              {
+                title: "Single service record",
+                body: "Orders, invoices, tickets, credentials, and subscription history remain attached to the same managed account flow.",
+                icon: LifeBuoy,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div key={item.title} className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
+                  <Icon className="h-5 w-5 text-orange-300" />
+                  <h3 className="mt-4 text-sm font-extrabold text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/62">{item.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
       <section className="mt-12 grid gap-6 lg:grid-cols-[1fr_320px]">

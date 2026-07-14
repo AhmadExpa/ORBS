@@ -31,7 +31,7 @@ const stackMetrics = [
 ];
 
 const operatingModel = [
-  "Select proven platforms for each service lane.",
+  "Select trusted, authentic providers for each service lane.",
   "Connect tools into provisioning, tickets, billing, renewals, and custom workflows.",
   "Keep accountability with ElevenOrbits while the partner mix evolves.",
 ];
@@ -143,7 +143,7 @@ export function TechStackShowcase({ compact = false }) {
                 The stack behind managed delivery.
               </h2>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">
-                ElevenOrbits uses a practical partner ecosystem for security, cloud continuity, endpoint management, service desk operations, custom AI enablement, and communications.
+                ElevenOrbits uses a practical partner ecosystem for security, cloud continuity, endpoint management, service desk operations, custom AI enablement, and communications. These are the trusted providers behind managed service delivery, not decorative logos.
               </p>
             </div>
 
@@ -209,7 +209,7 @@ export function TechStackShowcase({ compact = false }) {
                 </Link>
               ) : (
                 <p className="mt-5 max-w-xl text-sm leading-7 text-slate-500">
-                  Partner availability may evolve over time. The operating standard stays consistent: choose reliable tools, integrate them carefully, and keep accountability with the ElevenOrbits service process.
+                  Partner availability may evolve over time. The operating standard stays consistent: choose reliable providers, integrate them carefully, and keep accountability with the ElevenOrbits service process.
                 </p>
               )}
             </div>
