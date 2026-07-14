@@ -26,29 +26,42 @@ import {
 import { Button, cn } from "@/lib/ui";
 import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds } from "@/lib/shared";
 import { industryPages, resourcePages } from "@/lib/marketing-content";
-import { ServiceLogo, ServiceLogoCluster } from "@/components/marketing/service-branding";
+import { ServiceLogo } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
 
 const planMap = new Map(productPlanSeeds.map((plan) => [plan.slug, plan]));
-
-const industryRecommendationSlugs = {
-  "Managed Servers": ["vps", "vds"],
-  "Cybersecurity Services": ["cybersecurity"],
-  "Workflow Automation": ["workflows"],
-  "VoIP and Vicidial Services": ["vicidial"],
-  "Development Support": ["development-support"],
-  "AI Services": ["ai-servers", "ai-solutions", "workflows"],
-  "Managed CDN": ["cdn"],
-  "Object Storage": ["object-storage"],
-  "Self-Hosted App Services": ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
-};
 
 function plansFor(slugs) {
   return slugs.map((slug) => planMap.get(slug)).filter(Boolean);
 }
 
-function slugsForIndustryRecommendations(items = []) {
-  return [...new Set(items.flatMap((item) => industryRecommendationSlugs[item] || []))];
+const recommendationPartnerStacks = {
+  "Managed Servers": ["Windows", "Ubuntu", "Proxmox", "Nginx"],
+  "Cybersecurity Services": ["Datto", "Cloudflare", "Kaseya", "Veeam"],
+  "Workflow Automation": ["n8n", "OpenAI", "Zapier", "GitHub"],
+  "VoIP and Vicidial Services": ["VICIdial", "3CX", "Telnyx", "Nextiva"],
+  "Development Support": ["GitHub", "Jira", "Docker", "Kubernetes"],
+  "AI Services": ["NVIDIA", "OpenAI", "DeepSeek", "n8n"],
+  "Managed CDN": ["Cloudflare", "Nginx", "Apache"],
+  "Object Storage": ["Veeam", "Cloudflare", "Microsoft Azure"],
+  "Self-Hosted App Services": ["Nextcloud", "OpenClaw", "Docker", "Ubuntu"],
+};
+
+const industryPartnerStacks = {
+  "saas-software-teams": ["Microsoft Azure", "GitHub", "Cloudflare", "Ubuntu"],
+  "call-centers-bpo": ["VICIdial", "3CX", "Telnyx", "Nextiva"],
+  "agencies-web-operations": ["Cloudflare", "GitHub", "Nginx", "Docker"],
+  "ecommerce-service-businesses": ["Cloudflare", "Datto", "Veeam", "Nextcloud"],
+  "ai-product-teams": ["NVIDIA", "OpenAI", "DeepSeek", "n8n"],
+  "security-sensitive-teams": ["Datto", "Cloudflare", "Kaseya", "Veeam"],
+};
+
+function partnerStackForIndustry(industry) {
+  if (industryPartnerStacks[industry.slug]) {
+    return industryPartnerStacks[industry.slug];
+  }
+
+  return [...new Set((industry.recommended || []).flatMap((item) => recommendationPartnerStacks[item] || []))].slice(0, 4);
 }
 
 const serviceChoices = [
@@ -223,6 +236,18 @@ function PartnerLogoStrip({ items = [] }) {
       {items.slice(0, 5).map((item) => (
         <span key={item} className="flex h-12 min-w-24 items-center justify-center rounded-lg border border-white/10 bg-white px-3 shadow-[0_18px_48px_-38px_rgba(0,0,0,0.55)]">
           <ServiceLogo name={item} imageClassName="h-8 w-20" className="[&>span:first-child]:h-8 [&>span:first-child]:w-8" />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function IndustryPartnerLogoStrip({ items = [] }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-4">
+      {items.slice(0, 4).map((item) => (
+        <span key={item} className="flex h-14 min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-[#f8fafc] px-3 shadow-sm">
+          <ServiceLogo name={item} imageClassName="h-8 w-24" className="[&>span:first-child]:h-8 [&>span:first-child]:w-8" />
         </span>
       ))}
     </div>
@@ -416,6 +441,7 @@ function SimpleLinkCard({ href, label, description, icon: Icon, onNavigate, acti
 
 function IndustryFitPanel({ industry, onNavigate }) {
   const recommended = industry.recommended || [];
+  const partnerStack = partnerStackForIndustry(industry);
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
@@ -426,7 +452,7 @@ function IndustryFitPanel({ industry, onNavigate }) {
           <h3 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-slate-950">{industry.title}</h3>
         </div>
         <div className="border-y border-slate-200 py-4">
-          <ServiceLogoCluster categorySlugs={slugsForIndustryRecommendations(recommended)} max={4} className="gap-2" />
+          <IndustryPartnerLogoStrip items={partnerStack} />
         </div>
       </div>
 

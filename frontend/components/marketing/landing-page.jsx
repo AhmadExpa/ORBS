@@ -283,11 +283,8 @@ function HeroSection() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(circle_at_28%_16%,rgba(255,122,26,0.16),transparent_34%),radial-gradient(circle_at_78%_22%,rgba(0,105,166,0.13),transparent_32%)]" />
       <div className="relative mx-auto grid max-w-[1580px] gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[0.74fr_1.26fr] lg:items-center lg:px-8 lg:py-24">
         <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/90 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-orange-800 shadow-sm backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a1a]" />
-            Behind the systems businesses use every day
-          </div>
-          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-[64px] lg:leading-[1.02]">
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#ff7a1a]">Business systems, managed end to end</p>
+          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-[64px] lg:leading-[1.02]">
             We manage the technology layer behind SMB and corporate operations.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
@@ -454,32 +451,36 @@ function MetricsBand() {
   ];
 
   return (
-    <section className="relative overflow-hidden border-y border-slate-800 bg-[linear-gradient(135deg,#070b16_0%,#10172a_54%,#070b16_100%)] text-white">
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,122,26,0.2),transparent_64%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-300/60 to-transparent" />
-      <div className="relative w-full px-4 py-16 sm:px-6 lg:px-8 2xl:px-10">
-        <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">More power and control</p>
-              <h2 className="mt-4 max-w-xl text-3xl font-extrabold tracking-tight sm:text-5xl">Managed service depth without scattered ownership.</h2>
-              <div className="mt-7 grid gap-3">
-                {operatingStandards.map((item) => (
-                  <div key={item} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-sm leading-6 text-white/70">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-4">
-              {metrics.map((metric) => (
-                <div key={metric.label} className="relative min-h-32 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.075] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-                  <p className="text-3xl font-extrabold text-white">{metric.value}</p>
-                  <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/45">{metric.label}</p>
-                </div>
-              ))}
+    <section className="relative overflow-hidden border-y border-slate-800 bg-[#070b16] text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_20%,rgba(255,122,26,0.14),transparent_52%)]" />
+      <div className="relative w-full px-4 py-14 sm:px-6 lg:px-8 2xl:px-10">
+        <div className="grid gap-8 lg:grid-cols-[minmax(360px,0.42fr)_minmax(0,0.58fr)] lg:items-center">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">Operational ownership</p>
+            <h2 className="mt-4 max-w-2xl text-3xl font-extrabold tracking-tight sm:text-5xl">
+              One accountable team behind the systems your business depends on.
+            </h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-white/60">
+              Orders, infrastructure, billing, renewals, support, and handoff notes stay connected instead of spreading across disconnected vendor dashboards.
+            </p>
           </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            {metrics.map((metric) => (
+              <div key={metric.label} className="relative min-h-28 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-300/40 to-transparent" />
+                <p className="text-3xl font-extrabold text-white">{metric.value}</p>
+                <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/40">{metric.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-8 grid gap-3 border-t border-white/10 pt-6 md:grid-cols-3">
+          {operatingStandards.map((item) => (
+            <div key={item} className="flex gap-3 text-sm leading-6 text-white/65">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
+              <span>{item}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
