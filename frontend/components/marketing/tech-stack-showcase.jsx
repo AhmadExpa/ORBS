@@ -40,14 +40,22 @@ function LogoMark({ partner }) {
   const label = partner.wordmark || partner.name;
   const brand = partner.logo ? { name: partner.name, logo: partner.logo } : getBrandForName(label);
   const logo = partner.logo || brand.logo;
+  const Icon = brand.icon;
 
   return (
-    <div className="flex h-full w-full shrink-0 items-center justify-center px-4">
+    <div className="flex h-full w-full min-w-0 shrink-0 items-center justify-start gap-3 px-4">
       {logo ? (
-        <img src={logo} alt={`${label} logo`} loading="lazy" decoding="async" className="max-h-10 max-w-full object-contain" />
+        <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-md bg-white">
+          <img src={logo} alt={`${label} logo`} loading="lazy" decoding="async" className="max-h-9 max-w-12 object-contain" />
+        </span>
+      ) : Icon ? (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
       ) : (
-        <span className="max-w-full truncate text-center text-sm font-semibold text-slate-700">{label}</span>
+        <span className="hidden" aria-hidden="true" />
       )}
+      <span className="min-w-0 truncate text-sm font-semibold text-slate-800">{label}</span>
     </div>
   );
 }
@@ -56,7 +64,7 @@ function CarouselPartnerCard({ partner }) {
   return (
     <article
       aria-label={partner.name}
-      className="flex h-16 w-40 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/95 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
+      className="flex h-16 w-52 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/95 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.55)]"
     >
       <LogoMark partner={partner} />
     </article>

@@ -167,7 +167,7 @@ export const brandLogos = {
   github: { name: "GitHub", logo: "/partners/github.svg" },
   jira: { name: "Jira", logo: "/partners/jira.svg" },
   twilio: { name: "Twilio", logo: "/partners/twilio.svg" },
-  telnyx: { name: "Telnyx", logo: "/partners/telnyx.svg" },
+  telnyx: { name: "Telnyx", logo: "/partners/telnyx.png" },
   broadvoice: { name: "Broadvoice", logo: "/partners/broadvoice.svg" },
   nextiva: { name: "Nextiva", logo: "/partners/nextiva.svg" },
   "zoom phone": { name: "Zoom Phone", logo: "/partners/zoom-phone.svg" },

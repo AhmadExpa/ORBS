@@ -616,7 +616,7 @@ export const techStackGroups = [
       { name: "Google Voice", logo: "/partners/google-voice.svg", descriptor: "Google calling for teams" },
       { name: "Microsoft Teams", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", descriptor: "Collaboration and meetings" },
       { name: "Twilio", logo: "/partners/twilio.svg", descriptor: "Programmable voice and messaging" },
-      { name: "Telnyx", logo: "/partners/telnyx.svg", descriptor: "Carrier voice and SMS APIs" },
+      { name: "Telnyx", logo: "/partners/telnyx.png", descriptor: "Carrier voice and SMS APIs" },
       { name: "VICIdial", logo: "/partners/vicidial.svg", descriptor: "Contact center dialer" },
       { name: "3CX", logo: "/partners/3cx.svg", descriptor: "Business phone system" },
       { name: "Zoiper", logo: "/partners/zoiper.svg", descriptor: "SIP softphone" },

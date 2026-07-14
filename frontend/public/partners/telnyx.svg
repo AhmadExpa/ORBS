@@ -1,6 +1,0 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
-  <title id="title">Telnyx</title>
-  <rect width="64" height="64" rx="16" fill="#f8fafc"/>
-  <rect x="13" y="13" width="38" height="38" rx="11" fill="#101828"/>
-  <path d="M23 41c5-13 13-19 25-19M20 32c7-8 15-12 25-12M28 44c3-5 7-8 13-10" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-</svg>
