@@ -24,24 +24,44 @@ const subjectDetails = {
     eyebrow: "Cloud operations",
     primaryCategorySlug: "vps",
     promise: "Managed hosting, storage, CDN, and self-hosted app operations with provisioning notes and renewal records attached.",
+    managedLine: "Servers, storage, edge delivery, app hosting, access handoff, billing records, and support continuity.",
+    background: "border-orange-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_48%,#ecfeff_100%)]",
+    accent: "text-[#ff6b00]",
+    iconShell: "border-orange-200 bg-orange-50",
+    chip: "border-orange-200 bg-white/75 text-slate-800",
   },
   "Call Centers": {
     number: "02",
     eyebrow: "Voice operations",
     primaryCategorySlug: "vicidial",
     promise: "Dialer operations, SIP routing, queue support, and service coordination for teams that need context preserved.",
+    managedLine: "Vicidial, Asterisk, SIP routing, campaign support, queue behavior, service issues, and operational runbooks.",
+    background: "border-blue-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_50%,#f8fafc_100%)]",
+    accent: "text-blue-700",
+    iconShell: "border-blue-200 bg-blue-50",
+    chip: "border-blue-200 bg-white/75 text-slate-800",
   },
   "AI Services": {
     number: "03",
     eyebrow: "AI enablement",
     primaryCategorySlug: "ai-servers",
     promise: "GPU-ready servers, n8n workflow operations, model integrations, and private AI rollout support.",
+    managedLine: "AI servers, model access, workflow automation, n8n operations, private rollout planning, and support routing.",
+    background: "border-violet-200 bg-[linear-gradient(135deg,#f5f3ff_0%,#ffffff_48%,#ecfeff_100%)]",
+    accent: "text-violet-700",
+    iconShell: "border-violet-200 bg-violet-50",
+    chip: "border-violet-200 bg-white/75 text-slate-800",
   },
   Cybersecurity: {
     number: "04",
     eyebrow: "Security operations",
     primaryCategorySlug: "cybersecurity",
     promise: "Hardening, monitoring guidance, response readiness, and policy follow-up for hosted systems.",
+    managedLine: "Security baselines, access review, WAF and SIEM guidance, patch governance, and incident-readiness coordination.",
+    background: "border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5_0%,#ffffff_50%,#f8fafc_100%)]",
+    accent: "text-emerald-700",
+    iconShell: "border-emerald-200 bg-emerald-50",
+    chip: "border-emerald-200 bg-white/75 text-slate-800",
   },
 };
 
@@ -225,45 +245,33 @@ function OperatingLanesSection() {
             const primaryCategorySlug = details.primaryCategorySlug || family.categorySlugs[0];
             const primaryBrand = getCategoryBrand(primaryCategorySlug);
             const serviceLineBrands = uniqueItems([primaryCategorySlug, ...family.categorySlugs]).slice(0, 5).map(getCategoryBrand);
-            const { plans, startingPlan } = getFamilySummary(family);
+            const { startingPlan } = getFamilySummary(family);
             const subjectHref = `/${family.pageSlug}`;
             const orderHref = startingPlan ? getPurchasePath(startingPlan) : "/contact";
-            const displayPlans = plans.slice(0, 2);
 
             return (
-              <article key={family.name} className="group relative flex min-h-[440px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-[0_28px_90px_-78px_rgba(15,23,42,0.85)] transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_42px_120px_-78px_rgba(15,23,42,0.95)]">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
+              <article key={family.name} className={`group relative flex min-h-[430px] flex-col overflow-hidden rounded-lg border p-5 shadow-[0_34px_110px_-82px_rgba(15,23,42,0.88)] transition hover:-translate-y-1 hover:shadow-[0_46px_130px_-84px_rgba(15,23,42,0.98)] ${details.background || "border-slate-200 bg-white"}`}>
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
+                <div className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-white/70 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 left-8 h-40 w-40 rounded-full bg-slate-950/[0.04] blur-3xl" />
                 <div className="flex items-start justify-between gap-5">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#ff7a1a]">{details.eyebrow || "Managed service"}</p>
+                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${details.accent || "text-[#ff7a1a]"}`}>{details.eyebrow || "Managed service"}</p>
                     <h3 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">{family.name}</h3>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-3">
                     <span className="text-xs font-extrabold text-slate-400">{details.number || "00"}</span>
-                    <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                    <span className={`flex h-14 w-14 items-center justify-center rounded-lg border ${details.iconShell || "border-slate-200 bg-white"}`}>
                       <ServiceLogo brand={primaryBrand} imageClassName="h-9 w-9" className="[&>span:first-child]:h-10 [&>span:first-child]:w-10" />
                     </span>
                   </div>
                 </div>
 
-                <p className="mt-5 text-sm leading-7 text-slate-600">{details.promise || family.description}</p>
+                <p className="mt-5 text-sm font-medium leading-7 text-slate-700">{details.promise || family.description}</p>
 
-                <div className="mt-6 rounded-lg border border-slate-200 bg-[#f8fafc] p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-400">Starting point</p>
-                      <p className="mt-2 truncate text-sm font-extrabold text-slate-900">{startingPlan?.name || "Scoped managed plan"}</p>
-                    </div>
-                    <p className="shrink-0 text-base font-extrabold text-slate-950">{getPriceLabel(startingPlan)}</p>
-                  </div>
-                  <div className="mt-4 grid gap-2">
-                    {displayPlans.map((plan) => (
-                      <div key={plan.slug} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 ring-1 ring-slate-200">
-                        <span className="min-w-0 truncate text-xs font-bold text-slate-700">{plan.name}</span>
-                        <span className="shrink-0 text-xs font-extrabold text-slate-950">{getPriceLabel(plan)}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-6 border-y border-slate-950/[0.08] py-5">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">What we manage</p>
+                  <p className="mt-3 text-sm font-extrabold leading-7 text-slate-950">{details.managedLine || family.description}</p>
                 </div>
 
                 <div className="mt-5">
@@ -274,7 +282,7 @@ function OperatingLanesSection() {
                 <div className="mt-auto border-t border-slate-200 pt-5">
                   <div className="flex flex-wrap gap-2">
                     {family.includes.slice(0, 3).map((item) => (
-                      <span key={item} className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-extrabold text-slate-600">
+                      <span key={item} className={`rounded-md border px-2.5 py-1 text-[11px] font-extrabold ${details.chip || "border-slate-200 bg-slate-100 text-slate-600"}`}>
                         {item}
                       </span>
                     ))}
