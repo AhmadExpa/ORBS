@@ -26,7 +26,7 @@ import {
 import { Button, cn } from "@/lib/ui";
 import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds } from "@/lib/shared";
 import { industryPages, resourcePages } from "@/lib/marketing-content";
-import { ServiceLogoCluster } from "@/components/marketing/service-branding";
+import { ServiceLogo, ServiceLogoCluster } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
 
 const planMap = new Map(productPlanSeeds.map((plan) => [plan.slug, plan]));
@@ -59,6 +59,7 @@ const serviceChoices = [
     href: "/services/vps",
     icon: Server,
     categorySlugs: ["vps"],
+    techItems: ["Windows", "Ubuntu", "AlmaLinux", "Nginx", "Apache"],
     description: "Choose VPS when you need a managed server for apps, websites, RDP, testing, or client workloads without dedicated-resource isolation.",
     chooseWhen: ["You need fast provisioning", "Workload is moderate or predictable", "Windows RDP or Linux app hosting is the target"],
     paths: [
@@ -75,6 +76,7 @@ const serviceChoices = [
     href: "/services/vds",
     icon: HardDrive,
     categorySlugs: ["vds"],
+    techItems: ["NVIDIA", "AMD Ryzen", "Intel", "Proxmox"],
     description: "Choose VDS when you want stronger isolation, steadier performance, and managed capacity planning for heavier business systems.",
     chooseWhen: ["Noisy-neighbor risk matters", "Database or business systems need steadier resources", "You expect growth and want scaling review"],
     paths: [
@@ -91,6 +93,7 @@ const serviceChoices = [
     href: "/services/object-storage",
     icon: Database,
     categorySlugs: ["object-storage"],
+    techItems: ["O7 Bucket", "S3-compatible API", "Veeam", "Cloudflare"],
     description: "Choose O7 Bucket for fixed-capacity object storage with S3-style access, CORS policy, gated delivery, and custom domains.",
     chooseWhen: ["Backups, media, archives, or AI datasets", "You want fixed capacity pricing", "Applications need S3-compatible credentials"],
     paths: [
@@ -107,6 +110,7 @@ const serviceChoices = [
     href: "/services/vicidial",
     icon: PhoneCall,
     categorySlugs: ["vicidial"],
+    techItems: ["VICIdial", "3CX", "Asterisk", "Telnyx", "Nextiva"],
     description: "Choose VoIP support when call routing, SIP trunks, queues, campaigns, RVM, and dialer uptime affect daily operations.",
     chooseWhen: ["Agents depend on dialer uptime", "You need inbound/outbound/RVM planning", "SIP routing and queue behavior need recurring support"],
     paths: [
@@ -123,6 +127,7 @@ const serviceChoices = [
     href: "/ai-services",
     icon: Cpu,
     categorySlugs: ["ai-servers", "workflows", "ai-solutions"],
+    techItems: ["NVIDIA", "n8n", "OpenAI", "DeepSeek", "Kimi"],
     description: "Choose AI services for managed AI servers, n8n automation, model and API access, private deployment guidance, and practical rollout support.",
     chooseWhen: ["You need AI infrastructure or API guardrails", "n8n workflows should run on managed infrastructure", "AI workflows need operations support"],
     paths: [
@@ -140,6 +145,7 @@ const serviceChoices = [
     href: "/self-hosted-app-services",
     icon: Bot,
     categorySlugs: ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"],
+    techItems: ["Hermes AI", "OpenClaw", "Nextcloud", "Docker"],
     description: "Choose app hosting when you want private AI agents, assistants, or collaboration apps on managed VPS infrastructure.",
     chooseWhen: ["You need a hosted app, not a blank server", "Private assistant or file cloud is the goal", "Credentials and app handoff should live in portal"],
     paths: [
@@ -156,6 +162,7 @@ const serviceChoices = [
     href: "/cybersecurity-services",
     icon: ShieldCheck,
     categorySlugs: ["cybersecurity"],
+    techItems: ["Datto", "Cloudflare", "Kaseya", "Veeam"],
     description: "Choose cybersecurity coverage when hosted systems need hardening, access review, monitoring, patch governance, and incident readiness.",
     chooseWhen: ["Public systems need stronger controls", "Access and patching need review", "You want recurring posture and response coverage"],
     paths: [
@@ -207,6 +214,18 @@ function PlanCard({ plan, onNavigate }) {
         <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#ff7a1a]" />
       </span>
     </Link>
+  );
+}
+
+function PartnerLogoStrip({ items = [] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.slice(0, 5).map((item) => (
+        <span key={item} className="flex h-12 min-w-24 items-center justify-center rounded-lg border border-white/10 bg-white px-3 shadow-[0_18px_48px_-38px_rgba(0,0,0,0.55)]">
+          <ServiceLogo name={item} imageClassName="h-8 w-20" className="[&>span:first-child]:h-8 [&>span:first-child]:w-8" />
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -295,7 +314,7 @@ function ServicesMegaMenu({ activeChoiceId, setActiveChoiceId, onNavigate }) {
                   </div>
                 </div>
                 <div className="border-t border-white/10 pt-4">
-                  <ServiceLogoCluster categorySlugs={activeChoice.categorySlugs} max={4} className="gap-2" />
+                  <PartnerLogoStrip items={activeChoice.techItems || []} />
                 </div>
               </div>
             </div>

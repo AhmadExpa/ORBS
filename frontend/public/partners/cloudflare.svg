@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 56" role="img" aria-label="Cloudflare">
+  <rect width="190" height="56" rx="10" fill="#ffffff"/>
+  <path d="M34 35H20c-5 0-8-3-8-7.1 0-3.8 2.9-6.9 6.9-7.1 1.8-6.2 7.4-10.5 14-10.5 7.2 0 13.2 5.2 14.3 12.2h2.1c5.5 0 9.7 4 9.7 9.1 0 1.2-.2 2.3-.6 3.4H34Z" fill="#f97316"/>
+  <path d="M39 35h17.5c2.3 0 4.4-1.4 5.3-3.5 1.1-2.6-.8-5.5-3.6-5.5H45.5c-2.3 0-4.3 1.4-5.2 3.5L38 35Z" fill="#fbbf24"/>
+  <text x="73" y="35" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800" fill="#0f172a">Cloudflare</text>
+</svg>

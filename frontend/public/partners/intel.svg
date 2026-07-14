@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 56" role="img" aria-label="Intel">
+  <rect width="180" height="56" rx="10" fill="#ffffff"/>
+  <text x="24" y="37" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#0068B5">intel</text>
+  <path d="M21 43c21 6 66 5 93-7" fill="none" stroke="#0068B5" stroke-width="3" stroke-linecap="round"/>
+</svg>

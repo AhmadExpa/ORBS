@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 56" role="img" aria-label="Windows">
+  <rect width="180" height="56" rx="10" fill="#ffffff"/>
+  <path d="M18 16.8 38.6 14v19H18V16.8Zm23.8-3.2L72 9.6V33H41.8V13.6ZM18 36.3h20.6v19L18 52.5V36.3Zm23.8 0H72v23.4l-30.2-4.1V36.3Z" fill="#0078D4"/>
+  <text x="86" y="35" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#0f172a">Windows</text>
+</svg>

@@ -2,16 +2,22 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  BrainCircuit,
+  CheckCircle2,
   ClipboardCheck,
   CloudCog,
+  Cpu,
+  Globe2,
   Headphones,
   LockKeyhole,
   PackageCheck,
+  PhoneCall,
+  ShieldCheck,
   Wallet,
   Workflow,
 } from "lucide-react";
 import { formatCurrency, getPurchasePath, getSignupPath, productPlanSeeds, serviceCategories, serviceFamilies } from "@/lib/shared";
-import { ServiceLogo, ServiceLogoCluster, getCategoryBrand } from "./service-branding";
+import { ServiceLogo, getCategoryBrand } from "./service-branding";
 import { TechStackShowcase } from "./tech-stack-showcase";
 
 const activePlans = productPlanSeeds.filter((plan) => plan.isActive !== false);
@@ -28,6 +34,9 @@ const subjectDetails = {
     accent: "text-[#ff6b00]",
     iconShell: "border-orange-200 bg-orange-50",
     chip: "border-orange-200 bg-white/75 text-slate-800",
+    icon: CloudCog,
+    iconClassName: "border-orange-200 bg-orange-50 text-[#ff7a1a]",
+    panelClassName: "from-orange-50 via-white to-cyan-50",
   },
   "Call Centers": {
     number: "02",
@@ -39,6 +48,9 @@ const subjectDetails = {
     accent: "text-blue-700",
     iconShell: "border-blue-200 bg-blue-50",
     chip: "border-blue-200 bg-white/75 text-slate-800",
+    icon: PhoneCall,
+    iconClassName: "border-blue-200 bg-blue-50 text-blue-700",
+    panelClassName: "from-blue-50 via-white to-slate-50",
   },
   "AI Services": {
     number: "03",
@@ -50,6 +62,9 @@ const subjectDetails = {
     accent: "text-violet-700",
     iconShell: "border-violet-200 bg-violet-50",
     chip: "border-violet-200 bg-white/75 text-slate-800",
+    icon: BrainCircuit,
+    iconClassName: "border-violet-200 bg-violet-50 text-violet-700",
+    panelClassName: "from-violet-50 via-white to-cyan-50",
   },
   Cybersecurity: {
     number: "04",
@@ -61,6 +76,9 @@ const subjectDetails = {
     accent: "text-emerald-700",
     iconShell: "border-emerald-200 bg-emerald-50",
     chip: "border-emerald-200 bg-white/75 text-slate-800",
+    icon: ShieldCheck,
+    iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    panelClassName: "from-emerald-50 via-white to-slate-50",
   },
 };
 
@@ -73,7 +91,7 @@ const promoTiles = [
     categorySlugs: ["vps", "vds", "cdn", "object-storage"],
     theme: "from-[#ff7a1a] to-[#ff9f47]",
     icon: CloudCog,
-    iconTone: "text-[#ff7a1a]",
+    iconTone: "text-slate-950",
   },
   {
     title: "AI and automation delivery",
@@ -83,7 +101,7 @@ const promoTiles = [
     categorySlugs: ["ai-servers", "workflows", "ai-solutions"],
     theme: "from-slate-950 to-[#142238]",
     icon: Workflow,
-    iconTone: "text-violet-400",
+    iconTone: "text-slate-950",
   },
 ];
 
@@ -128,10 +146,49 @@ const journeySteps = [
   },
 ];
 
+const operatingStandards = [
+  "Portal order, invoice, and billing state stay attached.",
+  "Provisioning notes, credentials, and support history stay visible.",
+  "The customer sees one accountable service model after launch.",
+];
+
 const aiHighlights = [
-  ["AI Servers", "GPU-ready environments for managed model workloads.", "ai-servers"],
-  ["n8n Workflows", "Community Edition automation on managed infrastructure.", "workflows"],
-  ["AI Solutions", "Model/API access, implementation guidance, and rollout support.", "ai-solutions"],
+  {
+    title: "AI Servers",
+    body: "GPU-ready environments for managed model workloads.",
+    icon: Cpu,
+    tone: "text-violet-300",
+  },
+  {
+    title: "n8n Workflows",
+    body: "Community Edition automation on managed infrastructure.",
+    icon: Workflow,
+    tone: "text-rose-300",
+  },
+  {
+    title: "AI Solutions",
+    body: "Model/API access, implementation guidance, and rollout support.",
+    icon: BrainCircuit,
+    tone: "text-sky-300",
+  },
+];
+
+const serviceAreaStats = [
+  {
+    title: "Managed record",
+    body: "Orders, invoices, support, and handoff stay attached.",
+    icon: ClipboardCheck,
+  },
+  {
+    title: "Global reach",
+    body: "Provider stack selected for resilient delivery.",
+    icon: Globe2,
+  },
+  {
+    title: "24/7 support",
+    body: "Operational follow-up remains accountable.",
+    icon: Headphones,
+  },
 ];
 
 const catalogExampleSlugs = [
@@ -180,10 +237,6 @@ function getPlanBySlug(slug) {
   return activePlans.find((plan) => plan.slug === slug);
 }
 
-function uniqueItems(items) {
-  return [...new Set(items.filter(Boolean))];
-}
-
 function SectionIntro({ eyebrow, title, description, align = "left" }) {
   return (
     <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
@@ -213,7 +266,7 @@ function HeroVisual() {
           ["Billing", "Wallet and card fallback"],
           ["Support", "Managed follow-up"],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white/88 px-4 py-3 shadow-[0_24px_70px_-58px_rgba(15,23,42,0.78)] backdrop-blur">
+          <div key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_24px_70px_-58px_rgba(15,23,42,0.78)]">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ff7a1a]">{label}</p>
             <p className="mt-1 text-sm font-extrabold text-slate-950">{value}</p>
           </div>
@@ -232,13 +285,13 @@ function HeroSection() {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/90 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-orange-800 shadow-sm backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a1a]" />
-            Managed infrastructure with operating ownership
+            Behind the systems businesses use every day
           </div>
           <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-[64px] lg:leading-[1.02]">
-            Launch managed systems without losing billing, support, or service context.
+            We manage the technology layer behind SMB and corporate operations.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-            ElevenOrbits runs managed cloud, AI services, call-center operations, cybersecurity, and customer portal workflows through one accountable service model.
+            ElevenOrbits operates the cloud, voice, AI, security, billing, and support systems companies rely on every day, with one accountable service record from order to renewal.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -249,19 +302,6 @@ function HeroSection() {
             <Link href="/pricing" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:bg-slate-50">
               Review catalog pricing
             </Link>
-          </div>
-
-          <div className="mt-10 grid overflow-hidden rounded-2xl border border-slate-200 bg-white/82 shadow-[0_24px_90px_-72px_rgba(15,23,42,0.85)] backdrop-blur sm:grid-cols-3">
-            {[
-              [serviceFamilies.length, "operating lanes"],
-              [activeCategories.length, "service lines"],
-              [activePlans.length, "active plans"],
-            ].map(([value, label]) => (
-              <div key={label} className="border-b border-slate-200 px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
-                <p className="text-2xl font-extrabold text-slate-950">{value}</p>
-                <p className="mt-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -284,7 +324,7 @@ function PromoTilesSection() {
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent" />
               <div className="relative flex items-start justify-between gap-5">
                 <div className="max-w-xl">
-                  <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/[0.14] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_20px_55px_-38px_rgba(0,0,0,0.75)] backdrop-blur">
+                  <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/60 bg-white/90 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_20px_55px_-38px_rgba(0,0,0,0.75)] backdrop-blur">
                     <Icon className={`h-7 w-7 ${tile.iconTone}`} strokeWidth={1.8} />
                   </span>
                   <h2 className="mt-8 text-2xl font-extrabold tracking-tight">{tile.title}</h2>
@@ -414,22 +454,31 @@ function MetricsBand() {
   ];
 
   return (
-    <section className="relative overflow-hidden border-b border-slate-800 bg-[linear-gradient(135deg,#080b18_0%,#0d1222_54%,#080b18_100%)] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_66%_50%,rgba(255,122,26,0.16),transparent_58%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.035)_50%,transparent_100%)]" />
-      <div className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">More Power And Control</p>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">Managed service depth without scattered ownership.</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-4">
-            {metrics.map((metric) => (
-              <div key={metric.label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
-                <p className="text-3xl font-extrabold text-white">{metric.value}</p>
-                <p className="mt-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-white/50">{metric.label}</p>
+    <section className="relative overflow-hidden border-y border-slate-800 bg-[linear-gradient(135deg,#070b16_0%,#10172a_54%,#070b16_100%)] text-white">
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,122,26,0.2),transparent_64%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-300/60 to-transparent" />
+      <div className="relative w-full px-4 py-16 sm:px-6 lg:px-8 2xl:px-10">
+        <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">More power and control</p>
+              <h2 className="mt-4 max-w-xl text-3xl font-extrabold tracking-tight sm:text-5xl">Managed service depth without scattered ownership.</h2>
+              <div className="mt-7 grid gap-3">
+                {operatingStandards.map((item) => (
+                  <div key={item} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-sm leading-6 text-white/70">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-4">
+              {metrics.map((metric) => (
+                <div key={metric.label} className="relative min-h-32 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.075] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                  <p className="text-3xl font-extrabold text-white">{metric.value}</p>
+                  <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/45">{metric.label}</p>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -439,107 +488,222 @@ function MetricsBand() {
 
 function AIHighlightSection() {
   return (
-    <section className="relative overflow-hidden border-b border-slate-800 bg-slate-950 text-white">
-      <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-[0.08]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_center,rgba(255,122,26,0.22),transparent_64%)]" />
-      <div className="relative mx-auto max-w-[1280px] px-4 py-16 text-center sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">Human-led, AI-managed</p>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">AI services without abandoned experiments.</h2>
-          <p className="mt-4 text-sm leading-7 text-white/60">AI servers, automation, and model access stay attached to support, billing, and deployment context.</p>
-        </div>
-        <div className="mx-auto mt-10 max-w-4xl rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-[0_34px_110px_-82px_rgba(0,0,0,0.9)] backdrop-blur">
-          <div className="grid gap-4 md:grid-cols-3">
-            {aiHighlights.map(([title, body, slug]) => (
-              <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 text-left">
-                <ServiceLogo brand={getCategoryBrand(slug)} imageClassName="h-8 w-8" className="[&>span:first-child]:h-10 [&>span:first-child]:w-10" />
-                <h3 className="mt-5 text-lg font-extrabold text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/60">{body}</p>
-              </div>
-            ))}
+    <section className="relative overflow-hidden border-b border-slate-200 bg-[#f7f9fb]">
+      <div className="relative mx-auto max-w-[1280px] px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_36px_120px_-92px_rgba(15,23,42,0.95)] lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="relative bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_62%,#f8fafc_100%)] p-7 lg:p-8">
+            <div className="pointer-events-none absolute -right-20 -top-24 h-52 w-52 rounded-full bg-orange-200/55 blur-3xl" />
+            <div className="relative">
+              <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#ff7a1a]">Human-led, AI-managed</p>
+              <h2 className="mt-4 max-w-xl text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">AI services without abandoned experiments.</h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">AI servers, automation, and model access stay attached to support, billing, and deployment context.</p>
+              <Link href="/ai-services" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-slate-800">
+                View AI services
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <div className="grid gap-0 divide-y divide-slate-200 bg-[#fbfcfd] p-4 lg:p-5">
+            {aiHighlights.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div key={item.title} className="grid gap-4 py-5 first:pt-2 last:pb-2 sm:grid-cols-[72px_1fr] sm:items-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 text-white shadow-[0_24px_70px_-52px_rgba(15,23,42,0.85)]">
+                    <Icon className={`h-7 w-7 ${item.tone}`} strokeWidth={1.8} />
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-slate-950">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     </section>
   );
 }
+function ServiceAreaPills({ items = [], tone = "border-slate-200 bg-white/70 text-slate-700" }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.slice(0, 3).map((item) => (
+        <span key={item} className={`rounded-lg border px-3 py-1.5 text-[11px] font-extrabold ${tone}`}>
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ServiceAreaArt({ name }) {
+  if (name === "Managed Cloud") {
+    return (
+      <div className="pointer-events-none absolute bottom-8 right-2 hidden h-72 w-72 opacity-90 md:block">
+        <div className="absolute bottom-8 right-5 h-24 w-40 rotate-[-16deg] rounded-[2rem] border border-orange-200 bg-white/80 shadow-[0_34px_70px_-46px_rgba(15,23,42,0.55)]" />
+        <div className="absolute bottom-24 right-16 h-28 w-28 rounded-full bg-[linear-gradient(145deg,#ffffff,#e8e2d8)] shadow-[0_30px_70px_-44px_rgba(15,23,42,0.52)]" />
+        <div className="absolute bottom-28 right-[7.75rem] h-20 w-20 rounded-full bg-[linear-gradient(145deg,#ffffff,#eee8df)]" />
+        <div className="absolute bottom-[5.25rem] right-4 h-20 w-20 rounded-full bg-[linear-gradient(145deg,#ffffff,#e7ded2)]" />
+        <div className="absolute bottom-4 right-20 h-3 w-28 rounded-full bg-orange-200/70 blur-md" />
+      </div>
+    );
+  }
+
+  if (name === "Call Centers") {
+    return (
+      <div className="pointer-events-none absolute right-5 top-8 hidden h-40 w-64 opacity-70 md:block">
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(37,99,235,0.42) 1.2px, transparent 1.2px)",
+            backgroundSize: "10px 10px",
+          }}
+        />
+        <div className="absolute right-10 top-8 h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_0_10px_rgba(59,130,246,0.12)]" />
+        <div className="absolute right-[7.5rem] top-20 h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_0_10px_rgba(59,130,246,0.12)]" />
+      </div>
+    );
+  }
+
+  if (name === "AI Services") {
+    return (
+      <div className="pointer-events-none absolute bottom-8 right-8 hidden h-36 w-36 opacity-80 md:block">
+        <div className="absolute left-12 top-4 h-16 w-16 rotate-45 rounded-xl bg-violet-300/40 shadow-[0_28px_60px_-40px_rgba(109,40,217,0.9)]" />
+        <div className="absolute left-4 top-20 h-14 w-14 rotate-45 rounded-xl bg-violet-500/28" />
+        <div className="absolute left-20 top-20 h-14 w-14 rotate-45 rounded-xl bg-sky-300/32" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="pointer-events-none absolute bottom-4 right-0 hidden h-44 w-44 opacity-80 md:block">
+      <div className="absolute bottom-7 right-8 h-28 w-28 rounded-[2rem] border border-emerald-200 bg-emerald-100/55 shadow-[0_28px_70px_-44px_rgba(6,95,70,0.65)]" />
+      <div className="absolute bottom-12 right-12 h-20 w-20 rounded-[1.6rem] border border-emerald-300 bg-white/80" />
+      <ShieldCheck className="absolute bottom-[4.5rem] right-[4.5rem] h-9 w-9 text-emerald-700" strokeWidth={1.7} />
+    </div>
+  );
+}
+
+function FeaturedServiceCard({ lane }) {
+  const Icon = lane.icon;
+
+  return (
+    <article className={`relative min-h-[620px] overflow-hidden rounded-[1.7rem] border border-orange-200 bg-gradient-to-br ${lane.panelClassName} p-7 shadow-[0_38px_120px_-88px_rgba(15,23,42,0.92)]`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-300 to-transparent" />
+      <ServiceAreaArt name={lane.name} />
+      <div className="relative flex h-full flex-col">
+        <span className={`flex h-16 w-16 items-center justify-center rounded-2xl border ${lane.iconClassName}`}>
+          <Icon className="h-8 w-8" strokeWidth={1.65} />
+        </span>
+        <div className="mt-10">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#ff7a1a]">{lane.number} {lane.eyebrow}</p>
+          <h3 className="mt-4 text-4xl font-extrabold tracking-tight text-slate-950">{lane.name}</h3>
+          <p className="mt-5 max-w-sm text-sm font-medium leading-7 text-slate-600">{lane.promise}</p>
+        </div>
+        <div className="mt-9 max-w-xs">
+          <ServiceAreaPills items={lane.includes} tone={lane.chip} />
+        </div>
+        <Link href={lane.subjectHref} className="mt-auto inline-flex w-fit items-center gap-4 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-950 transition hover:border-orange-200 hover:bg-white">
+          Explore lane
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function ServiceAreaCard({ lane, wide = false }) {
+  const Icon = lane.icon;
+
+  return (
+    <article className={`relative overflow-hidden rounded-[1.45rem] border border-slate-200 bg-gradient-to-br ${lane.panelClassName} p-6 shadow-[0_30px_95px_-82px_rgba(15,23,42,0.9)] ${wide ? "min-h-[255px]" : "min-h-[338px]"}`}>
+      <ServiceAreaArt name={lane.name} />
+      <div className={`relative grid h-full gap-5 ${wide ? "md:grid-cols-[76px_minmax(0,1fr)]" : ""}`}>
+        <span className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${lane.iconClassName}`}>
+          <Icon className="h-7 w-7" strokeWidth={1.7} />
+        </span>
+        <div>
+          <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${lane.accent}`}>{lane.number} {lane.eyebrow}</p>
+          <h3 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950">{lane.name}</h3>
+          <p className="mt-3 max-w-md text-sm leading-7 text-slate-600">{lane.promise}</p>
+          <div className="mt-6">
+            <ServiceAreaPills items={lane.includes} tone={lane.chip} />
+          </div>
+          <Link href={lane.subjectHref} className="mt-7 inline-flex items-center gap-4 text-sm font-extrabold text-slate-950 transition hover:text-[#ff7a1a]">
+            Explore lane
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 function OperatingLanesSection() {
+  const lanes = serviceFamilies.map((family) => {
+    const details = subjectDetails[family.name] || {};
+    const { startingPlan } = getFamilySummary(family);
+
+    return {
+      ...family,
+      ...details,
+      icon: details.icon || CloudCog,
+      subjectHref: `/${family.pageSlug}`,
+      orderHref: startingPlan ? getPurchasePath(startingPlan) : "/contact",
+      includes: family.includes,
+    };
+  });
+  const cloudLane = lanes.find((lane) => lane.name === "Managed Cloud") || lanes[0];
+  const callLane = lanes.find((lane) => lane.name === "Call Centers");
+  const aiLane = lanes.find((lane) => lane.name === "AI Services");
+  const securityLane = lanes.find((lane) => lane.name === "Cybersecurity");
+
   return (
-    <section className="border-b border-slate-200 bg-[#f8fafc]">
-      <div className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <SectionIntro
-            eyebrow="Operating Lanes"
-            title="Four entry points, backed by the same managed record."
-            description="New visitors can understand the main ElevenOrbits service areas before entering plan selection, trials, invoices, or add-ons."
-          />
-          <Link href="/services" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-800 transition hover:bg-slate-50">
-            All service details
+    <section className="relative overflow-hidden border-b border-slate-200 bg-white">
+      <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full border border-slate-200/70 opacity-60" />
+      <div className="grid w-full gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(320px,0.32fr)_minmax(0,0.68fr)] lg:px-8 2xl:px-10">
+        <div className="lg:pt-2">
+          <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#0069a6]">Our service areas</p>
+          <h2 className="mt-6 text-5xl font-extrabold leading-[0.98] tracking-tight text-slate-950 lg:text-6xl">
+            Enterprise-grade operations.
+            <span className="block">Built for what is next.</span>
+          </h2>
+          <div className="mt-8 h-px w-20 bg-[#ff7a1a]" />
+          <p className="mt-8 max-w-md text-base leading-8 text-slate-600">
+            Integrated solutions across cloud, voice, AI, and security, designed to keep business operations secure, efficient, and accountable.
+          </p>
+
+          <div className="mt-10 grid gap-5 border-y border-slate-200 py-7 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {serviceAreaStats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <div key={stat.title}>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-950 shadow-sm">
+                    <Icon className="h-5 w-5" strokeWidth={1.7} />
+                  </span>
+                  <p className="mt-4 text-sm font-extrabold text-slate-950">{stat.title}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">{stat.body}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <Link href="/contact" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white shadow-[0_20px_55px_-36px_rgba(15,23,42,0.9)] transition hover:bg-slate-800">
+            Talk to an expert
+            <ArrowRight className="ml-3 h-4 w-4" />
           </Link>
         </div>
 
-        <div className="mt-10">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {serviceFamilies.map((family) => {
-              const details = subjectDetails[family.name] || {};
-              const primaryCategorySlug = details.primaryCategorySlug || family.categorySlugs[0];
-              const primaryBrand = getCategoryBrand(primaryCategorySlug);
-              const serviceLineBrands = uniqueItems([primaryCategorySlug, ...family.categorySlugs]).slice(0, 5).map(getCategoryBrand);
-              const { startingPlan } = getFamilySummary(family);
-              const subjectHref = `/${family.pageSlug}`;
-              const orderHref = startingPlan ? getPurchasePath(startingPlan) : "/contact";
-
-              return (
-                <article key={family.name} className={`group relative flex min-h-[460px] flex-col overflow-hidden rounded-2xl border p-5 shadow-[0_34px_110px_-82px_rgba(15,23,42,0.88)] transition hover:-translate-y-1 hover:shadow-[0_46px_130px_-84px_rgba(15,23,42,0.98)] ${details.background || "border-slate-200 bg-white"}`}>
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff7a1a] via-slate-950 to-transparent" />
-                  <div className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-white/70 blur-3xl" />
-                  <div className="pointer-events-none absolute -bottom-24 left-8 h-40 w-40 rounded-full bg-slate-950/[0.04] blur-3xl" />
-                  <div className="flex items-start justify-between gap-5">
-                    <div className="min-w-0">
-                      <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${details.accent || "text-[#ff7a1a]"}`}>{details.eyebrow || "Managed service"}</p>
-                      <h3 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">{family.name}</h3>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-3">
-                      <span className="text-xs font-extrabold text-slate-400">{details.number || "00"}</span>
-                      <span className={`flex h-14 w-14 items-center justify-center rounded-xl border ${details.iconShell || "border-slate-200 bg-white"}`}>
-                        <ServiceLogo brand={primaryBrand} imageClassName="h-9 w-9" className="[&>span:first-child]:h-10 [&>span:first-child]:w-10" />
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="mt-5 text-sm font-medium leading-7 text-slate-700">{details.promise || family.description}</p>
-
-                  <div className="mt-6 border-y border-slate-950/[0.08] py-5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">What we manage</p>
-                    <p className="mt-3 text-sm font-extrabold leading-7 text-slate-950">{details.managedLine || family.description}</p>
-                  </div>
-
-                  <div className="mt-5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-400">Service lines</p>
-                    <ServiceLogoCluster brands={serviceLineBrands} showLabels max={4} className="mt-3 gap-2" />
-                  </div>
-
-                  <div className="mt-auto border-t border-slate-200 pt-5">
-                    <div className="flex flex-wrap gap-2">
-                      {family.includes.slice(0, 3).map((item) => (
-                        <span key={item} className={`rounded-md border px-2.5 py-1 text-[11px] font-extrabold ${details.chip || "border-slate-200 bg-slate-100 text-slate-600"}`}>
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <Link href={subjectHref} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-950 px-3 py-2 text-sm font-extrabold text-white transition hover:bg-slate-800">
-                        View lane
-                      </Link>
-                      <Link href={orderHref} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-extrabold text-slate-800 transition hover:bg-slate-50">
-                        Start order
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+        <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+          {cloudLane ? <FeaturedServiceCard lane={cloudLane} /> : null}
+          <div className="grid gap-4">
+            {callLane ? <ServiceAreaCard lane={callLane} wide /> : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              {aiLane ? <ServiceAreaCard lane={aiLane} /> : null}
+              {securityLane ? <ServiceAreaCard lane={securityLane} /> : null}
+            </div>
           </div>
         </div>
       </div>
