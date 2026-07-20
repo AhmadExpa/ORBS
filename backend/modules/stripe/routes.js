@@ -7,7 +7,7 @@ import {
   createCheckoutLineItem,
   createPaymentCheckoutSession,
   createPaymentIntent,
-  createSavedCardCharge,
+  createSavedCardPaymentIntent,
   createSetupCheckoutSession,
   createSetupIntent,
   getUserSavedPaymentMethods,
@@ -506,6 +506,8 @@ stripeRouter.post(
         user,
         amount,
         description: "ElevenOrbits wallet top-up",
+        saveForFutureUse: false,
+        requestThreeDSecure: "automatic",
         metadata: {
           type: "wallet_topup",
           userId: user._id,
@@ -579,6 +581,8 @@ stripeRouter.post(
         user,
         successUrl: successUrl("/portal/payments", "wallet_topup"),
         cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
+        saveForFutureUse: false,
+        requestThreeDSecure: "automatic",
         lineItems: [
           createCheckoutLineItem({
             name: "ElevenOrbits Wallet Top-up",
@@ -707,7 +711,7 @@ stripeRouter.post(
       throw new HttpError(400, "A valid top-up amount is required.");
     }
 
-    const paymentIntent = await createSavedCardCharge({
+    const paymentIntent = await createSavedCardPaymentIntent({
       user,
       paymentMethodId: req.params.id,
       amount,
@@ -720,13 +724,10 @@ stripeRouter.post(
       },
     });
 
-    const submission = await finalizePaymentIntent({ paymentIntent, user });
-
     res.json({
-      success: true,
       type: "wallet_topup",
-      submission,
-      message: "Your saved card was charged and the wallet balance has been refreshed.",
+      clientSecret: paymentIntent.client_secret,
+      intentId: paymentIntent.id,
     });
   }),
 );

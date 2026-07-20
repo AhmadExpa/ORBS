@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api/client";
 import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
+import { createStripePaymentError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -136,7 +137,7 @@ export function CheckoutPaymentView({ orderId }) {
     });
 
     if (result.error) {
-      throw new Error(result.error.message || "The payment could not be completed.");
+      throw createStripePaymentError(result.error);
     }
 
     if (!result.paymentIntent?.id) {

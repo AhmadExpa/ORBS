@@ -292,7 +292,15 @@ export async function createSetupIntent({ user, metadata }) {
   });
 }
 
-export async function createPaymentCheckoutSession({ user, successUrl, cancelUrl, lineItems, metadata }) {
+export async function createPaymentCheckoutSession({
+  user,
+  successUrl,
+  cancelUrl,
+  lineItems,
+  metadata,
+  saveForFutureUse = true,
+  requestThreeDSecure = "automatic",
+}) {
   assertStripeConfigured();
 
   const customerId = await ensureStripeCustomer(user);
@@ -306,28 +314,67 @@ export async function createPaymentCheckoutSession({ user, successUrl, cancelUrl
     success_url: successUrl,
     cancel_url: cancelUrl,
     line_items: lineItems,
+    payment_method_options: {
+      card: {
+        request_three_d_secure: requestThreeDSecure,
+      },
+    },
     payment_intent_data: {
-      setup_future_usage: "off_session",
+      ...(saveForFutureUse ? { setup_future_usage: "off_session" } : {}),
       metadata: normalizedMetadata,
     },
     metadata: normalizedMetadata,
   });
 }
 
-export async function createPaymentIntent({ user, amount, description, metadata }) {
+export function buildUserInitiatedCardPaymentIntentParams({
+  customerId,
+  paymentMethodId,
+  amount,
+  description,
+  metadata,
+  saveForFutureUse = false,
+  requestThreeDSecure = "automatic",
+}) {
+  return {
+    amount: toStripeAmount(amount),
+    currency: env.stripeCurrency,
+    customer: customerId,
+    ...(paymentMethodId ? { payment_method: paymentMethodId } : {}),
+    payment_method_types: ["card"],
+    ...(saveForFutureUse ? { setup_future_usage: "off_session" } : {}),
+    payment_method_options: {
+      card: {
+        request_three_d_secure: requestThreeDSecure,
+      },
+    },
+    description,
+    metadata: normalizeMetadata(metadata),
+  };
+}
+
+export async function createPaymentIntent({
+  user,
+  amount,
+  description,
+  metadata,
+  saveForFutureUse = true,
+  requestThreeDSecure = "automatic",
+}) {
   assertStripeConfigured();
 
   const customerId = await ensureStripeCustomer(user);
 
-  return stripe.paymentIntents.create({
-    amount: toStripeAmount(amount),
-    currency: env.stripeCurrency,
-    customer: customerId,
-    payment_method_types: ["card"],
-    setup_future_usage: "off_session",
-    description,
-    metadata: normalizeMetadata(metadata),
-  });
+  return stripe.paymentIntents.create(
+    buildUserInitiatedCardPaymentIntentParams({
+      customerId,
+      amount,
+      description,
+      metadata,
+      saveForFutureUse,
+      requestThreeDSecure,
+    }),
+  );
 }
 
 export function createCheckoutLineItem({ name, description, amount }) {
@@ -369,7 +416,7 @@ export async function createOffSessionCharge({ user, amount, description, metada
   });
 }
 
-export async function createSavedCardCharge({ user, paymentMethodId, amount, description, metadata }) {
+export async function createSavedCardPaymentIntent({ user, paymentMethodId, amount, description, metadata, requestThreeDSecure = "automatic" }) {
   assertStripeConfigured();
 
   const savedCards = getUserSavedPaymentMethods(user);
@@ -388,18 +435,16 @@ export async function createSavedCardCharge({ user, paymentMethodId, amount, des
     throw new HttpError(403, "This saved card does not belong to the authenticated customer.");
   }
 
-  return stripe.paymentIntents.create({
-    amount: toStripeAmount(amount),
-    currency: env.stripeCurrency,
-    customer: user.stripeCustomerId,
-    payment_method: paymentMethodId,
-    payment_method_types: ["card"],
-    confirm: true,
-    off_session: true,
-    description,
-    metadata: normalizeMetadata(metadata),
-    expand: ["latest_charge"],
-  });
+  return stripe.paymentIntents.create(
+    buildUserInitiatedCardPaymentIntentParams({
+      customerId: user.stripeCustomerId,
+      paymentMethodId,
+      amount,
+      description,
+      metadata,
+      requestThreeDSecure,
+    }),
+  );
 }
 
 export async function constructWebhookEvent(rawBody, signature) {
