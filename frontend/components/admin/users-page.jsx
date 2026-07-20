@@ -66,14 +66,18 @@ export function AdminUsersPage() {
   async function runAction(user, action, body) {
     setActionState({ loadingId: user._id, error: "" });
     try {
-      await apiFetch(`/admin/users/${user._id}/${action}`, { method: "POST", authMode: "staff", body });
+      const response = await apiFetch(`/admin/users/${user._id}/${action}`, { method: "POST", authMode: "staff", body });
       await usersQuery.refetch();
       const labels = { suspend: "suspended", block: "blocked", reactivate: "reactivated" };
+      const emailDelivered = response.emailNotification?.delivered === true;
       showToast({
-        type: "success",
+        type: emailDelivered ? "success" : "warning",
         action: "Accounts",
         title: `Account ${labels[action]}`,
-        description: `${user.name || user.email} has been ${labels[action]} and notified by email.`,
+        description: emailDelivered
+          ? `${user.name || user.email} has been ${labels[action]} and the email notification was accepted by the mail server.`
+          : `${user.name || user.email} has been ${labels[action]}, but the email notification could not be delivered. Check the customer's email and the SMTP configuration.`,
+        duration: emailDelivered ? 3200 : 6500,
       });
       return true;
     } catch (error) {

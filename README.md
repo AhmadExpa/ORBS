@@ -74,6 +74,34 @@ This repository contains a Next.js frontend in `frontend/` and an Express backen
 
 16. Verify a non-approved customer cannot call Stripe or order APIs directly; the backend must return `403` with `CONTRACT_APPROVAL_REQUIRED`.
 
+### Existing Signed Agreement Review
+
+Customers who already signed with ElevenOrbits can submit their Documenso document ID and an `https://app.documenso.com` document URL from the Contracts page. The submission moves the agreement to `SIGNED_PENDING_ADMIN`, allowing access to the customer dashboard while payment remains locked.
+
+An administrator must open the submitted URL, verify the document ID, signer, and completed agreement, check the manual-verification confirmation, and approve the contract. Only then does the agreement move to `APPROVED` and unlock payment and activation flows.
+
+### SMTP Notification Verification
+
+Account suspension, blocking, and reactivation attempt to notify the customer's primary email. The admin UI reports a warning when the account action succeeds but the mail server does not accept the notification.
+
+For the current ElevenOrbits cPanel mail host, keep certificate validation enabled and use the provider certificate name:
+
+```text
+SMTP_HOST=mail.elevenorbits.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_TLS_REJECT_UNAUTHORIZED=true
+SMTP_TLS_SERVERNAME=server313-3.web-hosting.com
+```
+
+Verify the SMTP connection without sending a message, or optionally send a clearly labelled test message:
+
+```bash
+cd backend
+npm run smtp:test
+npm run smtp:test -- --send-to your-test-address@example.com
+```
+
 ### Scheduled Sync
 
 Pending contracts are synced by the backend scheduler every few minutes. A protected manual endpoint is also available for Coolify cron or internal workers:

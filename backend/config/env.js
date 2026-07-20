@@ -83,6 +83,23 @@ function expandCorsOrigins(origin) {
 const resolvedAppUrl = normalizeAppOrigin(process.env.FRONTEND_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL);
 const resolvedBackendUrl = normalizePublicApiOrigin(process.env.BACKEND_URL || process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL);
 const resolvedPublicApiUrl = normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL);
+const resolvedSmtpHost = process.env.SMTP_HOST || "mail.elevenorbits.com";
+
+function resolveSmtpTlsServername() {
+  const configuredServername = String(process.env.SMTP_TLS_SERVERNAME || "").trim();
+  if (configuredServername) {
+    return configuredServername;
+  }
+
+  // The ElevenOrbits cPanel mail endpoint is hosted by Namecheap and presents
+  // this provider hostname in its TLS certificate. Keep certificate validation
+  // enabled while connecting through the branded mail hostname.
+  if (resolvedSmtpHost.toLowerCase() === "mail.elevenorbits.com") {
+    return "server313-3.web-hosting.com";
+  }
+
+  return "";
+}
 
 function resolveSessionCookieDomain() {
   const configuredDomain = String(process.env.SESSION_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || "").trim();
@@ -120,7 +137,7 @@ export const env = {
   companyAddress: process.env.COMPANY_ADDRESS || process.env.NEXT_PUBLIC_COMPANY_ADDRESS || "3326 Anna Gorge Dr. Valrico, FL 33596",
   notificationFromEmail: process.env.NOTIFICATION_FROM_EMAIL || process.env.SMTP_USER || "noreply@elevenorbits.com",
   notificationFromName: process.env.NOTIFICATION_FROM_NAME || "ElevenOrbits",
-  smtpHost: process.env.SMTP_HOST || "mail.elevenorbits.com",
+  smtpHost: resolvedSmtpHost,
   smtpPort: Number(process.env.SMTP_PORT || 465),
   smtpSecure: String(process.env.SMTP_SECURE || "true").toLowerCase() !== "false",
   smtpUser: process.env.SMTP_USER || "",
@@ -129,7 +146,7 @@ export const env = {
   // (*.web-hosting.com) that will not match a custom mail hostname. Allow the
   // hostname check to be relaxed without disabling transport encryption.
   smtpTlsRejectUnauthorized: String(process.env.SMTP_TLS_REJECT_UNAUTHORIZED || "true").toLowerCase() !== "false",
-  smtpTlsServername: process.env.SMTP_TLS_SERVERNAME || "",
+  smtpTlsServername: resolveSmtpTlsServername(),
   sessionCookieDomain: resolveSessionCookieDomain(),
   clerkSecretKey: process.env.CLERK_SECRET_KEY || "",
   adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL || "admin@elevenorbits.com",

@@ -86,7 +86,7 @@ export function AdminContractsPage() {
                 { key: "businessName", label: "Business", render: (row) => row.businessName || "Not provided" },
                 { key: "templateVersion", label: "Version", render: (row) => `v${row.templateVersion}` },
                 { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
-                { key: "signedAt", label: "Signed", render: (row) => formatDate(row.signedAt) },
+                { key: "signedAt", label: "Signed/Submitted", render: (row) => formatDate(row.signedAt || row.manualVerificationSubmittedAt) },
                 { key: "createdAt", label: "Created", render: (row) => formatDate(row.createdAt) },
                 {
                   key: "actions",

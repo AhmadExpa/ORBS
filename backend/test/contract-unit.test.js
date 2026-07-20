@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { env } from "../config/env.js";
 import { assertPdfBuffer, calculateSha256, createPresignedContractDownloadUrl } from "../services/contract-storage-service.js";
+import { normalizeSubmittedDocumentReference } from "../services/contract-service.js";
 import {
   extractDocumentFieldValues,
   mapDocumensoFieldValuesToContractDetails,
@@ -18,6 +19,7 @@ const originalEnv = {
   r2Endpoint: env.r2Endpoint,
   r2AccessKeyId: env.r2AccessKeyId,
   r2SecretAccessKey: env.r2SecretAccessKey,
+  documensoApiUrl: env.documensoApiUrl,
 };
 
 function mockTurnstileResponse(payload, ok = true) {
@@ -33,6 +35,26 @@ test.afterEach(() => {
   globalThis.fetch = originalFetch;
   Object.assign(env, originalEnv);
   resetTurnstileReplayCacheForTests();
+});
+
+test("manual Documenso references accept only the configured HTTPS host", () => {
+  env.documensoApiUrl = "https://app.documenso.com/api/v2";
+
+  const reference = normalizeSubmittedDocumentReference({
+    documentId: "envelope_valid-123",
+    documentUrl: "https://app.documenso.com/documents/envelope_valid-123#review",
+  });
+
+  assert.equal(reference.documentId, "envelope_valid-123");
+  assert.equal(reference.documentUrl, "https://app.documenso.com/documents/envelope_valid-123");
+  assert.throws(
+    () => normalizeSubmittedDocumentReference({ documentId: "envelope_valid-123", documentUrl: "https://evil.example/document" }),
+    /must use https:\/\/app\.documenso\.com/,
+  );
+  assert.throws(
+    () => normalizeSubmittedDocumentReference({ documentId: "invalid id", documentUrl: "https://app.documenso.com/document" }),
+    /valid Documenso document ID/,
+  );
 });
 
 test("Turnstile success validates hostname, action, and freshness", async () => {

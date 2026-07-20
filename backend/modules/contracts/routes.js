@@ -10,6 +10,7 @@ import {
   getCurrentContractSummary,
   getCustomerContract,
   startCustomerContract,
+  submitExistingSignedContract,
   syncContractWithDocumenso,
 } from "../../services/contract-service.js";
 
@@ -79,6 +80,11 @@ const startContractSchema = z
     }
   });
 
+const existingSignedContractSchema = z.object({
+  documentId: z.string().trim().min(1).max(160).regex(/^[A-Za-z0-9_-]+$/u, "Enter a valid Documenso document ID."),
+  documentUrl: z.string().trim().url().max(2048),
+});
+
 contractsRouter.get(
   "/current",
   requirePortalActor,
@@ -106,6 +112,26 @@ contractsRouter.post(
     });
 
     res.status(201).json(result);
+  }),
+);
+
+contractsRouter.post(
+  "/manual-submission",
+  requireCustomer,
+  rateLimit({
+    name: "contract-manual-submission",
+    windowMs: 10 * 60 * 1000,
+    max: env.contractStartRateLimitMax,
+    keyFn: (req) => req.auth?.clerkId || req.ip,
+  }),
+  asyncHandler(async (req, res) => {
+    const payload = existingSignedContractSchema.parse(req.body);
+    const contract = await submitExistingSignedContract({
+      auth: req.auth,
+      documentId: payload.documentId,
+      documentUrl: payload.documentUrl,
+    });
+    res.status(201).json({ contract });
   }),
 );
 

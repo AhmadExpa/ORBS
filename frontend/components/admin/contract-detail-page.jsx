@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CheckCircle2, Download, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, RefreshCw, XCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextArea } from "@/lib/ui";
@@ -38,9 +38,11 @@ export function AdminContractDetailPage({ contractId }) {
   });
   const [reason, setReason] = useState("");
   const [action, setAction] = useState("");
+  const [manualVerificationConfirmed, setManualVerificationConfirmed] = useState(false);
 
   const contract = contractQuery.data?.contract;
   const canReview = contract?.status === "SIGNED_PENDING_ADMIN";
+  const isManualSubmission = contract?.submissionMethod === "MANUAL_DOCUMENSO_REFERENCE";
   const signedFieldValues = Array.isArray(contract?.documensoFieldValues)
     ? contract.documensoFieldValues.filter((field) => field?.value)
     : [];
@@ -82,6 +84,9 @@ export function AdminContractDetailPage({ contractId }) {
       apiFetch(`/admin/contracts/${contractId}/approve`, {
         method: "POST",
         authMode: "staff",
+        body: {
+          manualVerificationConfirmed: isManualSubmission ? manualVerificationConfirmed : false,
+        },
       }),
     );
   }
@@ -137,10 +142,20 @@ export function AdminContractDetailPage({ contractId }) {
           <Link href="/eo-admin/contracts">
             <Button asChild variant="ghost">Back to contracts</Button>
           </Link>
-          <Button type="button" variant="secondary" disabled={Boolean(action)} onClick={handleSync}>
-            <RefreshCw className="h-4 w-4" />
-            {action === "sync" ? "Syncing..." : "Sync Documenso"}
-          </Button>
+          {!isManualSubmission ? (
+            <Button type="button" variant="secondary" disabled={Boolean(action)} onClick={handleSync}>
+              <RefreshCw className="h-4 w-4" />
+              {action === "sync" ? "Syncing..." : "Sync Documenso"}
+            </Button>
+          ) : null}
+          {isManualSubmission && contract.submittedDocumentUrl ? (
+            <a href={contract.submittedDocumentUrl} target="_blank" rel="noopener noreferrer">
+              <Button asChild variant="secondary">
+                <ExternalLink className="h-4 w-4" />
+                Open submitted document
+              </Button>
+            </a>
+          ) : null}
           {contract.r2SignedPdfKey ? (
             <Button type="button" variant="ghost" disabled={Boolean(action)} onClick={() => handleDownload("signed")}>
               <Download className="h-4 w-4" />
@@ -178,6 +193,9 @@ export function AdminContractDetailPage({ contractId }) {
                 <DetailFact label="Country" value={fieldValue(contract.country)} />
                 <DetailFact label="Phone" value={fieldValue(contract.phone)} />
                 <DetailFact label="Documenso Document ID" value={fieldValue(contract.documensoDocumentId)} />
+                <DetailFact label="Submission Method" value={isManualSubmission ? "Customer-submitted Documenso reference" : "Documenso API"} />
+                <DetailFact label="Manual Reference Submitted" value={formatDate(contract.manualVerificationSubmittedAt)} />
+                <DetailFact label="Manual Reference Verified" value={formatDate(contract.manualVerificationVerifiedAt)} />
                 <DetailFact label="Documenso Fields Synced" value={formatDate(contract.documensoFieldValuesSyncedAt)} />
                 <DetailFact label="Signing Started" value={formatDate(contract.turnstileVerifiedAt || contract.createdAt)} />
                 <DetailFact label="Signed At" value={formatDate(contract.signedAt || contract.documensoCompletedAt)} />
@@ -228,7 +246,20 @@ export function AdminContractDetailPage({ contractId }) {
                 </div>
               ) : null}
 
-              <Button type="button" className="w-full" disabled={!canReview || Boolean(action)} onClick={handleApprove}>
+              {isManualSubmission && canReview ? (
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-amber-300"
+                    checked={manualVerificationConfirmed}
+                    onChange={(event) => setManualVerificationConfirmed(event.target.checked)}
+                    disabled={Boolean(action)}
+                  />
+                  <span>I opened the submitted Documenso URL and verified that the document ID, signer, and completed agreement are valid.</span>
+                </label>
+              ) : null}
+
+              <Button type="button" className="w-full" disabled={!canReview || Boolean(action) || (isManualSubmission && !manualVerificationConfirmed)} onClick={handleApprove}>
                 <CheckCircle2 className="h-4 w-4" />
                 {action === "approve" ? "Approving..." : "Approve contract"}
               </Button>
@@ -248,7 +279,7 @@ export function AdminContractDetailPage({ contractId }) {
 
               {!canReview ? (
                 <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-                  Only contracts with stored PDFs pending admin review can be approved or rejected.
+                  Only contracts with signing evidence pending admin review can be approved or rejected.
                 </p>
               ) : null}
             </CardContent>

@@ -49,10 +49,14 @@ export const User = createPostgresModel("User", {
     accountStatusReason: "",
     accountStatusBy: "",
     accountStatusAt: null,
+    accountStatusNotificationStatus: "",
+    accountStatusNotificationCode: "",
+    accountStatusNotificationAt: null,
   },
   arrayFields: ["savedPaymentMethods"],
   booleanFields: ["autoCardBillingEnabled"],
   numericFields: ["accountBalance"],
+  dateFields: ["accountStatusAt", "accountStatusNotificationAt"],
 });
 
 export const CustomerDelegate = createPostgresModel("CustomerDelegate", {
@@ -289,6 +293,8 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
     adminRejectionReason: "",
     documensoDocumentId: "",
     documensoRecipientId: "",
+    submittedDocumentUrl: "",
+    submissionMethod: "",
     documensoFieldValues: [],
     r2SignedPdfKey: "",
     r2AuditCertificateKey: "",
@@ -302,6 +308,8 @@ export const CustomerContract = createPostgresModel("CustomerContract", {
     "adminReviewedAt",
     "documensoCompletedAt",
     "documensoFieldValuesSyncedAt",
+    "manualVerificationSubmittedAt",
+    "manualVerificationVerifiedAt",
     "storageStartedAt",
     "storedAt",
     "supersededAt",

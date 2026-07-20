@@ -44,6 +44,44 @@ async function unbanClerkUser(clerkId) {
   }
 }
 
+async function recordStatusNotification({ customer, staff, notificationType, delivery }) {
+  const notificationAt = new Date();
+  const notificationStatus = delivery?.delivered ? "sent" : delivery?.status || "failed";
+  const notificationCode = delivery?.code || "SMTP_SEND_FAILED";
+  const updatedCustomer = await User.findByIdAndUpdate(
+    customer._id,
+    {
+      accountStatusNotificationStatus: notificationStatus,
+      accountStatusNotificationCode: notificationCode,
+      accountStatusNotificationAt: notificationAt,
+    },
+    { new: true },
+  );
+
+  await recordActivity({
+    actorId: staff?._id,
+    actorRole: staff?.role,
+    action: delivery?.delivered ? "user.account_status_notification_sent" : "user.account_status_notification_failed",
+    targetType: "user",
+    targetId: String(customer._id),
+    metadata: {
+      notificationType,
+      deliveryStatus: notificationStatus,
+      deliveryCode: notificationCode,
+    },
+  });
+
+  return {
+    user: updatedCustomer || customer,
+    emailNotification: {
+      delivered: Boolean(delivery?.delivered),
+      status: notificationStatus,
+      code: notificationCode,
+      attemptedAt: notificationAt,
+    },
+  };
+}
+
 export async function suspendCustomer({ userId, staff }) {
   const user = await loadCustomer(userId);
 
@@ -66,9 +104,8 @@ export async function suspendCustomer({ userId, staff }) {
     targetId: String(userId),
   });
 
-  await sendAccountSuspensionNotification({ customer: updated });
-
-  return updated;
+  const delivery = await sendAccountSuspensionNotification({ customer: updated });
+  return recordStatusNotification({ customer: updated, staff, notificationType: "suspension", delivery });
 }
 
 export async function blockCustomer({ userId, staff, reason }) {
@@ -101,9 +138,8 @@ export async function blockCustomer({ userId, staff, reason }) {
     metadata: { reason: trimmedReason },
   });
 
-  await sendAccountBlockNotification({ customer: updated, reason: trimmedReason });
-
-  return updated;
+  const delivery = await sendAccountBlockNotification({ customer: updated, reason: trimmedReason });
+  return recordStatusNotification({ customer: updated, staff, notificationType: "block", delivery });
 }
 
 export async function reactivateCustomer({ userId, staff }) {
@@ -133,7 +169,6 @@ export async function reactivateCustomer({ userId, staff }) {
     targetId: String(userId),
   });
 
-  await sendAccountReinstatedNotification({ customer: updated });
-
-  return updated;
+  const delivery = await sendAccountReinstatedNotification({ customer: updated });
+  return recordStatusNotification({ customer: updated, staff, notificationType: "reactivation", delivery });
 }

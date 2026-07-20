@@ -45,7 +45,7 @@ const transitionRules = {
   NOT_STARTED: new Set(["TURNSTILE_REQUIRED"]),
   TURNSTILE_REQUIRED: new Set(["READY_TO_SIGN", "CANCELLED", "EXPIRED"]),
   READY_TO_SIGN: new Set(["PENDING_SIGNATURE", "CANCELLED", "EXPIRED"]),
-  PENDING_SIGNATURE: new Set(["SIGNED_PENDING_STORAGE", "REJECTED", "CANCELLED", "EXPIRED"]),
+  PENDING_SIGNATURE: new Set(["SIGNED_PENDING_STORAGE", "SIGNED_PENDING_ADMIN", "REJECTED", "CANCELLED", "EXPIRED"]),
   SIGNED_PENDING_STORAGE: new Set(["SIGNED_PENDING_ADMIN", "CANCELLED", "EXPIRED"]),
   SIGNED_PENDING_ADMIN: new Set(["APPROVED", "REJECTED"]),
   APPROVED: new Set(["SUPERSEDED"]),
@@ -103,6 +103,35 @@ function getRequiredTemplateId() {
 
 function redirectUrlForContract(contractId) {
   return `${env.appUrl}/portal/contracts/${encodeURIComponent(String(contractId))}/complete`;
+}
+
+export function normalizeSubmittedDocumentReference({ documentId, documentUrl }) {
+  const normalizedDocumentId = String(documentId || "").trim();
+  if (!/^[A-Za-z0-9_-]{1,160}$/u.test(normalizedDocumentId)) {
+    throw new HttpError(400, "Enter a valid Documenso document ID.");
+  }
+
+  let normalizedUrl;
+  let allowedHost;
+  try {
+    normalizedUrl = new URL(String(documentUrl || "").trim());
+    allowedHost = new URL(env.documensoApiUrl).hostname.toLowerCase();
+  } catch {
+    throw new HttpError(400, "Enter a valid Documenso document URL.");
+  }
+
+  if (normalizedUrl.protocol !== "https:" || normalizedUrl.hostname.toLowerCase() !== allowedHost) {
+    throw new HttpError(400, `The document URL must use https://${allowedHost}.`);
+  }
+
+  normalizedUrl.username = "";
+  normalizedUrl.password = "";
+  normalizedUrl.hash = "";
+
+  return {
+    documentId: normalizedDocumentId,
+    documentUrl: normalizedUrl.toString(),
+  };
 }
 
 function getContractNumberParts(date = new Date()) {
@@ -647,6 +676,97 @@ export async function startCustomerContract({ auth, payload, turnstile = null })
   };
 }
 
+export async function submitExistingSignedContract({ auth, documentId, documentUrl }) {
+  const reference = normalizeSubmittedDocumentReference({ documentId, documentUrl });
+  const identity = await getClerkAccountIdentity({
+    clerkId: auth.clerkId,
+    payload: auth.payload,
+  });
+  const submittedAt = new Date();
+
+  await supersedeOutdatedApprovedContracts(identity.clerkUserId);
+
+  let contract;
+  try {
+    contract = await withTransaction(async () => {
+      let existing = await findReusableActiveContract(identity.clerkUserId);
+      if (!existing) {
+        const latest = await findLatestContractForUser(identity.clerkUserId);
+        if (latest?.status === "REJECTED" && latest.submissionMethod === "MANUAL_DOCUMENSO_REFERENCE") {
+          existing = latest;
+        }
+      }
+      if (existing?.status === "APPROVED") {
+        throw new HttpError(409, "The current agreement is already approved.");
+      }
+      if (existing?.status === "SIGNED_PENDING_ADMIN") {
+        throw new HttpError(409, "This document is already pending administrator review.");
+      }
+
+      const set = {
+        status: "SIGNED_PENDING_ADMIN",
+        documensoDocumentId: reference.documentId,
+        submittedDocumentUrl: reference.documentUrl,
+        submissionMethod: "MANUAL_DOCUMENSO_REFERENCE",
+        manualVerificationSubmittedAt: submittedAt,
+        manualVerificationVerifiedAt: null,
+        adminDecision: "",
+        adminReviewedBy: "",
+        adminReviewedAt: null,
+        adminRejectionReason: "",
+      };
+
+      if (existing) {
+        if (!["TURNSTILE_REQUIRED", "READY_TO_SIGN", "PENDING_SIGNATURE", "REJECTED"].includes(existing.status)) {
+          throw new HttpError(409, "This agreement cannot be submitted for manual review in its current state.");
+        }
+
+        const updated = await CustomerContract.findOneAndUpdate(
+          { _id: existing._id, status: existing.status },
+          { $set: set },
+          { new: true },
+        );
+        if (!updated) {
+          throw new HttpError(409, "The agreement changed while it was being submitted. Please retry.");
+        }
+        return updated;
+      }
+
+      const contractNumber = await nextContractNumber();
+      return insertContract({
+        contractNumber,
+        clerkUserId: identity.clerkUserId,
+        customerEmail: identity.customerEmail,
+        customerName: identity.customerName,
+        customerType: "INDIVIDUAL",
+        templateVersion: env.documensoAgreementVersion,
+        documensoTemplateId: env.documensoTemplateId,
+        documensoTemplateRecipientId: env.documensoTemplateRecipientId,
+        ...set,
+      });
+    });
+  } catch (error) {
+    if (String(error.message || "").toLowerCase().includes("duplicate key")) {
+      throw new HttpError(409, "This Documenso document ID has already been submitted.");
+    }
+    throw error;
+  }
+
+  await recordActivity({
+    actorId: auth.user?._id || identity.clerkUserId,
+    actorRole: "customer",
+    action: "contract.manual_reference_submitted",
+    targetType: "customer_contract",
+    targetId: String(contract._id),
+    metadata: {
+      contractNumber: contract.contractNumber,
+      documensoDocumentId: reference.documentId,
+    },
+  });
+
+  return normalizeContractForResponse(contract);
+}
+
 function ensureCanViewContract(contract, auth) {
   if (!contract) {
     throw new HttpError(404, "Contract not found.");
@@ -979,14 +1099,25 @@ export async function getAdminContract(contractId) {
   return normalizeContractForResponse(contract);
 }
 
-export async function approveContract({ contractId, staff }) {
+export async function approveContract({ contractId, staff, manualVerificationConfirmed = false }) {
+  const existing = await CustomerContract.findById(contractId);
+  if (!existing || existing.status !== "SIGNED_PENDING_ADMIN") {
+    throw new HttpError(409, "Only contracts pending admin review can be approved.");
+  }
+
+  const isManualReference = existing.submissionMethod === "MANUAL_DOCUMENSO_REFERENCE";
+  const hasStoredEvidence = Boolean(existing.r2SignedPdfKey);
+  const hasManualEvidence = Boolean(isManualReference && existing.documensoDocumentId && existing.submittedDocumentUrl);
+  if (!hasStoredEvidence && !hasManualEvidence) {
+    throw new HttpError(409, "Signed contract evidence is required before approval.");
+  }
+  if (hasManualEvidence && !manualVerificationConfirmed) {
+    throw new HttpError(400, "Confirm that you manually verified the submitted Documenso document before approval.");
+  }
+
   const now = new Date();
   const updated = await CustomerContract.findOneAndUpdate(
-    {
-      _id: contractId,
-      status: "SIGNED_PENDING_ADMIN",
-      r2SignedPdfKey: { $ne: "" },
-    },
+    { _id: contractId, status: "SIGNED_PENDING_ADMIN" },
     {
       $set: {
         status: "APPROVED",
@@ -994,13 +1125,14 @@ export async function approveContract({ contractId, staff }) {
         adminReviewedBy: staff._id,
         adminReviewedAt: now,
         adminRejectionReason: "",
+        ...(hasManualEvidence ? { manualVerificationVerifiedAt: now } : {}),
       },
     },
     { new: true },
   );
 
   if (!updated) {
-    throw new HttpError(409, "Only stored contracts pending admin review can be approved.");
+    throw new HttpError(409, "The contract changed while it was being approved. Please retry.");
   }
 
   await recordActivity({
@@ -1108,10 +1240,16 @@ export async function requireApprovedContract(clerkUserId) {
     templateVersion: env.documensoAgreementVersion,
     status: "APPROVED",
     adminDecision: "APPROVED",
-    r2SignedPdfKey: { $ne: "" },
   });
 
-  if (contract?.r2SignedPdfKey && contract.adminReviewedBy) {
+  const hasEvidence = Boolean(
+    contract?.r2SignedPdfKey ||
+      (contract?.submissionMethod === "MANUAL_DOCUMENSO_REFERENCE" &&
+        contract?.documensoDocumentId &&
+        contract?.submittedDocumentUrl &&
+        contract?.manualVerificationVerifiedAt),
+  );
+  if (hasEvidence && contract.adminReviewedBy) {
     return contract;
   }
 
@@ -1138,10 +1276,13 @@ export async function requireSubmittedContract(clerkUserId) {
     clerkUserId,
     templateVersion: env.documensoAgreementVersion,
     status: { $in: ["SIGNED_PENDING_ADMIN", "APPROVED"] },
-    r2SignedPdfKey: { $ne: "" },
   });
 
-  if (contract?.r2SignedPdfKey) {
+  const hasEvidence = Boolean(
+    contract?.r2SignedPdfKey ||
+      (contract?.submissionMethod === "MANUAL_DOCUMENSO_REFERENCE" && contract?.documensoDocumentId && contract?.submittedDocumentUrl),
+  );
+  if (hasEvidence) {
     return contract;
   }
 

@@ -48,6 +48,10 @@ const rejectContractSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
 });
 
+const approveContractSchema = z.object({
+  manualVerificationConfirmed: z.boolean().optional().default(false),
+});
+
 const blockUserSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
 });
@@ -460,8 +464,8 @@ adminRouter.post(
   requireAdmin,
   requireSameOrigin,
   asyncHandler(async (req, res) => {
-    const user = await suspendCustomer({ userId: req.params.id, staff: req.staff });
-    res.json({ user });
+    const result = await suspendCustomer({ userId: req.params.id, staff: req.staff });
+    res.json(result);
   }),
 );
 
@@ -471,8 +475,8 @@ adminRouter.post(
   requireSameOrigin,
   asyncHandler(async (req, res) => {
     const { reason } = blockUserSchema.parse(req.body);
-    const user = await blockCustomer({ userId: req.params.id, staff: req.staff, reason });
-    res.json({ user });
+    const result = await blockCustomer({ userId: req.params.id, staff: req.staff, reason });
+    res.json(result);
   }),
 );
 
@@ -481,8 +485,8 @@ adminRouter.post(
   requireAdmin,
   requireSameOrigin,
   asyncHandler(async (req, res) => {
-    const user = await reactivateCustomer({ userId: req.params.id, staff: req.staff });
-    res.json({ user });
+    const result = await reactivateCustomer({ userId: req.params.id, staff: req.staff });
+    res.json(result);
   }),
 );
 
@@ -947,9 +951,11 @@ adminRouter.post(
   requireAdmin,
   requireSameOrigin,
   asyncHandler(async (req, res) => {
+    const payload = approveContractSchema.parse(req.body || {});
     const contract = await approveContract({
       contractId: req.params.id,
       staff: req.staff,
+      manualVerificationConfirmed: payload.manualVerificationConfirmed,
     });
     res.json({ contract });
   }),
