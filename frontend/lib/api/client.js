@@ -3,6 +3,7 @@
 import { siteConfig } from "../constants/site";
 import { clearDelegateSessionToken, getDelegateSessionToken } from "../auth/delegate-client-session";
 import { clearStaffSessionToken, getStaffSessionToken } from "../auth/staff-client-session";
+import { resolveApiBaseUrl } from "./request-url";
 
 let pendingRequestCount = 0;
 const apiActivityListeners = new Set();
@@ -52,12 +53,27 @@ export async function apiFetch(path, { method = "GET", body, token, isMultipart 
   }
 
   try {
-    const response = await fetch(`${siteConfig.apiUrl}${path}`, {
-      method: resolvedMethod,
-      headers,
-      body: isMultipart ? body : body ? JSON.stringify(body) : undefined,
-      credentials: "include",
-    });
+    const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
+    const apiBaseUrl = resolveApiBaseUrl(siteConfig.apiUrl, browserOrigin);
+    let response;
+
+    try {
+      response = await fetch(`${apiBaseUrl}${path}`, {
+        method: resolvedMethod,
+        headers,
+        body: isMultipart ? body : body ? JSON.stringify(body) : undefined,
+        credentials: "include",
+      });
+    } catch (error) {
+      const networkError = new Error(
+        path.startsWith("/stripe/") && resolvedMethod !== "GET"
+          ? "The payment connection was interrupted. Check Payment Activity before trying again so you do not submit the same payment twice."
+          : "ElevenOrbits could not be reached. Check your connection and try again.",
+      );
+      networkError.code = "NETWORK_ERROR";
+      networkError.cause = error;
+      throw networkError;
+    }
 
     const data = await response.json().catch(() => ({}));
 

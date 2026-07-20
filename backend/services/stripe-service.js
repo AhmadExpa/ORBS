@@ -2,7 +2,12 @@ import Stripe from "stripe";
 import { env } from "../config/env.js";
 import { HttpError } from "../utils/http-error.js";
 
-const stripe = env.stripeSecretKey ? new Stripe(env.stripeSecretKey) : null;
+const stripe = env.stripeSecretKey
+  ? new Stripe(env.stripeSecretKey, {
+      maxNetworkRetries: 1,
+      timeout: env.stripeRequestTimeoutMs,
+    })
+  : null;
 
 function assertStripeConfigured() {
   if (!stripe) {

@@ -80,3 +80,21 @@ export function createStripePaymentError(error, fallback) {
   paymentError.stripeCode = error?.decline_code || error?.code || "";
   return paymentError;
 }
+
+export function normalizePaymentActionError(error) {
+  const message = String(error?.message || "");
+  const isNetworkError =
+    error?.code === "NETWORK_ERROR" ||
+    /failed to fetch|load failed|networkerror|network request failed|err_timed_out/iu.test(message);
+
+  if (!isNetworkError) {
+    return error;
+  }
+
+  const paymentError = new Error(
+    "The payment connection was interrupted. Check Payment Activity before trying again so you do not submit the same payment twice.",
+  );
+  paymentError.code = "NETWORK_ERROR";
+  paymentError.cause = error;
+  return paymentError;
+}

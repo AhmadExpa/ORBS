@@ -154,6 +154,7 @@ export const env = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
   stripeCurrency: (process.env.STRIPE_CURRENCY || "usd").toLowerCase(),
+  stripeRequestTimeoutMs: Math.max(5000, Math.min(Number(process.env.STRIPE_REQUEST_TIMEOUT_MS || 20000), 60000)),
   internalCronSecret: process.env.INTERNAL_CRON_SECRET || "",
   turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || "",
   turnstileExpectedAction: process.env.TURNSTILE_EXPECTED_ACTION || "contract_start",

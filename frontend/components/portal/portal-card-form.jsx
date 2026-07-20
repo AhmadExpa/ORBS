@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/lib/ui";
+import { normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -122,20 +123,21 @@ function PortalCardFormInner({
         description: message || "The card action finished successfully.",
       });
     } catch (error) {
+      const normalizedError = normalizePaymentActionError(error);
       setCardState((current) => ({
         ...current,
-        retryLocked: Boolean(error.preventSameCardRetry),
+        retryLocked: Boolean(normalizedError.preventSameCardRetry),
       }));
       setState({
         isSubmitting: false,
         message: "",
-        error: error.message || "The card action could not be completed.",
+        error: normalizedError.message || "The card action could not be completed.",
       });
       showToast({
         type: "error",
         action: actionLabel,
         title: errorTitle,
-        description: error.message || "The card action could not be completed.",
+        description: normalizedError.message || "The card action could not be completed.",
       });
     }
   }

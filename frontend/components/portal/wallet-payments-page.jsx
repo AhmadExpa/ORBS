@@ -8,7 +8,7 @@ import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
-import { createStripePaymentError } from "@/lib/payments/stripe-errors";
+import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm, portalStripePromise } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -324,22 +324,23 @@ export function WalletPaymentsPage() {
         description: response.message || "Your saved card was charged and the wallet balance has been refreshed.",
       });
     } catch (error) {
-      if (error.preventSameCardRetry) {
+      const normalizedError = normalizePaymentActionError(error);
+      if (normalizedError.preventSameCardRetry) {
         setBlockedSavedTopupCardId(paymentMethodId);
       }
-      if (error.redirectUrl) {
-        router.push(error.redirectUrl);
+      if (normalizedError.redirectUrl) {
+        router.push(normalizedError.redirectUrl);
       }
       setSavedTopupState({
         savingId: "",
-        error: error.message || "The saved-card top-up could not be completed.",
+        error: normalizedError.message || "The saved-card top-up could not be completed.",
         message: "",
       });
       showToast({
         type: "error",
         action: "Wallet Top-up",
         title: "Saved-card top-up failed",
-        description: error.message || "The saved-card top-up could not be completed.",
+        description: normalizedError.message || "The saved-card top-up could not be completed.",
       });
     }
   }

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createStripePaymentError, getStripePaymentErrorMessage, shouldPreventSameCardRetry } from "../lib/payments/stripe-errors.js";
+import {
+  createStripePaymentError,
+  getStripePaymentErrorMessage,
+  normalizePaymentActionError,
+  shouldPreventSameCardRetry,
+} from "../lib/payments/stripe-errors.js";
 
 test("blocked payments with do-not-retry advice stop repeated attempts", () => {
   assert.match(
@@ -32,4 +37,12 @@ test("do-not-retry and Radar-style declines require different card details", () 
 
   const error = createStripePaymentError({ decline_code: "generic_decline" });
   assert.equal(error.preventSameCardRetry, true);
+});
+
+test("browser transport failures never expose Failed to fetch to customers", () => {
+  const error = normalizePaymentActionError(new TypeError("Failed to fetch"));
+
+  assert.equal(error.code, "NETWORK_ERROR");
+  assert.doesNotMatch(error.message, /failed to fetch/iu);
+  assert.match(error.message, /Payment Activity/);
 });
