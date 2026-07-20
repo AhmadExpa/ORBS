@@ -9,6 +9,8 @@ const stripe = env.stripeSecretKey
     })
   : null;
 
+export const WALLET_TOPUP_THREE_D_SECURE_MODE = "challenge";
+
 function assertStripeConfigured() {
   if (!stripe) {
     throw new HttpError(503, "Stripe is not configured yet.");

@@ -906,7 +906,7 @@ export function WalletPaymentsPage() {
                   </div>
                 </div>
 
-                <p className="text-xs leading-5 text-slate-500">Enter any positive amount. The card is validated before the payment is submitted.</p>
+                <p className="text-xs leading-5 text-slate-500">Enter any positive amount. Your bank may ask you to verify the payment with 3D Secure before the charge is submitted.</p>
               </CardContent>
             </Card>
 
@@ -924,7 +924,7 @@ export function WalletPaymentsPage() {
                             <p className="text-sm font-semibold text-slate-950">Top up with {savedCardLabel(primaryCard)}</p>
                             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">Fastest</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · No card details to re-enter</p>
+                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Your bank may request 3D Secure verification</p>
                         </div>
                       </div>
                       <Button
@@ -968,6 +968,7 @@ export function WalletPaymentsPage() {
                       disabled={!instantAmount || Number(instantAmount) <= 0}
                       submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
                       pendingLabel="Processing payment..."
+                      note="Your bank may open a secure verification prompt before approving this wallet top-up."
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"

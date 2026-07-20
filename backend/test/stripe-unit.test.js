@@ -1,21 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildUserInitiatedCardPaymentIntentParams } from "../services/stripe-service.js";
+import { buildUserInitiatedCardPaymentIntentParams, WALLET_TOPUP_THREE_D_SECURE_MODE } from "../services/stripe-service.js";
 
-test("customer-initiated saved-card payments stay on-session and can authenticate", () => {
+test("customer-initiated wallet top-ups stay on-session and request an active 3DS challenge", () => {
   const params = buildUserInitiatedCardPaymentIntentParams({
     customerId: "cus_test",
     paymentMethodId: "pm_test",
     amount: 19.87,
     description: "Wallet top-up",
     metadata: { type: "wallet_topup", preserveSavedCard: true },
-    requestThreeDSecure: "automatic",
+    requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
   });
 
   assert.equal(params.amount, 1987);
   assert.equal(params.customer, "cus_test");
   assert.equal(params.payment_method, "pm_test");
-  assert.equal(params.payment_method_options.card.request_three_d_secure, "automatic");
+  assert.equal(WALLET_TOPUP_THREE_D_SECURE_MODE, "challenge");
+  assert.equal(params.payment_method_options.card.request_three_d_secure, "challenge");
   assert.equal(params.confirm, undefined);
   assert.equal(params.off_session, undefined);
   assert.equal(params.setup_future_usage, undefined);
