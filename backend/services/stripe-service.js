@@ -9,18 +9,7 @@ const stripe = env.stripeSecretKey
     })
   : null;
 
-export const DEFAULT_WALLET_TOPUP_THREE_D_SECURE_MODE = "challenge";
-const walletTopupThreeDSecureModes = new Set(["automatic", "challenge"]);
-
-export function resolveWalletTopupThreeDSecureMode(value) {
-  const mode = String(value || DEFAULT_WALLET_TOPUP_THREE_D_SECURE_MODE).trim().toLowerCase();
-
-  if (!walletTopupThreeDSecureModes.has(mode)) {
-    throw new HttpError(400, "Choose either 3D Secure verification or standard card processing.");
-  }
-
-  return mode;
-}
+export const WALLET_TOPUP_THREE_D_SECURE_MODE = "challenge";
 
 function assertStripeConfigured() {
   if (!stripe) {

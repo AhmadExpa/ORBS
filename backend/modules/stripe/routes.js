@@ -17,9 +17,9 @@ import {
   retrieveCheckoutSession,
   retrievePaymentIntent,
   retrieveSetupIntent,
-  resolveWalletTopupThreeDSecureMode,
   updateUserCardAutoBilling,
   updateUserDefaultPaymentMethod,
+  WALLET_TOPUP_THREE_D_SECURE_MODE,
 } from "../../services/stripe-service.js";
 import { handleStripeDisputeEvent } from "../../services/stripe-dispute-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -502,19 +502,18 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
-      const threeDSecureMode = resolveWalletTopupThreeDSecureMode(req.body.threeDSecureMode);
 
       const intent = await createPaymentIntent({
         user,
         amount,
         description: "ElevenOrbits wallet top-up",
         saveForFutureUse: false,
-        requestThreeDSecure: threeDSecureMode,
+        requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
         metadata: {
           type: "wallet_topup",
           userId: user._id,
           amount: amount.toFixed(2),
-          threeDSecurePolicy: threeDSecureMode,
+          threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
         },
       });
 
@@ -579,14 +578,13 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
-      const threeDSecureMode = resolveWalletTopupThreeDSecureMode(req.body.threeDSecureMode);
 
       const session = await createPaymentCheckoutSession({
         user,
         successUrl: successUrl("/portal/payments", "wallet_topup"),
         cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
         saveForFutureUse: false,
-        requestThreeDSecure: threeDSecureMode,
+        requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
         lineItems: [
           createCheckoutLineItem({
             name: "ElevenOrbits Wallet Top-up",
@@ -598,7 +596,7 @@ stripeRouter.post(
           type: "wallet_topup",
           userId: user._id,
           amount: amount.toFixed(2),
-          threeDSecurePolicy: threeDSecureMode,
+          threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
         },
       });
 
@@ -715,20 +713,19 @@ stripeRouter.post(
     if (!amount || amount <= 0) {
       throw new HttpError(400, "A valid top-up amount is required.");
     }
-    const threeDSecureMode = resolveWalletTopupThreeDSecureMode(req.body.threeDSecureMode);
 
     const paymentIntent = await createSavedCardPaymentIntent({
       user,
       paymentMethodId: req.params.id,
       amount,
       description: "ElevenOrbits wallet top-up from saved card",
-      requestThreeDSecure: threeDSecureMode,
+      requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
       metadata: {
         type: "wallet_topup",
         userId: user._id,
         amount: amount.toFixed(2),
         preserveSavedCard: "true",
-        threeDSecurePolicy: threeDSecureMode,
+        threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
       },
     });
 

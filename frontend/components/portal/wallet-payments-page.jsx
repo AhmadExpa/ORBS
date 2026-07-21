@@ -112,7 +112,6 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
-  const [topupVerificationMode, setTopupVerificationMode] = useState("challenge");
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const [cardManagementState, setCardManagementState] = useState({
@@ -147,12 +146,6 @@ export function WalletPaymentsPage() {
     await Promise.all([refetchPayments(), refetchProfile()]);
     await wait(1200);
     await Promise.all([refetchPayments(), refetchProfile()]);
-  }
-
-  function selectTopupVerificationMode(mode) {
-    setTopupVerificationMode(mode);
-    setBlockedSavedTopupCardId("");
-    setSavedTopupState({ savingId: "", error: "", message: "" });
   }
 
   async function handleSaveCard({ stripe, cardElement }) {
@@ -225,7 +218,6 @@ export function WalletPaymentsPage() {
         body: {
           type: "wallet_topup",
           amount: numericAmount,
-          threeDSecureMode: topupVerificationMode,
         },
       });
     } catch (error) {
@@ -270,7 +262,6 @@ export function WalletPaymentsPage() {
 
     await syncPortalPayments();
     setInstantAmount("");
-    setTopupVerificationMode("challenge");
     setActiveSection("overview");
     return "Your wallet payment was received. The balance has been refreshed.";
   }
@@ -289,10 +280,7 @@ export function WalletPaymentsPage() {
       const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
         method: "POST",
         token,
-        body: {
-          amount: numericAmount,
-          threeDSecureMode: topupVerificationMode,
-        },
+        body: { amount: numericAmount },
       });
 
       const stripe = await portalStripePromise;
@@ -322,7 +310,6 @@ export function WalletPaymentsPage() {
 
       await syncPortalPayments();
       setInstantAmount("");
-      setTopupVerificationMode("challenge");
       setBlockedSavedTopupCardId("");
       setActiveSection("overview");
       setSavedTopupState({
@@ -912,51 +899,6 @@ export function WalletPaymentsPage() {
                   ))}
                 </div>
 
-                <fieldset>
-                  <legend className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Verification method</legend>
-                  <div className="grid gap-2">
-                    <button
-                      type="button"
-                      aria-pressed={topupVerificationMode === "challenge"}
-                      onClick={() => selectTopupVerificationMode("challenge")}
-                      className={cn(
-                        "flex items-start gap-3 rounded-xl border p-3 text-left transition-colors",
-                        topupVerificationMode === "challenge"
-                          ? "border-brand-300 bg-brand-50"
-                          : "border-line bg-white hover:bg-slate-50",
-                      )}
-                    >
-                      <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", topupVerificationMode === "challenge" ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600")}>
-                        <ShieldCheck className="h-4 w-4" />
-                      </span>
-                      <span>
-                        <span className="block text-sm font-semibold text-slate-900">3D Secure verification</span>
-                        <span className="mt-0.5 block text-xs leading-5 text-slate-500">Recommended · Ask the bank to authenticate this payment.</span>
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      aria-pressed={topupVerificationMode === "automatic"}
-                      onClick={() => selectTopupVerificationMode("automatic")}
-                      className={cn(
-                        "flex items-start gap-3 rounded-xl border p-3 text-left transition-colors",
-                        topupVerificationMode === "automatic"
-                          ? "border-accent-300 bg-accent-50"
-                          : "border-line bg-white hover:bg-slate-50",
-                      )}
-                    >
-                      <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", topupVerificationMode === "automatic" ? "bg-accent-600 text-white" : "bg-slate-100 text-slate-600")}>
-                        <Zap className="h-4 w-4" />
-                      </span>
-                      <span>
-                        <span className="block text-sm font-semibold text-slate-900">Standard checkout</span>
-                        <span className="mt-0.5 block text-xs leading-5 text-slate-500">Fastest · 3DS is used only when Stripe or the bank requires it.</span>
-                      </span>
-                    </button>
-                  </div>
-                </fieldset>
-
                 <div className="rounded-xl bg-slate-950 p-4 text-white">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-400">Wallet after top-up</span>
@@ -964,11 +906,7 @@ export function WalletPaymentsPage() {
                   </div>
                 </div>
 
-                <p className="text-xs leading-5 text-slate-500">
-                  {topupVerificationMode === "challenge"
-                    ? "3D Secure is selected. The card issuer decides whether verification is a prompt or a frictionless check."
-                    : "Standard checkout is selected. Stripe or the bank may still require 3D Secure when legally or technically necessary."}
-                </p>
+                <p className="text-xs leading-5 text-slate-500">Enter any positive amount. Your bank may ask you to verify the payment with 3D Secure before the charge is submitted.</p>
               </CardContent>
             </Card>
 
@@ -986,9 +924,7 @@ export function WalletPaymentsPage() {
                             <p className="text-sm font-semibold text-slate-950">Top up with {savedCardLabel(primaryCard)}</p>
                             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">Fastest</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {cardExpiryLabel(primaryCard)} · {topupVerificationMode === "challenge" ? "3D Secure selected" : "Standard checkout selected"}
-                          </p>
+                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Your bank may request 3D Secure verification</p>
                         </div>
                       </div>
                       <Button
@@ -1031,12 +967,8 @@ export function WalletPaymentsPage() {
                     <PortalCardForm
                       disabled={!instantAmount || Number(instantAmount) <= 0}
                       submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel={topupVerificationMode === "challenge" ? "Waiting for bank verification..." : "Processing payment..."}
-                      note={
-                        topupVerificationMode === "challenge"
-                          ? "Your bank may open a secure verification prompt before approving this wallet top-up."
-                          : "Standard checkout does not proactively request 3DS, but Stripe or your bank can still require it."
-                      }
+                      pendingLabel="Processing payment..."
+                      note="Your bank may open a secure verification prompt before approving this wallet top-up."
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"
