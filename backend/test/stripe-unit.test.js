@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildUserInitiatedCardPaymentIntentParams, WALLET_TOPUP_THREE_D_SECURE_MODE } from "../services/stripe-service.js";
+import {
+  buildUserInitiatedCardPaymentIntentParams,
+  CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  normalizePaymentBillingDetails,
+  WALLET_TOPUP_THREE_D_SECURE_MODE,
+} from "../services/stripe-service.js";
 
 test("customer-initiated wallet top-ups stay on-session and request an active 3DS challenge", () => {
   const params = buildUserInitiatedCardPaymentIntentParams({
@@ -30,15 +35,17 @@ test("new-card payments can save the card for later off-session renewals", () =>
     description: "Wallet top-up",
     metadata: { type: "wallet_topup" },
     saveForFutureUse: true,
-    requestThreeDSecure: "automatic",
+    requestThreeDSecure: CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+    receiptEmail: "cardholder@example.com",
   });
 
   assert.equal(params.setup_future_usage, "off_session");
   assert.equal(params.payment_method, undefined);
-  assert.equal(params.payment_method_options.card.request_three_d_secure, "automatic");
+  assert.equal(params.payment_method_options.card.request_three_d_secure, "challenge");
+  assert.equal(params.receipt_email, "cardholder@example.com");
 });
 
-test("one-time top-ups do not request future card usage", () => {
+test("one-time customer-present payments default to 3DS and do not request future usage", () => {
   const params = buildUserInitiatedCardPaymentIntentParams({
     customerId: "cus_test",
     amount: 25,
@@ -47,5 +54,25 @@ test("one-time top-ups do not request future card usage", () => {
   });
 
   assert.equal(params.setup_future_usage, undefined);
-  assert.equal(params.payment_method_options.card.request_three_d_secure, "automatic");
+  assert.equal(params.payment_method_options.card.request_three_d_secure, "challenge");
+});
+
+test("provided billing details are validated and mapped to Stripe fields", () => {
+  const details = normalizePaymentBillingDetails({
+    name: " Card Holder ",
+    email: " CARD@EXAMPLE.COM ",
+    phone: "+1 813 555 0199",
+    line1: "123 Billing Street",
+    line2: "Suite 5",
+    city: "Tampa",
+    state: "FL",
+    postalCode: "33601",
+    country: "us",
+  });
+
+  assert.equal(details.name, "Card Holder");
+  assert.equal(details.email, "card@example.com");
+  assert.equal(details.address.postal_code, "33601");
+  assert.equal(details.address.country, "US");
+  assert.throws(() => normalizePaymentBillingDetails({}), /full name/);
 });

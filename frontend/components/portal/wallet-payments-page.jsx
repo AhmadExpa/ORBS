@@ -8,9 +8,15 @@ import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
+import {
+  createEmptyPaymentBillingDetails,
+  getPaymentBillingDetailsValidationError,
+  normalizePaymentBillingDetails,
+  toStripeBillingDetails,
+} from "@/lib/payments/billing-details";
 import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
-import { PortalCardForm, portalStripePromise } from "@/components/portal/portal-card-form";
+import { PaymentBillingDetailsFields, PortalCardForm, portalStripePromise } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
@@ -112,6 +118,7 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
+  const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const [cardManagementState, setCardManagementState] = useState({
@@ -148,14 +155,14 @@ export function WalletPaymentsPage() {
     await Promise.all([refetchPayments(), refetchProfile()]);
   }
 
-  async function handleSaveCard({ stripe, cardElement }) {
+  async function handleSaveCard({ stripe, cardElement, billingDetails }) {
     const token = await getToken();
     let response;
     try {
       response = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
-        body: { type: "card_setup" },
+        body: { type: "card_setup", billingDetails },
       });
     } catch (error) {
       if (error.redirectUrl) {
@@ -167,10 +174,7 @@ export function WalletPaymentsPage() {
     const result = await stripe.confirmCardSetup(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: {
-          name: user?.name || undefined,
-          email: user?.email || undefined,
-        },
+        billing_details: toStripeBillingDetails(billingDetails),
       },
     });
 
@@ -203,7 +207,7 @@ export function WalletPaymentsPage() {
       : "Your card has been saved and set as the primary card. You can switch to wallet-only mode any time.";
   }
 
-  async function handleCardTopup({ stripe, cardElement }) {
+  async function handleCardTopup({ stripe, cardElement, billingDetails }) {
     const numericAmount = Number(instantAmount || 0);
     if (!numericAmount || numericAmount <= 0) {
       throw new Error("Enter a valid top-up amount before submitting the card payment.");
@@ -218,6 +222,7 @@ export function WalletPaymentsPage() {
         body: {
           type: "wallet_topup",
           amount: numericAmount,
+          billingDetails,
         },
       });
     } catch (error) {
@@ -230,10 +235,7 @@ export function WalletPaymentsPage() {
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: {
-          name: user?.name || undefined,
-          email: user?.email || undefined,
-        },
+        billing_details: toStripeBillingDetails(billingDetails),
       },
     });
 
@@ -262,6 +264,7 @@ export function WalletPaymentsPage() {
 
     await syncPortalPayments();
     setInstantAmount("");
+    setTopupBillingDetails(createEmptyPaymentBillingDetails());
     setActiveSection("overview");
     return "Your wallet payment was received. The balance has been refreshed.";
   }
@@ -273,6 +276,12 @@ export function WalletPaymentsPage() {
       return;
     }
 
+    const billingError = getPaymentBillingDetailsValidationError(topupBillingDetails);
+    if (billingError) {
+      setSavedTopupState({ savingId: "", error: billingError, message: "" });
+      return;
+    }
+
     setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
 
     try {
@@ -280,7 +289,10 @@ export function WalletPaymentsPage() {
       const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
         method: "POST",
         token,
-        body: { amount: numericAmount },
+        body: {
+          amount: numericAmount,
+          billingDetails: normalizePaymentBillingDetails(topupBillingDetails),
+        },
       });
 
       const stripe = await portalStripePromise;
@@ -310,6 +322,7 @@ export function WalletPaymentsPage() {
 
       await syncPortalPayments();
       setInstantAmount("");
+      setTopupBillingDetails(createEmptyPaymentBillingDetails());
       setBlockedSavedTopupCardId("");
       setActiveSection("overview");
       setSavedTopupState({
@@ -835,6 +848,7 @@ export function WalletPaymentsPage() {
                     <PortalCardForm
                       submitLabel={hasSavedCard ? "Add card" : "Save card"}
                       pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
+                      note="Enter the cardholder's billing details. Saving the card requests 3D Secure verification."
                       onSubmit={handleSaveCard}
                       successTitle="Saved card added"
                       errorTitle="Saved card action failed"
@@ -911,6 +925,20 @@ export function WalletPaymentsPage() {
             </Card>
 
             <div className="space-y-5">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Billing details for this payment</CardTitle>
+                  <CardDescription>Enter the cardholder details for this card. We send these to Stripe instead of using the portal account email.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PaymentBillingDetailsFields
+                    value={topupBillingDetails}
+                    onChange={setTopupBillingDetails}
+                    disabled={Boolean(savedTopupState.savingId)}
+                  />
+                </CardContent>
+              </Card>
+
               {primaryCard ? (
                 <Card>
                   <CardContent className="p-5 sm:p-6">
@@ -967,12 +995,15 @@ export function WalletPaymentsPage() {
                     <PortalCardForm
                       disabled={!instantAmount || Number(instantAmount) <= 0}
                       submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel="Processing payment..."
+                      pendingLabel="Waiting for 3D Secure verification..."
                       note="Your bank may open a secure verification prompt before approving this wallet top-up."
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"
                       actionLabel="Wallet Top-up"
+                      billingDetails={topupBillingDetails}
+                      onBillingDetailsChange={setTopupBillingDetails}
+                      showBillingDetails={false}
                     />
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />

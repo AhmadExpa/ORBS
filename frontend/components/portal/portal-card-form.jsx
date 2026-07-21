@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { Button } from "@/lib/ui";
+import { Button, TextInput } from "@/lib/ui";
+import {
+  createEmptyPaymentBillingDetails,
+  getPaymentBillingDetailsValidationError,
+  normalizePaymentBillingDetails,
+} from "@/lib/payments/billing-details";
 import { normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
@@ -11,6 +16,7 @@ const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 export const portalStripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 const cardElementOptions = {
+  hidePostalCode: true,
   style: {
     base: {
       color: "#0f172a",
@@ -29,6 +35,68 @@ const cardElementOptions = {
   },
 };
 
+export function PaymentBillingDetailsFields({ value, onChange, disabled = false }) {
+  const id = useId().replace(/:/gu, "");
+
+  function updateField(field, fieldValue) {
+    onChange({
+      ...value,
+      [field]: field === "country" ? fieldValue.toUpperCase() : fieldValue,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor={`${id}-name`} className="mb-2 block text-sm font-medium text-slate-700">Cardholder name</label>
+          <TextInput id={`${id}-name`} autoComplete="cc-name" value={value.name} disabled={disabled} onChange={(event) => updateField("name", event.target.value)} placeholder="Full name on card" />
+        </div>
+        <div>
+          <label htmlFor={`${id}-email`} className="mb-2 block text-sm font-medium text-slate-700">Payment email</label>
+          <TextInput id={`${id}-email`} type="email" autoComplete="email" value={value.email} disabled={disabled} onChange={(event) => updateField("email", event.target.value)} placeholder="cardholder@example.com" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
+        <div>
+          <label htmlFor={`${id}-phone`} className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
+          <TextInput id={`${id}-phone`} type="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+1 813 555 0199" />
+        </div>
+        <div>
+          <label htmlFor={`${id}-country`} className="mb-2 block text-sm font-medium text-slate-700">Country code</label>
+          <TextInput id={`${id}-country`} autoComplete="country" maxLength={2} value={value.country} disabled={disabled} onChange={(event) => updateField("country", event.target.value)} placeholder="US" />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor={`${id}-line1`} className="mb-2 block text-sm font-medium text-slate-700">Billing address</label>
+        <TextInput id={`${id}-line1`} autoComplete="address-line1" value={value.line1} disabled={disabled} onChange={(event) => updateField("line1", event.target.value)} placeholder="Street address" />
+      </div>
+
+      <div>
+        <label htmlFor={`${id}-line2`} className="mb-2 block text-sm font-medium text-slate-700">Apartment, suite, or unit <span className="font-normal text-slate-400">(optional)</span></label>
+        <TextInput id={`${id}-line2`} autoComplete="address-line2" value={value.line2} disabled={disabled} onChange={(event) => updateField("line2", event.target.value)} placeholder="Apartment, suite, or unit" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor={`${id}-city`} className="mb-2 block text-sm font-medium text-slate-700">City</label>
+          <TextInput id={`${id}-city`} autoComplete="address-level2" value={value.city} disabled={disabled} onChange={(event) => updateField("city", event.target.value)} placeholder="City" />
+        </div>
+        <div>
+          <label htmlFor={`${id}-state`} className="mb-2 block text-sm font-medium text-slate-700">State / region</label>
+          <TextInput id={`${id}-state`} autoComplete="address-level1" value={value.state} disabled={disabled} onChange={(event) => updateField("state", event.target.value)} placeholder="State or region" />
+        </div>
+        <div>
+          <label htmlFor={`${id}-postal`} className="mb-2 block text-sm font-medium text-slate-700">Postal code</label>
+          <TextInput id={`${id}-postal`} autoComplete="postal-code" value={value.postalCode} disabled={disabled} onChange={(event) => updateField("postalCode", event.target.value)} placeholder="Postal code" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PortalCardFormInner({
   disabled = false,
   note = "",
@@ -38,6 +106,9 @@ function PortalCardFormInner({
   successTitle = "Card action completed",
   errorTitle = "Card action failed",
   actionLabel = "Payments",
+  billingDetails,
+  onBillingDetailsChange,
+  showBillingDetails = true,
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -52,6 +123,9 @@ function PortalCardFormInner({
     error: "",
     retryLocked: false,
   });
+  const [internalBillingDetails, setInternalBillingDetails] = useState(createEmptyPaymentBillingDetails);
+  const resolvedBillingDetails = billingDetails || internalBillingDetails;
+  const setResolvedBillingDetails = onBillingDetailsChange || setInternalBillingDetails;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -93,6 +167,12 @@ function PortalCardFormInner({
       return;
     }
 
+    const billingError = getPaymentBillingDetailsValidationError(resolvedBillingDetails);
+    if (billingError) {
+      setState({ isSubmitting: false, message: "", error: billingError });
+      return;
+    }
+
     if (cardState.retryLocked) {
       setState({ isSubmitting: false, message: "", error: "Change the card details before trying this payment again." });
       return;
@@ -108,6 +188,7 @@ function PortalCardFormInner({
       const message = await onSubmit({
         stripe,
         cardElement,
+        billingDetails: normalizePaymentBillingDetails(resolvedBillingDetails),
       });
 
       cardElement.clear();
@@ -144,6 +225,9 @@ function PortalCardFormInner({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      {showBillingDetails ? (
+        <PaymentBillingDetailsFields value={resolvedBillingDetails} onChange={setResolvedBillingDetails} disabled={state.isSubmitting} />
+      ) : null}
       <div>
         <label className="mb-2 block text-sm font-medium text-slate-700">Card details</label>
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm focus-within:border-sky-300 focus-within:ring-2 focus-within:ring-sky-200">
@@ -182,6 +266,9 @@ export function PortalCardForm({
   successTitle,
   errorTitle,
   actionLabel,
+  billingDetails,
+  onBillingDetailsChange,
+  showBillingDetails = true,
 }) {
   if (!portalStripePromise) {
     return (
@@ -202,6 +289,9 @@ export function PortalCardForm({
         successTitle={successTitle}
         errorTitle={errorTitle}
         actionLabel={actionLabel}
+        billingDetails={billingDetails}
+        onBillingDetailsChange={onBillingDetailsChange}
+        showBillingDetails={showBillingDetails}
       />
     </Elements>
   );

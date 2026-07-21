@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api/client";
 import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
+import { toStripeBillingDetails } from "@/lib/payments/billing-details";
 import { createStripePaymentError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
 import { PortalCardForm } from "@/components/portal/portal-card-form";
@@ -107,7 +108,7 @@ export function CheckoutPaymentView({ orderId }) {
     await Promise.all([refetchOrder(), refetchProfile()]);
   }
 
-  async function handleCardPayment({ stripe, cardElement }) {
+  async function handleCardPayment({ stripe, cardElement, billingDetails }) {
     let response;
     try {
       const token = await getToken();
@@ -117,6 +118,7 @@ export function CheckoutPaymentView({ orderId }) {
         body: {
           type: "order_payment",
           orderId,
+          billingDetails,
         },
       });
     } catch (error) {
@@ -129,10 +131,7 @@ export function CheckoutPaymentView({ orderId }) {
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: {
-          name: profile?.name || undefined,
-          email: profile?.email || undefined,
-        },
+        billing_details: toStripeBillingDetails(billingDetails),
       },
     });
 
@@ -382,9 +381,9 @@ export function CheckoutPaymentView({ orderId }) {
                     <PortalCardForm
                       disabled={!canTriggerPayments || state.isSubmitting}
                       submitLabel="Pay by Card"
-                      pendingLabel="Processing payment..."
+                      pendingLabel="Waiting for 3D Secure verification..."
                       onSubmit={handleCardPayment}
-                      note="The card is confirmed securely through Stripe without leaving this checkout page."
+                      note="Every card payment requests 3D Secure. Enter the cardholder's billing details; the portal account email is not used for this charge."
                       successTitle="Card payment completed"
                       errorTitle="Card payment failed"
                       actionLabel="Order Payment"

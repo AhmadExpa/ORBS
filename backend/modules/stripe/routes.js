@@ -487,6 +487,7 @@ stripeRouter.post(
     if (req.body.type === "card_setup") {
       const intent = await createSetupIntent({
         user,
+        billingDetails: req.body.billingDetails,
         metadata: {
           type: "card_setup",
           userId: user._id,
@@ -507,6 +508,7 @@ stripeRouter.post(
         user,
         amount,
         description: "ElevenOrbits wallet top-up",
+        billingDetails: req.body.billingDetails,
         saveForFutureUse: false,
         requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
         metadata: {
@@ -535,6 +537,7 @@ stripeRouter.post(
         user,
         amount: order.totalAmount,
         description: invoice?.invoiceNumber || order.productPlanId?.name || "Managed service payment",
+        billingDetails: req.body.billingDetails,
         metadata: {
           type: "order_payment",
           userId: user._id,
@@ -719,6 +722,7 @@ stripeRouter.post(
       paymentMethodId: req.params.id,
       amount,
       description: "ElevenOrbits wallet top-up from saved card",
+      billingDetails: req.body.billingDetails,
       requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
       metadata: {
         type: "wallet_topup",
