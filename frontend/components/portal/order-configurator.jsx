@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Archive,
   BarChart3,
@@ -18,6 +19,8 @@ import {
   Calendar,
   CheckCircle2,
   CheckSquare,
+  ChevronRight,
+  CircleDollarSign,
   ClipboardList,
   Code2,
   Database,
@@ -54,6 +57,7 @@ import {
   Settings2,
   Shield,
   ShoppingCart,
+  Sparkles,
   SlidersHorizontal,
   StepForward,
   Target,
@@ -301,13 +305,15 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selected}
       className={cn(
-        "rounded-xl border p-5 text-left transition duration-200",
+        "group relative overflow-hidden rounded-2xl border p-5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2",
         selected
-          ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+          ? "border-accent-400 bg-gradient-to-br from-accent-50 via-white to-white shadow-card-hover ring-1 ring-accent-200"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 hover:shadow-card-hover",
       )}
     >
+      {selected ? <span className="absolute inset-y-0 left-0 w-1 bg-accent-500" aria-hidden="true" /> : null}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           {artwork ? (
@@ -315,8 +321,8 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
           ) : (
             <span
               className={cn(
-                "mt-0.5 rounded-2xl p-2.5",
-                selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-600",
+                "mt-0.5 rounded-xl p-2.5 transition-colors",
+                selected ? "bg-accent-100 text-accent-700" : "bg-slate-100 text-slate-600 group-hover:bg-white",
               )}
             >
               <Icon className="h-5 w-5" />
@@ -327,13 +333,105 @@ function OptionCard({ icon: Icon, artwork, title, description, priceLabel, selec
             <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
           </div>
         </div>
-        {selected ? <CheckCircle2 className="h-5 w-5 shrink-0 text-sky-600" /> : null}
+        <span
+          className={cn(
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors",
+            selected ? "border-accent-600 bg-accent-600 text-white" : "border-slate-300 bg-white",
+          )}
+        >
+          {selected ? <CheckCircle2 className="h-4 w-4" /> : <span className="h-2 w-2 rounded-full bg-slate-200" />}
+        </span>
       </div>
       <div className="mt-4 flex items-center justify-between gap-4">
-        <span className="text-sm font-semibold text-slate-900">{priceLabel}</span>
+        <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", selected ? "bg-accent-100 text-accent-800" : "bg-slate-100 text-slate-700")}>
+          {priceLabel}
+        </span>
         {children}
       </div>
     </button>
+  );
+}
+
+function BillingCycleCard({ plan, cycle, selected, onClick }) {
+  const discount = getBillingCycleDiscountPercent(plan, cycle);
+  const isBestValue = cycle === "yearly";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={cn(
+        "relative overflow-hidden rounded-2xl border p-5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2",
+        selected
+          ? "border-accent-400 bg-gradient-to-br from-accent-50 via-white to-white shadow-card-hover ring-1 ring-accent-200"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 hover:shadow-card-hover",
+      )}
+    >
+      {selected ? <span className="absolute inset-x-0 top-0 h-1 bg-accent-500" aria-hidden="true" /> : null}
+      <div className="flex items-start justify-between gap-3">
+        <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl", selected ? "bg-accent-100 text-accent-700" : "bg-slate-100 text-slate-500")}>
+          <CircleDollarSign className="h-4 w-4" />
+        </span>
+        {isBestValue ? (
+          <span className="rounded-full bg-slate-950 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Best value</span>
+        ) : selected ? (
+          <CheckCircle2 className="h-5 w-5 text-accent-600" />
+        ) : null}
+      </div>
+      <p className="mt-4 font-semibold text-slate-950">{getBillingCycleLabel(cycle)}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{formatCurrency(calculatePlanPrice(plan, cycle))}</p>
+      <div className="mt-2 flex min-h-5 items-center gap-2">
+        {discount ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Save {discount}%</span> : null}
+        <span className="text-xs text-slate-500">{getBillingSuffix(cycle).replace("/", "per ")}</span>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-500">{getBillingCycleDescription(plan, cycle)}</p>
+    </button>
+  );
+}
+
+function ConfiguratorStepNav({ steps, currentId, onSelect }) {
+  const currentIndex = Math.max(steps.findIndex((step) => step.id === currentId), 0);
+
+  return (
+    <div className="border-b border-line bg-slate-50/80 p-3 sm:p-4">
+      <div className="eo-scrollbar-none flex gap-2 overflow-x-auto" role="tablist" aria-label="Configuration steps">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          const active = step.id === currentId;
+          const complete = index < currentIndex;
+
+          return (
+            <button
+              key={step.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onSelect(step.id)}
+              className={cn(
+                "flex min-w-[190px] flex-1 items-center gap-3 rounded-xl border px-3 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500",
+                active ? "border-slate-300 bg-white shadow-card" : "border-transparent hover:border-slate-200 hover:bg-white/80",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-bold",
+                  active && "border-accent-500 bg-accent-50 text-accent-700",
+                  complete && !active && "border-emerald-500 bg-emerald-500 text-white",
+                  !active && !complete && "border-slate-200 bg-white text-slate-400",
+                )}
+              >
+                {complete ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Step {index + 1}</span>
+                <span className={cn("mt-0.5 block truncate text-sm font-semibold", active ? "text-slate-950" : "text-slate-600")}>{step.label}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -347,7 +445,7 @@ function RequirementLogo({ src, alt, selected = false, compact = false }) {
       className={cn(
         "flex shrink-0 items-center justify-center rounded-2xl bg-white ring-1 transition",
         compact ? "h-10 w-10 p-2" : "h-12 w-12 p-2.5",
-        selected ? "ring-brand-300" : "ring-slate-200",
+        selected ? "ring-accent-300" : "ring-slate-200",
       )}
     >
       <Image
@@ -375,7 +473,7 @@ function RequirementIcon({ icon, logo, label, selected = false, compact = false 
       className={cn(
         "flex shrink-0 items-center justify-center rounded-2xl transition",
         compact ? "h-10 w-10" : "h-12 w-12",
-        selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-600",
+        selected ? "bg-accent-100 text-accent-700" : "bg-slate-100 text-slate-600",
       )}
     >
       <Icon className={compact ? "h-4 w-4" : "h-5 w-5"} />
@@ -393,17 +491,29 @@ function IntakeOptionButton({ option, selected, onClick, multi = false }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selected}
       className={cn(
-        "flex min-h-[84px] items-start gap-3 rounded-xl border p-3 text-left transition-colors",
-        selected ? "border-brand-500 bg-brand-50 ring-1 ring-brand-200" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+        "group relative flex min-h-[88px] items-start gap-3 overflow-hidden rounded-2xl border p-4 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2",
+        selected
+          ? "border-accent-400 bg-gradient-to-br from-accent-50 via-white to-white shadow-card ring-1 ring-accent-200"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 hover:shadow-card",
       )}
     >
+      {selected ? <span className="absolute inset-y-0 left-0 w-1 bg-accent-500" aria-hidden="true" /> : null}
       <RequirementIcon icon={option.icon} logo={option.logo} label={option.label} selected={selected} compact />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-slate-950">{option.label}</span>
         {option.description ? <span className="mt-1 block text-xs leading-5 text-slate-500">{option.description}</span> : null}
       </span>
-      {selected ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-brand-600" /> : multi ? <span className="mt-1 h-4 w-4 shrink-0 rounded border border-slate-300" /> : null}
+      <span
+        className={cn(
+          "mt-1 flex h-5 w-5 shrink-0 items-center justify-center border",
+          multi ? "rounded-md" : "rounded-full",
+          selected ? "border-accent-600 bg-accent-600 text-white" : "border-slate-300 bg-white",
+        )}
+      >
+        {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+      </span>
     </button>
   );
 }
@@ -511,7 +621,7 @@ function ServiceRequirementsSection({ config, answers, errors, onChange }) {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+    <div>
       <div className="flex items-start gap-3">
         <RequirementIcon icon="clipboard-list" logo={config.logo} label={config.title} />
         <div>
@@ -523,9 +633,9 @@ function ServiceRequirementsSection({ config, answers, errors, onChange }) {
         {config.sections.map((section) => {
           const SectionIcon = getRequirementIcon(section.icon);
           return (
-            <section key={section.id} className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+            <section key={section.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 ring-1 ring-slate-200">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700 ring-1 ring-slate-200">
                   <SectionIcon className="h-4 w-4" />
                 </span>
                 <div>
@@ -637,6 +747,7 @@ export function OrderConfigurator({ slug }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [restoredCartVersion, setRestoredCartVersion] = useState("");
+  const [activeConfiguratorStep, setActiveConfiguratorStep] = useState("plan");
 
   const { data, isLoading } = useQuery({
     queryKey: ["catalog-plan", slug],
@@ -708,6 +819,56 @@ export function OrderConfigurator({ slug }) {
   const selectedStorage = storageOptions.find((addon) => addon._id === activeStorageId) || null;
   const selectedFeatures = featureAddons.filter((addon) => activeFeatureIds.includes(addon._id));
   const selectedImageArtwork = getImageArtwork(selectedImage || imageOptions[0]);
+  const hasDeploymentOptions = Boolean(regionOptions.length || storageOptions.length || imageOptions.length);
+  const configuratorSteps = useMemo(
+    () => [
+      {
+        id: "plan",
+        label: "Plan & term",
+        title: "Choose your commercial foundation",
+        description: "Start with the contract that fits your budget and preferred commitment.",
+        icon: CircleDollarSign,
+      },
+      ...(serviceIntakeConfig
+        ? [
+            {
+              id: "requirements",
+              label: "Your needs",
+              title: "Tell us what you are building",
+              description: "A focused intake helps our team provision the right environment the first time.",
+              icon: ClipboardList,
+            },
+          ]
+        : []),
+      ...(hasDeploymentOptions
+        ? [
+            {
+              id: "deployment",
+              label: "Deployment",
+              title: "Shape the managed environment",
+              description: "Confirm where it runs, how it is sized, and which system image it uses.",
+              icon: Globe2,
+            },
+          ]
+        : []),
+      {
+        id: "addons",
+        label: "Finish",
+        title: "Add the finishing touches",
+        description: "Choose optional enhancements, add a team note, and review the live estimate.",
+        icon: Sparkles,
+      },
+    ],
+    [hasDeploymentOptions, serviceIntakeConfig],
+  );
+  const currentConfiguratorStepIndex = Math.max(
+    configuratorSteps.findIndex((step) => step.id === activeConfiguratorStep),
+    0,
+  );
+  const currentConfiguratorStep = configuratorSteps[currentConfiguratorStepIndex];
+  const previousConfiguratorStep = configuratorSteps[currentConfiguratorStepIndex - 1] || null;
+  const nextConfiguratorStep = configuratorSteps[currentConfiguratorStepIndex + 1] || null;
+  const isFinalConfiguratorStep = !nextConfiguratorStep;
   const serviceIntakeValidation = useMemo(
     () => validateServiceIntakeAnswers(categorySlug, serviceAnswers, { categoryName: plan?.categoryId?.name || plan?.name || "" }),
     [categorySlug, plan?.categoryId?.name, plan?.name, serviceAnswers],
@@ -725,6 +886,14 @@ export function OrderConfigurator({ slug }) {
 
     setBillingCycle(availableBillingCycles.includes("monthly") ? "monthly" : availableBillingCycles[0]);
   }, [availableBillingCycles, billingCycle]);
+
+  useEffect(() => {
+    if (configuratorSteps.some((step) => step.id === activeConfiguratorStep)) {
+      return;
+    }
+
+    setActiveConfiguratorStep(configuratorSteps[0]?.id || "plan");
+  }, [activeConfiguratorStep, configuratorSteps]);
 
   useEffect(() => {
     if (
@@ -748,6 +917,7 @@ export function OrderConfigurator({ slug }) {
     setFinalNote(payload.finalNote || "");
     setShowFinalNote(Boolean(payload.finalNote));
     setTrialRequested(Boolean(payload.trialRequested));
+    setActiveConfiguratorStep("addons");
     setRestoredCartVersion(cartItem.updatedAt);
   }, [addonsQuery.isLoading, cartIsHydrated, cartItem, plan, restoredCartVersion]);
 
@@ -804,6 +974,7 @@ export function OrderConfigurator({ slug }) {
   }
 
   function updateServiceAnswer(key, value) {
+    setError("");
     setServiceAnswers((current) => ({
       ...pruneHiddenIntakeAnswers(
         {
@@ -833,6 +1004,58 @@ export function OrderConfigurator({ slug }) {
     }
   }
 
+  function focusConfigurator() {
+    window.requestAnimationFrame(() => {
+      document.getElementById("configurator-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function validateRequirementsForProgress() {
+    if (!serviceIntakeConfig) {
+      return true;
+    }
+
+    const validation = validateServiceIntakeAnswers(categorySlug, serviceAnswers, {
+      categoryName: plan?.categoryId?.name || plan?.name || "",
+    });
+
+    if (validation.ok) {
+      setServiceAnswerErrors({});
+      setError("");
+      return true;
+    }
+
+    setServiceAnswerErrors(validation.errors);
+    setError("Complete the highlighted requirements to continue.");
+    return false;
+  }
+
+  function moveToConfiguratorStep(stepId) {
+    const targetIndex = configuratorSteps.findIndex((step) => step.id === stepId);
+    if (targetIndex < 0) return;
+
+    const requirementsIndex = configuratorSteps.findIndex((step) => step.id === "requirements");
+    if (targetIndex > requirementsIndex && requirementsIndex >= 0 && !validateRequirementsForProgress()) {
+      setActiveConfiguratorStep("requirements");
+      focusConfigurator();
+      return;
+    }
+
+    setError("");
+    setActiveConfiguratorStep(stepId);
+    focusConfigurator();
+  }
+
+  function handleStepSelect(stepId) {
+    moveToConfiguratorStep(stepId);
+  }
+
+  function handleConfiguratorContinue() {
+    if (nextConfiguratorStep) {
+      moveToConfiguratorStep(nextConfiguratorStep.id);
+    }
+  }
+
   function handleAddToCart() {
     if (!plan || plan.contactSalesOnly) {
       router.push("/contact");
@@ -848,6 +1071,8 @@ export function OrderConfigurator({ slug }) {
       });
       if (!intakeValidation.ok) {
         setServiceAnswerErrors(intakeValidation.errors);
+        setActiveConfiguratorStep("requirements");
+        focusConfigurator();
         throw new Error("Please complete the required service requirements before adding this service to your cart.");
       }
 
@@ -942,7 +1167,7 @@ export function OrderConfigurator({ slug }) {
         <OrderJourney current="configure" />
       </div>
       <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="overflow-hidden">
+        <Card id="configurator-workspace" className="scroll-mt-36 overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-slate-950 to-slate-800 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-300">Managed service builder</p>
             <CardTitle className="mt-2 text-xl text-white">Configure your service</CardTitle>
@@ -950,23 +1175,44 @@ export function OrderConfigurator({ slug }) {
               <span className="text-slate-300">Choose the contract, deployment preferences, and managed add-ons that fit your workload.</span>
             </CardDescription>
           </CardHeader>
+          <ConfiguratorStepNav steps={configuratorSteps} currentId={activeConfiguratorStep} onSelect={handleStepSelect} />
           <CardContent className="space-y-8">
+            <div className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-accent-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-accent-800">
+                    Step {currentConfiguratorStepIndex + 1} of {configuratorSteps.length}
+                  </span>
+                  <span className="text-xs font-medium text-slate-400">Guided setup</span>
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.025em] text-slate-950">{currentConfiguratorStep.title}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{currentConfiguratorStep.description}</p>
+              </div>
+              <div className="w-full max-w-[180px] pt-1">
+                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  <span>Setup progress</span>
+                  <span>{Math.round(((currentConfiguratorStepIndex + 1) / configuratorSteps.length) * 100)}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-700 transition-all duration-300"
+                    style={{ width: `${((currentConfiguratorStepIndex + 1) / configuratorSteps.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {activeConfiguratorStep === "plan" ? (
+              <>
             <div className="grid gap-4 md:grid-cols-3">
               {availableBillingCycles.map((cycle) => (
-                <button
+                <BillingCycleCard
                   key={cycle}
-                  type="button"
+                  plan={plan}
+                  cycle={cycle}
+                  selected={billingCycle === cycle}
                   onClick={() => setBillingCycle(cycle)}
-                  className={cn(
-                    "rounded-xl border p-5 text-left transition duration-200",
-                    billingCycle === cycle
-                      ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600/30"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-                  )}
-                >
-                  <p className="font-semibold text-slate-950">{getBillingCycleLabel(cycle)}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{getBillingCycleDescription(plan, cycle)}</p>
-                </button>
+                />
               ))}
             </div>
 
@@ -1065,14 +1311,31 @@ export function OrderConfigurator({ slug }) {
                 </div>
               </div>
             ) : null}
+              </>
+            ) : null}
 
-            <ServiceRequirementsSection
-              config={serviceIntakeConfig}
-              answers={serviceAnswers}
-              errors={serviceAnswerErrors}
-              onChange={updateServiceAnswer}
-            />
+            {activeConfiguratorStep === "requirements" ? (
+              <ServiceRequirementsSection
+                config={serviceIntakeConfig}
+                answers={serviceAnswers}
+                errors={serviceAnswerErrors}
+                onChange={updateServiceAnswer}
+              />
+            ) : null}
 
+            {activeConfiguratorStep === "deployment" ? (
+              <>
+            <div className="flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sky-700 ring-1 ring-sky-200">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-sky-950">Smart defaults are already selected</p>
+                <p className="mt-1 text-xs leading-5 text-sky-700">
+                  We started with the first compatible region, storage profile, and system image so you only need to change what matters.
+                </p>
+              </div>
+            </div>
             {regionOptions.length ? (
               <div className="rounded-3xl border border-slate-200 bg-white p-5">
                 <div className="flex items-start gap-3">
@@ -1195,7 +1458,11 @@ export function OrderConfigurator({ slug }) {
                 </div>
               </div>
             ) : null}
+              </>
+            ) : null}
 
+            {activeConfiguratorStep === "addons" ? (
+              <>
             {extraIpAddon || otherFeatureAddons.length ? (
               <div className="rounded-3xl border border-slate-200 bg-white p-5">
                 <div className="flex items-start gap-3">
@@ -1227,26 +1494,30 @@ export function OrderConfigurator({ slug }) {
                       <button
                         type="button"
                         onClick={() => updateFeatureSelection(extraIpAddon._id, false)}
+                        aria-pressed={!activeFeatureIds.includes(extraIpAddon._id)}
                         className={cn(
-                          "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                          "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition",
                           activeFeatureIds.includes(extraIpAddon._id)
                             ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                            : "border-brand-600 bg-brand-600 text-white",
+                            : "border-accent-400 bg-accent-50 text-accent-800 ring-1 ring-accent-200",
                         )}
                       >
-                        No extra IP
+                        <span>No extra IP</span>
+                        {!activeFeatureIds.includes(extraIpAddon._id) ? <CheckCircle2 className="h-4 w-4" /> : null}
                       </button>
                       <button
                         type="button"
                         onClick={() => updateFeatureSelection(extraIpAddon._id, true)}
+                        aria-pressed={activeFeatureIds.includes(extraIpAddon._id)}
                         className={cn(
-                          "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                          "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition",
                           activeFeatureIds.includes(extraIpAddon._id)
-                            ? "border-brand-600 bg-brand-600 text-white"
+                            ? "border-accent-400 bg-accent-50 text-accent-800 ring-1 ring-accent-200"
                             : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
                         )}
                       >
-                        Yes, add 1 extra IP
+                        <span>Yes, add 1 extra IP</span>
+                        {activeFeatureIds.includes(extraIpAddon._id) ? <CheckCircle2 className="h-4 w-4" /> : null}
                       </button>
                     </div>
                   </div>
@@ -1317,16 +1588,47 @@ export function OrderConfigurator({ slug }) {
                 </Link>
               </div>
             </div>
+              </>
+            ) : null}
 
-            {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
+            {error ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>
+            ) : null}
+
+            <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+              {previousConfiguratorStep ? (
+                <Button type="button" variant="ghost" onClick={() => moveToConfiguratorStep(previousConfiguratorStep.id)}>
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to {previousConfiguratorStep.label}
+                </Button>
+              ) : (
+                <span className="hidden sm:block" />
+              )}
+              {nextConfiguratorStep ? (
+                <Button type="button" onClick={handleConfiguratorContinue}>
+                  Continue to {nextConfiguratorStep.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Configuration ready for cart
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="h-fit lg:sticky lg:top-[8.5rem]">
           <CardHeader>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700">Live estimate</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700">Live estimate</p>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                {currentConfiguratorStepIndex + 1}/{configuratorSteps.length}
+              </span>
+            </div>
             <CardTitle className="mt-1">Your configuration</CardTitle>
-            <CardDescription>Transparent pricing before anything enters checkout.</CardDescription>
+            <CardDescription>Updates instantly as you make each selection.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <SummaryRow label="Plan" value={plan.name} />
@@ -1349,7 +1651,7 @@ export function OrderConfigurator({ slug }) {
             ) : null}
             {finalNote.trim() ? <SummaryRow label="Team Note" value="Included with order" /> : null}
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Charges</p>
               <div className="mt-3 space-y-3">
                 {summaryItems.map((item) => (
@@ -1375,21 +1677,36 @@ export function OrderConfigurator({ slug }) {
               </div>
             ) : null}
 
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+            <div className={cn("rounded-xl border p-3.5", isFinalConfiguratorStep ? "border-emerald-200 bg-emerald-50" : "border-sky-200 bg-sky-50")}>
               <div className="flex items-start gap-2.5">
-                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
-                <p className="text-xs leading-5 text-emerald-800">
-                  No charge is made here. You can review, edit, or remove this configuration from your cart first.
+                {isFinalConfiguratorStep ? (
+                  <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                ) : (
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
+                )}
+                <p className={cn("text-xs leading-5", isFinalConfiguratorStep ? "text-emerald-800" : "text-sky-800")}>
+                  {isFinalConfiguratorStep
+                    ? "No charge is made here. You can review, edit, or remove this configuration from your cart first."
+                    : "Your choices are kept while you move between steps. Continue when this section looks right."}
                 </p>
               </div>
             </div>
 
-            <Button className="w-full" onClick={handleAddToCart} disabled={isSubmitting}>
-              <ShoppingCart className="h-4 w-4" />
-              {isSubmitting ? "Saving configuration..." : plan.contactSalesOnly ? "Talk to Sales" : "Add to cart"}
-              {!isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
-            </Button>
-            <p className="text-center text-xs leading-5 text-slate-500">Next: review your cart and initiate secure checkout.</p>
+            {nextConfiguratorStep ? (
+              <Button className="w-full" onClick={handleConfiguratorContinue}>
+                Continue to {nextConfiguratorStep.label}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button className="w-full" onClick={handleAddToCart} disabled={isSubmitting}>
+                <ShoppingCart className="h-4 w-4" />
+                {isSubmitting ? "Saving configuration..." : plan.contactSalesOnly ? "Talk to Sales" : "Add to cart"}
+                {!isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
+              </Button>
+            )}
+            <p className="text-center text-xs leading-5 text-slate-500">
+              {isFinalConfiguratorStep ? "Next: review your cart and initiate secure checkout." : `Current step: ${currentConfiguratorStep.label}`}
+            </p>
           </CardContent>
         </Card>
       </div>
