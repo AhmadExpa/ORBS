@@ -28,6 +28,7 @@ export const legalPages = [
         heading: "Orders and Managed Delivery",
         paragraphs: [
           "Orders submitted through the portal are requests for managed delivery. Provisioning may require payment confirmation, account review, service availability, licensing checks, infrastructure availability, and operational approval by the ElevenOrbits team.",
+          "Payment of a new-order invoice is an advance payment and does not by itself mean the request has been accepted. If ElevenOrbits rejects the request during its pre-provisioning review, the full collected advance is returned to the original card or restored to the ElevenOrbits wallet used for payment.",
           "Configuration notes, selected add-ons, preferred regions, images, and deployment instructions are used to guide fulfillment. ElevenOrbits may contact you for clarification or decline requests that are incomplete, unavailable, unlawful, abusive, or outside the supported service scope.",
         ],
       },
@@ -185,6 +186,7 @@ export const legalPages = [
       {
         heading: "Eligible Refund Reviews",
         paragraphs: [
+          "New-order payments are collected in advance. When ElevenOrbits rejects a service request during review and before provisioning begins, the full collected advance is refunded automatically through the original card or wallet source.",
           "ElevenOrbits may review refund requests for duplicate payments, billing errors, payments made against unavailable services, accidental overpayments, or situations where ElevenOrbits determines it cannot provide the purchased service.",
           "Approved refunds may be returned to the original payment method, applied as wallet credit, or handled through another mutually acceptable method depending on the payment rail and account status.",
         ],
@@ -199,7 +201,8 @@ export const legalPages = [
       {
         heading: "Wallet Funds and Card Payments",
         paragraphs: [
-          "Wallet credits are intended for ElevenOrbits service charges. Card-funded wallet top-ups are processed through the configured payment provider and become available after successful confirmation.",
+          "Wallet credits can be used to pay eligible ElevenOrbits order invoices and recurring service charges. Card-funded wallet top-ups are processed through the configured payment provider and become available after successful confirmation.",
+          "If an order paid from wallet balance is rejected during pre-provisioning review, the collected advance is restored to that wallet balance.",
         ],
       },
       {

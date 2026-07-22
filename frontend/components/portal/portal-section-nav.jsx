@@ -40,7 +40,7 @@ function isLinkActive(pathname, href) {
 }
 
 function isActiveSubscription(item) {
-  return !["cancelled", "expired"].includes(item?.status);
+  return !["cancelled", "expired", "rejected"].includes(item?.status);
 }
 
 export function PortalSectionNav({ section, isDelegate = false }) {
@@ -123,7 +123,8 @@ export function PortalSectionNav({ section, isDelegate = false }) {
     if (normalizedPathname === "/portal/invoices") {
       if (!value) return invoices.length;
       if (value === "paid") return invoices.filter((invoice) => invoice.status === "paid").length;
-      if (value === "outstanding") return invoices.filter((invoice) => invoice.status !== "paid").length;
+      if (value === "outstanding") return invoices.filter((invoice) => ["pending", "rejected"].includes(invoice.status)).length;
+      return invoices.filter((invoice) => invoice.status === value).length;
     }
     if (normalizedPathname === "/portal/subscriptions") {
       if (!value) return subscriptions.length;
@@ -141,7 +142,9 @@ export function PortalSectionNav({ section, isDelegate = false }) {
       { label: "Total subscriptions", value: subscriptions.length },
     ];
   } else if (sectionId === "billing") {
-    const outstanding = invoices.filter((invoice) => invoice.status !== "paid").reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
+    const outstanding = invoices
+      .filter((invoice) => ["pending", "rejected"].includes(invoice.status))
+      .reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
     stats = [
       { label: "Wallet balance", value: formatCurrency(walletBalance) },
       { label: "Outstanding", value: formatCurrency(outstanding) },

@@ -149,7 +149,7 @@ function GeneralAccountPanel({ onEditBusiness }) {
         <Card>
           <CardHeader>
             <CardTitle>Billing & Wallet</CardTitle>
-            <CardDescription>Wallet balance is used first for renewals and approved service charges.</CardDescription>
+            <CardDescription>Wallet funds can pay order invoices and are used first for future renewals.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2">

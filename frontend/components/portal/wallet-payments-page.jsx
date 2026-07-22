@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, CircleDollarSign, CreditCard, History, Plus, ReceiptText, ShieldCheck, Sparkles, Wallet, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleDollarSign, CreditCard, History, Plus, ReceiptText, RefreshCw, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
@@ -122,6 +123,7 @@ export function WalletPaymentsPage() {
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const reconciliationStartedRef = useRef(false);
+  const checkoutPrefillAppliedRef = useRef(false);
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
     action: "",
@@ -142,6 +144,11 @@ export function WalletPaymentsPage() {
   const renewalModeLabel = autoCardBillingEnabled ? "Wallet first, primary-card fallback" : "Wallet-only top-up mode";
   const walletBalance = Number(user?.accountBalance || 0);
   const recentSubmissions = submissions.slice(0, 4);
+  const requestedAmount = Number(searchParams.get("amount") || 0);
+  const requestedReturnUrl = searchParams.get("return_url") || "";
+  const returnUrl = requestedReturnUrl.startsWith("/") && !requestedReturnUrl.startsWith("//")
+    ? requestedReturnUrl
+    : "";
 
   useEffect(() => {
     const requestedSection = searchParams.get("section");
@@ -149,6 +156,15 @@ export function WalletPaymentsPage() {
       setActiveSection(requestedSection);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (checkoutPrefillAppliedRef.current || !Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+      return;
+    }
+
+    checkoutPrefillAppliedRef.current = true;
+    setInstantAmount(requestedAmount.toFixed(2));
+  }, [requestedAmount]);
 
   useEffect(() => {
     if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
@@ -328,6 +344,10 @@ export function WalletPaymentsPage() {
       return "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.";
     }
 
+    if (returnUrl) {
+      router.push(returnUrl);
+    }
+
     return "Your wallet payment was received. The balance has been refreshed.";
   }
 
@@ -397,6 +417,9 @@ export function WalletPaymentsPage() {
           ? response.message || "Your saved card was charged and the wallet balance has been refreshed."
           : "The wallet credit is synchronizing automatically. Do not submit the payment again.",
       });
+      if (finalization.completed && returnUrl) {
+        router.push(returnUrl);
+      }
     } catch (error) {
       const normalizedError = normalizePaymentActionError(error);
       if (normalizedError.preventSameCardRetry) {
@@ -545,7 +568,7 @@ export function WalletPaymentsPage() {
     <div className="min-h-full">
       <Topbar
         title="Wallet & payments"
-        subtitle="One balance for top-ups, renewals, and every approved ElevenOrbits service."
+        subtitle="One balance for order invoices, top-ups, renewals, and ElevenOrbits services."
         actions={
           <Button type="button" onClick={() => setActiveSection("instant-topup")}>
             <Plus className="h-4 w-4" />
@@ -576,7 +599,7 @@ export function WalletPaymentsPage() {
                 <p className="text-sm font-medium text-slate-400">Available balance</p>
                 <p className="mt-2 text-5xl font-semibold tracking-[-0.05em] sm:text-6xl">{formatCurrency(walletBalance)}</p>
                 <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
-                  Your wallet is used first for renewals and approved service charges. Add exactly what you need, whenever you need it.
+                  Use wallet funds to pay a new order invoice in full or cover future renewals. Add exactly what you need, whenever you need it.
                 </p>
               </div>
 
@@ -624,7 +647,7 @@ export function WalletPaymentsPage() {
                 <button type="button" onClick={() => setActiveSection("saved-card")} className="flex w-full items-center justify-between gap-4 py-5 text-left">
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                      <Sparkles className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-slate-900">Renewal mode</span>
@@ -925,7 +948,25 @@ export function WalletPaymentsPage() {
         ) : null}
 
         {activeSection === "instant-topup" ? (
-          <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="space-y-5">
+            {returnUrl ? (
+              <div className="flex flex-col gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">Top up for your order invoice</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    Add the remaining balance here. After funding, you can return to checkout and pay the invoice from your wallet.
+                  </p>
+                </div>
+                <Link href={returnUrl} className="inline-flex shrink-0">
+                  <Button variant="ghost">
+                    Return to checkout
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            ) : null}
+
+            <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
             <Card className="h-fit overflow-hidden">
               <CardHeader>
                 <div className="flex items-center justify-between gap-4">
@@ -1071,6 +1112,7 @@ export function WalletPaymentsPage() {
                   )}
                 </CardContent>
               </Card>
+            </div>
             </div>
           </div>
         ) : null}

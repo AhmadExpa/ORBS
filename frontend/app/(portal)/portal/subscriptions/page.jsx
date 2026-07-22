@@ -15,11 +15,11 @@ import { Topbar } from "@/components/shared/topbar";
 import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
 
 function canUnsubscribe(subscription) {
-  return !["cancelled", "expired"].includes(subscription?.status);
+  return !["cancelled", "expired", "rejected"].includes(subscription?.status);
 }
 
 function canDeleteFromPortal(subscription) {
-  return ["cancelled", "expired"].includes(subscription?.status);
+  return ["cancelled", "expired", "rejected"].includes(subscription?.status);
 }
 
 export default function PortalSubscriptionsPage() {
@@ -132,7 +132,7 @@ export default function PortalSubscriptionsPage() {
         type: "info",
         action: "Subscription",
         title: isDeleteAction ? "Service removed" : "Subscription cancelled",
-        description: response.message || (isDeleteAction ? "The cancelled service has been removed from your portal." : "The subscription has been cancelled."),
+        description: response.message || (isDeleteAction ? "The service record has been removed from your portal." : "The subscription has been cancelled."),
       });
       setActionState({ loadingId: "", type: "", error: "" });
       setPendingAction(null);
@@ -220,7 +220,7 @@ export default function PortalSubscriptionsPage() {
       </div>
       <DeleteReasonModal
         open={Boolean(pendingAction)}
-        title={pendingAction?.type === "delete" ? "Delete cancelled service" : "Unsubscribe service"}
+        title={pendingAction?.type === "delete" ? "Remove service record" : "Unsubscribe service"}
         subtitle={
           pendingAction?.type === "delete"
             ? `Remove ${pendingAction?.subscription?.productPlanId?.name || "this service"} from your portal history? Billing records stay intact.`

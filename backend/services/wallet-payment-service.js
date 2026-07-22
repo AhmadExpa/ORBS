@@ -66,8 +66,8 @@ async function finalizeOrderInvoicePayment({
     throw new HttpError(404, "The linked order could not be found.");
   }
 
-  if (order.status === "cancelled") {
-    throw new HttpError(400, "Cancelled orders cannot be paid.");
+  if (["cancelled", "rejected"].includes(order.status)) {
+    throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
   }
 
   if (order.status === "approved") {
@@ -76,16 +76,25 @@ async function finalizeOrderInvoicePayment({
 
   await rejectSupersededOrderSubmissions(order._id);
 
-  order.status = "approved";
+  const paymentReceivedAt = new Date();
+  order.status = "pending_verification";
+  order.metadata = {
+    ...order.metadata,
+    advancePayment: true,
+    advancePaymentStatus: "pending_review",
+    paymentReceivedAt: paymentReceivedAt.toISOString(),
+    paymentMethodType: "wallet_balance",
+  };
   await order.save();
 
   if (subscription && !["cancelled", "expired"].includes(subscription.status)) {
-    subscription.status = "active";
-    subscription.startDate = new Date();
-    subscription.renewalDate = addBillingPeriod(new Date(), subscription.billingCycle);
+    subscription.status = "pending_verification";
     subscription.metadata = {
       ...subscription.metadata,
       billingAmount: order.totalAmount,
+      advancePayment: true,
+      advancePaymentStatus: "pending_review",
+      paymentReceivedAt: paymentReceivedAt.toISOString(),
       lastWalletPaymentAt: new Date(),
       lastWalletPaymentSource: "wallet_balance",
     };
@@ -111,7 +120,7 @@ async function finalizeOrderInvoicePayment({
     invoiceCode: paymentReferenceCode,
     paymentMethodType: "wallet_balance",
     status: "approved",
-    adminRemarks: "Customer paid the invoice using wallet balance.",
+    adminRemarks: "Advance payment received from wallet balance. The service request is pending legitimacy and provisioning review.",
     gateway: "wallet",
     submittedAt: new Date(),
     reviewedAt: new Date(),

@@ -22,6 +22,7 @@ export function CheckoutThankYouView({ orderId }) {
   const isTrialRequested = Boolean(order?.metadata?.trialRequested);
   const totalPaid = isTrialRequested ? 0 : Number(invoice?.amount || order?.totalAmount || 0);
   const isPaid = !isTrialRequested && (invoice?.status === "paid" || order?.status === "approved");
+  const isRefunded = invoice?.status === "refunded" || order?.status === "rejected";
 
   if (orderQuery.isLoading) {
     return <PageLoader title="Payment Confirmation" subtitle="Confirming payment status..." cardCount={2} lines={3} />;
@@ -38,12 +39,14 @@ export function CheckoutThankYouView({ orderId }) {
   return (
     <div>
       <Topbar
-        title={isTrialRequested ? "Trial Request Received" : isPaid ? "Payment Successful" : "Payment Status Updating"}
+        title={isTrialRequested ? "Trial Request Received" : isRefunded ? "Request Refunded" : isPaid ? "Advance Payment Received" : "Payment Status Updating"}
         subtitle={
           isTrialRequested
             ? "Your 3-day trial request is attached to your account for ElevenOrbits review."
+            : isRefunded
+            ? "The request was not approved and its payment has been returned through the original payment source."
             : isPaid
-            ? "Your card payment was received. The service is now ready for provisioning follow-up in the portal."
+            ? "Your order invoice is paid. ElevenOrbits will now review the request before provisioning the service."
             : "Stripe confirmed the checkout flow, and the portal is refreshing the final payment state."
         }
       />
@@ -64,7 +67,9 @@ export function CheckoutThankYouView({ orderId }) {
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600">
                   {isTrialRequested
                     ? "The selected settings and trial request are attached to your account. The ElevenOrbits team will review the request before activation."
-                    : "The selected settings, invoice, and service record are attached to your account. The ElevenOrbits team will handle provisioning and add access details after setup."}
+                    : isRefunded
+                    ? "The request remains in your portal for reference. Its advance payment has been refunded to the original card or wallet balance."
+                    : "The selected settings, paid invoice, and service record are attached to your account. If the request is legitimate and approved, the team will prepare the server and publish access details. Otherwise, the advance payment will be refunded."}
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href="/portal">
@@ -95,7 +100,7 @@ export function CheckoutThankYouView({ orderId }) {
                         <ReceiptText className="h-5 w-5 text-slate-600" />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                            {isTrialRequested ? "Due Today" : "Amount Paid"}
+                            {isTrialRequested ? "Due Today" : isRefunded ? "Amount Refunded" : "Advance Paid"}
                           </p>
                           <p className="mt-1 text-2xl font-semibold text-slate-950">
                             {isTrialRequested ? "No charge" : formatCurrency(totalPaid)}
@@ -108,7 +113,9 @@ export function CheckoutThankYouView({ orderId }) {
                         <ServerCog className="h-5 w-5 text-slate-600" />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Next Step</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-950">Provisioning and access handoff</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-950">
+                            {isRefunded ? "Refund completed" : isTrialRequested ? "Trial review" : "Legitimacy and provisioning review"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -126,7 +133,7 @@ export function CheckoutThankYouView({ orderId }) {
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500">Payment</span>
                         <span className="font-semibold text-slate-950">
-                          {isTrialRequested ? "Trial requested" : isPaid ? "Card received" : "Updating"}
+                          {isTrialRequested ? "Trial requested" : isRefunded ? "Refunded" : isPaid ? "Advance received" : "Updating"}
                         </span>
                       </div>
                     </div>

@@ -635,6 +635,22 @@ export async function retrieveCharge(chargeId) {
   });
 }
 
+export async function refundStripePayment({ paymentIntentId, metadata = {}, idempotencyKey = "" }) {
+  assertStripeConfigured();
+
+  if (!paymentIntentId) {
+    throw new HttpError(400, "The original Stripe payment reference is missing.");
+  }
+
+  return stripe.refunds.create(
+    {
+      payment_intent: paymentIntentId,
+      metadata: normalizeMetadata(metadata),
+    },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
+}
+
 export async function retrieveSetupIntent(setupIntentId) {
   assertStripeConfigured();
 

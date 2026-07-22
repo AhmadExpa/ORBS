@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Archive,
+  BadgeCheck,
   BarChart3,
   Bot,
   Brain,
@@ -57,7 +58,6 @@ import {
   Settings2,
   Shield,
   ShoppingCart,
-  Sparkles,
   SlidersHorizontal,
   StepForward,
   Target,
@@ -856,7 +856,7 @@ export function OrderConfigurator({ slug }) {
         label: "Finish",
         title: "Add the finishing touches",
         description: "Choose optional enhancements, add a team note, and review the live estimate.",
-        icon: Sparkles,
+        icon: BadgeCheck,
       },
     ],
     [hasDeploymentOptions, serviceIntakeConfig],
@@ -1327,7 +1327,7 @@ export function OrderConfigurator({ slug }) {
               <>
             <div className="flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sky-700 ring-1 ring-sky-200">
-                <Sparkles className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" />
               </span>
               <div>
                 <p className="text-sm font-semibold text-sky-950">Smart defaults are already selected</p>
@@ -1682,7 +1682,7 @@ export function OrderConfigurator({ slug }) {
                 {isFinalConfiguratorStep ? (
                   <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
                 ) : (
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
                 )}
                 <p className={cn("text-xs leading-5", isFinalConfiguratorStep ? "text-emerald-800" : "text-sky-800")}>
                   {isFinalConfiguratorStep

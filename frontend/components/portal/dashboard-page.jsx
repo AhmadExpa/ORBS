@@ -116,7 +116,7 @@ export function PortalDashboardPage() {
   const monthlyRecurring = getMonthlyRecurringAmount(subscriptions);
   const walletBalance = Number(profile?.accountBalance || 0);
   const openTickets = tickets.filter((item) => ["open", "pending"].includes(item.status));
-  const outstandingInvoices = invoices.filter((item) => item.status !== "paid");
+  const outstandingInvoices = invoices.filter((item) => ["pending", "rejected"].includes(item.status));
   const outstandingTotal = outstandingInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
   const upcomingRenewals = currentServices

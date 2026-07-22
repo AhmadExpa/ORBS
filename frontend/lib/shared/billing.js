@@ -1,6 +1,6 @@
 // Shared billing helpers for the customer portal.
 
-const INACTIVE_STATUSES = ["cancelled", "expired"];
+const INACTIVE_STATUSES = ["cancelled", "expired", "rejected"];
 
 export function isActiveSubscription(subscription) {
   return !INACTIVE_STATUSES.includes(subscription?.status);

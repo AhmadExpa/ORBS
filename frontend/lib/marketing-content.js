@@ -433,7 +433,7 @@ export const resourcePages = [
       {
         heading: "Wallet and Renewals",
         points: [
-          "Wallet balance can be applied to recurring service charges.",
+          "Wallet balance can pay a new order invoice in full and can also be applied to recurring service charges.",
           "If wallet balance does not cover the full due amount, a saved card or another payment route may be needed.",
           "Customers should keep billing information and payment methods current before renewal dates.",
         ],
@@ -442,6 +442,7 @@ export const resourcePages = [
         heading: "Card Payments",
         points: [
           "Card payments are confirmed through the configured payment provider.",
+          "New-order payments are collected in advance, reviewed before provisioning, and refunded through the original source when a request cannot be approved.",
           "Wallet top-ups and order payments appear in portal payment activity.",
           "Customers should keep saved card details current for renewal fallback billing.",
         ],

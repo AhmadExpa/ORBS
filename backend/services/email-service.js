@@ -315,8 +315,16 @@ function getCustomerName(customer) {
 }
 
 function getInvoiceSubject(invoice, eventType) {
+  if (eventType === "invoice_refunded") {
+    return `Advance payment refunded for ${invoice.invoiceNumber}`;
+  }
+
+  if (eventType === "invoice_rejected") {
+    return `Service request update for ${invoice.invoiceNumber}`;
+  }
+
   if (eventType === "invoice_paid") {
-    return `Payment received for ${invoice.invoiceNumber}`;
+    return `Advance payment received for ${invoice.invoiceNumber}`;
   }
 
   if (eventType === "renewal_paid") {
@@ -333,7 +341,19 @@ function getInvoiceSubject(invoice, eventType) {
 function getInvoiceIntro(invoice, planName, eventType) {
   const serviceName = planName || invoice.lineItems?.[0]?.label || "your ElevenOrbits service";
 
-  if (eventType === "invoice_paid" || eventType === "renewal_paid") {
+  if (eventType === "invoice_refunded") {
+    return `We could not approve the service request for ${serviceName}. The advance payment has been returned through the original payment source.`;
+  }
+
+  if (eventType === "invoice_rejected") {
+    return `We could not approve the unpaid service request for ${serviceName}. No payment was collected.`;
+  }
+
+  if (eventType === "invoice_paid") {
+    return `We received the advance payment for ${serviceName}. The request is now under legitimacy and provisioning review. If it cannot be approved, the payment will be returned through its original source.`;
+  }
+
+  if (eventType === "renewal_paid") {
     return `We received payment for ${serviceName}. Your invoice has been updated and is available in your customer portal.`;
   }
 
@@ -355,7 +375,7 @@ export async function sendInvoiceNotification({ customer, invoice, planName, eve
     subject,
     title: subject,
     preheader: `Invoice ${invoice.invoiceNumber} is available in your ElevenOrbits portal.`,
-    badge: invoice.status === "paid" ? "Payment Receipt" : "Invoice Notice",
+    badge: invoice.status === "paid" ? eventType === "invoice_paid" ? "Advance Payment Receipt" : "Payment Receipt" : invoice.status === "refunded" ? "Refund Confirmation" : "Invoice Notice",
     intro: getInvoiceIntro(invoice, planName, eventType),
     rows: [
       { label: "Customer", value: getCustomerName(customer) },
@@ -363,15 +383,18 @@ export async function sendInvoiceNotification({ customer, invoice, planName, eve
       { label: "Status", value: humanizeValue(invoice.status) },
       { label: "Amount", value: formatMoney(invoice.amount, invoice.currency) },
       { label: "Issued", value: formatDate(invoice.issuedAt) },
-      { label: "Paid", value: invoice.status === "paid" ? formatDate(invoice.paidAt) : "Pending" },
+      { label: "Paid", value: ["paid", "refunded"].includes(invoice.status) ? formatDate(invoice.paidAt) : "Pending" },
       { label: "Reference", value: invoice.paymentReferenceCode || "Pending" },
+      ...(invoice.status === "refunded" ? [{ label: "Refund Reference", value: invoice.metadata?.refundReference || "Pending" }] : []),
     ],
     action: {
       label: "Open Customer Portal",
       href: invoiceUrl,
     },
     notes: [
-      invoice.status === "paid"
+      invoice.status === "refunded"
+        ? "Card refunds are returned through Stripe. Wallet payments are restored to the ElevenOrbits wallet balance."
+        : invoice.status === "paid"
         ? "Keep this receipt for your records."
         : "If payment is still required, complete it from the invoice or wallet section of the customer portal.",
     ],

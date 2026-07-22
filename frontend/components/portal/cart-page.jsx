@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CreditCard,
   FileCheck2,
   Headphones,
   LockKeyhole,
@@ -18,6 +17,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Trash2,
+  Wallet,
 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui";
 import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
@@ -261,9 +261,9 @@ export function CartPage() {
                 <CardDescription>A clear handoff from purchase to managed delivery.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5 md:grid-cols-3">
-                <Assurance icon={CreditCard} title="1. Secure payment" description="Your order is created only when you proceed, then card payment uses 3D Secure." />
-                <Assurance icon={FileCheck2} title="2. Team review" description="We confirm the configuration and provisioning requirements." />
-                <Assurance icon={PackageCheck} title="3. Managed delivery" description="Access details and service status are published in your portal." />
+                <Assurance icon={Wallet} title="1. Advance payment" description="Pay the order invoice securely from your wallet or by card." />
+                <Assurance icon={FileCheck2} title="2. Legitimacy review" description="We validate the request before provisioning. Unapproved requests are refunded." />
+                <Assurance icon={PackageCheck} title="3. Managed delivery" description="Approved services are prepared and access details are published in your portal." />
               </CardContent>
             </Card>
           </div>

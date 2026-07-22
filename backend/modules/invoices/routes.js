@@ -210,7 +210,7 @@ invoicesRouter.post(
 
     res.json({
       success: true,
-      message: "The invoice has been paid from your wallet balance.",
+      message: "Advance payment received from your wallet. The service request is now pending review.",
       invoice: result.invoice,
       order: result.order,
       subscription: result.subscription,

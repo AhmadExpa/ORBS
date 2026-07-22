@@ -20,6 +20,8 @@ export function DeleteReasonModal({
   confirmLabel = "Delete",
   reasonLabel = "Reason for deletion",
   otherLabel = "Please describe your reason",
+  reasons = PREDEFINED_REASONS,
+  pendingLabel = "Deleting...",
   isDeleting = false,
   onConfirm,
   onClose,
@@ -84,7 +86,7 @@ export function DeleteReasonModal({
         <div className="px-6 py-5">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{reasonLabel}</p>
           <div className="space-y-2">
-            {PREDEFINED_REASONS.map((reason) => (
+            {reasons.map((reason) => (
               <button
                 key={reason}
                 type="button"
@@ -147,7 +149,7 @@ export function DeleteReasonModal({
                 : "cursor-not-allowed bg-slate-100 text-slate-400",
             )}
           >
-            {isDeleting ? "Deleting..." : confirmLabel}
+            {isDeleting ? pendingLabel : confirmLabel}
           </button>
         </div>
       </div>

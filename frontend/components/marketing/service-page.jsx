@@ -246,7 +246,7 @@ export function ServicePage({ slug }) {
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
               <p>Customers do not self-manage infra from this portal. We handle monitoring, maintenance, and day-to-day operations.</p>
-              <p>Fixed-price plans now start with account access, then configuration, card payment, and a confirmation page before the portal opens.</p>
+              <p>Fixed-price plans start with account access, configuration, and an advance payment by wallet or card. Approved requests move into managed provisioning; requests we cannot approve are refunded.</p>
               <p>Contact-sales plans route through the department contact flow first.</p>
               <ServiceLogoCluster categorySlugs={[slug]} techItems={planTechItems} max={5} />
             </CardContent>

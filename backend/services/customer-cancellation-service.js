@@ -47,7 +47,7 @@ export async function cancelCustomerSubscription({
     throw new HttpError(404, "Subscription not found.");
   }
 
-  if (["cancelled", "expired"].includes(subscription.status)) {
+  if (["cancelled", "expired", "rejected"].includes(subscription.status)) {
     throw new HttpError(400, "This subscription can no longer be cancelled.");
   }
 
@@ -99,7 +99,7 @@ export async function cancelCustomerOrder({
 
   const paidApprovedOrder = order.status === "approved" && invoice?.status === "paid";
   const cancellableUnpaidOrder =
-    ["draft", "pending_verification", "trial_requested"].includes(order.status) ||
+    ["draft", "pending_verification", "trial_requested"].includes(order.status) &&
     ["pending", "rejected", "void"].includes(invoice?.status);
 
   if (!paidApprovedOrder && !cancellableUnpaidOrder) {
@@ -141,8 +141,8 @@ export async function deleteCustomerSubscriptionFromPortal({
     throw new HttpError(400, "This service has already been removed from your portal.");
   }
 
-  if (!["cancelled", "expired"].includes(subscription.status)) {
-    throw new HttpError(400, "Only cancelled or expired services can be removed from your portal.");
+  if (!["cancelled", "expired", "rejected"].includes(subscription.status)) {
+    throw new HttpError(400, "Only cancelled, expired, or rejected services can be removed from your portal.");
   }
 
   subscription.customerDeletedAt = new Date();

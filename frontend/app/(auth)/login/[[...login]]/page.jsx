@@ -39,14 +39,14 @@ export default async function LoginPage({ searchParams }) {
                 Return to your managed order without losing context.
               </h1>
               <p className="mt-6 max-w-md text-sm leading-7 text-white/64">
-                Sign in to review settings, confirm billing, and complete card payment inside the ElevenOrbits portal.
+                Sign in to review settings, confirm billing, and pay securely by wallet or card inside the ElevenOrbits portal.
               </p>
             </div>
             <div className="grid gap-3">
               {[
                 { icon: LockKeyhole, label: "Protected checkout", value: "Account access is required before configuration and payment." },
                 { icon: ServerCog, label: "Managed delivery", value: "Provisioning notes and selected settings remain tied to your order." },
-                { icon: ShieldCheck, label: "Billing continuity", value: "Successful card payments activate the order and open the portal." },
+                { icon: ShieldCheck, label: "Reviewed fulfillment", value: "Advance payments enter review before an approved service is provisioned." },
               ].map((item) => {
                 const Icon = item.icon;
                 return (

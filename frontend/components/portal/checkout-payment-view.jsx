@@ -18,6 +18,7 @@ import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
 import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
 import { OrderJourney } from "@/components/portal/order-journey";
+import { ArrowRight, Wallet } from "lucide-react";
 
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
@@ -92,9 +93,10 @@ export function CheckoutPaymentView({ orderId }) {
   const lineItems = order?.lineItems || [];
   const isTrialRequested = Boolean(order?.metadata?.trialRequested);
   const isCancelled = order?.status === "cancelled" || subscription?.status === "cancelled";
+  const isRejected = order?.status === "rejected" || subscription?.status === "rejected" || invoice?.status === "refunded";
   const isPaid = !isTrialRequested && (invoice?.status === "paid" || order?.status === "approved");
-  const canTriggerPayments = Boolean(order) && !isTrialRequested && !isPaid && !isCancelled && contractApproved;
-  const canCancelOrder = Boolean(order) && !["cancelled", "deleted", "rejected"].includes(order.status);
+  const canTriggerPayments = Boolean(order) && !isTrialRequested && !isPaid && !isCancelled && !isRejected && contractApproved;
+  const canCancelOrder = Boolean(order) && !isPaid && !["cancelled", "deleted", "rejected"].includes(order.status);
   const canDeleteOrder = order?.status === "cancelled";
   const invoiceFileUrl = resolvePublicFileUrl(invoice?.pdfUrl);
   const refetchOrder = orderQuery.refetch;
@@ -102,11 +104,48 @@ export function CheckoutPaymentView({ orderId }) {
   const customerNote = String(order?.metadata?.customerNote || "").trim();
 
   const totalDue = useMemo(() => (isTrialRequested ? 0 : Number(invoice?.amount || order?.totalAmount || 0)), [invoice?.amount, isTrialRequested, order?.totalAmount]);
+  const walletBalance = Number(profile?.accountBalance || 0);
+  const walletShortfall = Math.max(totalDue - walletBalance, 0);
+  const canPayWithWallet = Boolean(invoice?._id) && canTriggerPayments && walletBalance >= totalDue;
 
   async function syncOrderState() {
     await Promise.all([refetchOrder(), refetchProfile()]);
     await wait(1200);
     await Promise.all([refetchOrder(), refetchProfile()]);
+  }
+
+  async function handleWalletPayment() {
+    if (!canPayWithWallet || state.isSubmitting) return;
+
+    setState({ isSubmitting: true, action: "wallet", message: "", error: "" });
+    try {
+      const token = await getToken();
+      const response = await apiFetch(`/invoices/${invoice._id}/pay-with-wallet`, {
+        method: "POST",
+        token,
+      });
+      showToast({
+        type: "success",
+        action: "Advance payment",
+        title: "Invoice paid from wallet",
+        description: response.message || "Your advance payment was received and the service request is pending review.",
+      });
+      await syncOrderState();
+      router.replace(`/portal/checkout/${orderId}/thank-you`);
+    } catch (paymentError) {
+      setState({
+        isSubmitting: false,
+        action: "",
+        message: "",
+        error: paymentError.message || "The invoice could not be paid from your wallet.",
+      });
+      showToast({
+        type: "error",
+        action: "Advance payment",
+        title: "Wallet payment failed",
+        description: paymentError.message || "The invoice could not be paid from your wallet.",
+      });
+    }
   }
 
   async function handleCardPayment({ stripe, cardElement, billingDetails }) {
@@ -173,7 +212,7 @@ export function CheckoutPaymentView({ orderId }) {
 
     await syncOrderState();
     router.replace(`/portal/checkout/${orderId}/thank-you`);
-    return "Your payment was received. The order details are being refreshed now.";
+    return "Your advance payment was received. The request is now pending review.";
   }
 
   async function handleOrderCancel(reason) {
@@ -354,26 +393,33 @@ export function CheckoutPaymentView({ orderId }) {
             ) : null}
 
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
-              Server login credentials are not chosen during checkout. After the order is approved, the admin team will provision the service and place the login, password, and IP details in your portal.
+              This checkout is an advance payment for the requested service. ElevenOrbits reviews the request before provisioning. Approved requests are prepared and published in your portal; requests that cannot be approved are refunded through the original payment source.
             </div>
 
             <div className="rounded-xl border border-line bg-white p-5">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    {isTrialRequested ? "Trial Request" : "Card Payment"}
+                    {isTrialRequested ? "Trial Request" : "Advance Payment"}
                   </p>
                   <p className="mt-4 text-2xl font-semibold tracking-[-0.025em] text-slate-950">{formatCurrency(totalDue)}</p>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
                     {isTrialRequested
                       ? "No payment is due today. ElevenOrbits will review the 3-day trial request and follow up before activation."
                       : contractApproved
-                      ? "Complete this first purchase by card. A successful payment activates the order, saves the card for renewal fallback billing, and opens a confirmation page."
+                      ? "Pay the order invoice now by wallet or card. The payment is held as an advance while ElevenOrbits reviews the request. If approved, provisioning begins; if rejected, the payment is returned."
                       : "This order is ready for review, but payment remains locked until an ElevenOrbits administrator approves your signed agreement."}
                   </p>
                   {!isTrialRequested ? (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-                      Current saved card: <span className="font-semibold text-slate-950">{savedCardLabel(profile)}</span>
+                    <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Wallet balance</span>
+                        <span className="font-semibold text-slate-950">{formatCurrency(walletBalance)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Saved card</span>
+                        <span className="text-right font-semibold text-slate-950">{savedCardLabel(profile)}</span>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -382,27 +428,70 @@ export function CheckoutPaymentView({ orderId }) {
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-700">
                       This order has been cancelled and is no longer billable.
                     </div>
+                  ) : isRejected ? (
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-medium text-sky-800">
+                      This request was not approved. Any collected advance payment has been returned to the original card or wallet balance.
+                    </div>
                   ) : isTrialRequested ? (
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-700">
                       3-day trial requested. Payment is not required at checkout.
                     </div>
                   ) : isPaid ? (
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-700">
-                      This order has already been paid.
+                      Advance payment received. Your request is awaiting legitimacy and provisioning review. If it cannot be approved, the payment will be refunded.
                     </div>
                   ) : !contractApproved ? (
-                    <ContractApprovalLock description="Your signed agreement was received. An ElevenOrbits administrator must approve it before card payment is available for this order." />
+                    <ContractApprovalLock description="Your signed agreement was received. An ElevenOrbits administrator must approve it before wallet or card payment is available for this order." />
                   ) : (
-                    <PortalCardForm
-                      disabled={!canTriggerPayments || state.isSubmitting}
-                      submitLabel="Pay by Card"
-                      pendingLabel="Waiting for 3D Secure verification..."
-                      onSubmit={handleCardPayment}
-                      note="Every card payment requests 3D Secure. Enter the cardholder's billing details; the portal account email is not used for this charge."
-                      successTitle="Card payment completed"
-                      errorTitle="Card payment failed"
-                      actionLabel="Order Payment"
-                    />
+                    <div className="space-y-5">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 ring-1 ring-slate-200">
+                            <Wallet className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-950">Pay from wallet</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                              Wallet top-ups can be used to settle this order invoice in full.
+                            </p>
+                          </div>
+                        </div>
+                        {canPayWithWallet ? (
+                          <Button className="mt-4 w-full" type="button" disabled={state.isSubmitting} onClick={handleWalletPayment}>
+                            <Wallet className="h-4 w-4" />
+                            {state.isSubmitting && state.action === "wallet" ? "Paying from wallet..." : `Pay ${formatCurrency(totalDue)} from wallet`}
+                          </Button>
+                        ) : (
+                          <div className="mt-4">
+                            <p className="text-xs font-medium text-amber-700">Add {formatCurrency(walletShortfall)} more to cover this invoice.</p>
+                            <Link
+                              href={`/portal/payments?section=instant-topup&amount=${walletShortfall.toFixed(2)}&return_url=${encodeURIComponent(`/portal/checkout/${orderId}`)}`}
+                              className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-700 hover:text-accent-800"
+                            >
+                              Top up wallet
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        <span className="h-px flex-1 bg-slate-200" />
+                        Or pay by card
+                        <span className="h-px flex-1 bg-slate-200" />
+                      </div>
+
+                      <PortalCardForm
+                        disabled={!canTriggerPayments || state.isSubmitting}
+                        submitLabel="Pay advance by Card"
+                        pendingLabel="Waiting for 3D Secure verification..."
+                        onSubmit={handleCardPayment}
+                        note="Every card payment requests 3D Secure. Enter the cardholder's billing details; the portal account email is not used for this charge."
+                        successTitle="Advance payment completed"
+                        errorTitle="Card payment failed"
+                        actionLabel="Order Advance Payment"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
@@ -444,11 +533,11 @@ export function CheckoutPaymentView({ orderId }) {
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Renewal Strategy</span>
               <span className="text-right font-semibold text-slate-900">
-                {isTrialRequested ? "Starts after trial approval" : "Wallet first, saved-card fallback"}
+                {isTrialRequested ? "Starts after trial approval" : "Wallet available for invoices and renewals"}
               </span>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              After approval, future renewals can check wallet balance first and use the saved card as a fallback when card billing is enabled.
+              Wallet top-ups can pay this order invoice and future renewal invoices. After service approval, renewals check wallet balance first and may use the saved card as a fallback.
             </div>
             <Link href="/portal/payments">
               <Button variant="ghost">Manage Wallet & Saved Card</Button>

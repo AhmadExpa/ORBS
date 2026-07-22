@@ -26,7 +26,7 @@ import { handleStripeDisputeEvent } from "../../services/stripe-dispute-service.
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { recordActivity } from "../../services/activity-log-service.js";
-import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification, sendWalletTopupNotification } from "../../services/email-service.js";
@@ -155,8 +155,8 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       return { submission: existingSubmission, shouldNotify: false };
     }
 
-    if (order.status === "cancelled") {
-      throw new HttpError(400, "Cancelled orders cannot be paid.");
+    if (["cancelled", "rejected"].includes(order.status)) {
+      throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
     }
 
     if (order.status === "approved" || invoice?.status === "paid") {
@@ -176,16 +176,25 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       "Superseded by a completed Stripe card payment.",
     );
 
-    order.status = "approved";
+    const paymentReceivedAt = new Date();
+    order.status = "pending_verification";
+    order.metadata = {
+      ...order.metadata,
+      advancePayment: true,
+      advancePaymentStatus: "pending_review",
+      paymentReceivedAt: paymentReceivedAt.toISOString(),
+      paymentMethodType: "stripe_card",
+    };
     await order.save();
 
     if (subscription) {
-      subscription.status = "active";
-      subscription.startDate = new Date();
-      subscription.renewalDate = addBillingPeriod(new Date(), subscription.billingCycle);
+      subscription.status = "pending_verification";
       subscription.metadata = {
         ...subscription.metadata,
         billingAmount: order.totalAmount,
+        advancePayment: true,
+        advancePaymentStatus: "pending_review",
+        paymentReceivedAt: paymentReceivedAt.toISOString(),
         lastStripePaymentIntentId: paymentIntentId,
         ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
       };
@@ -219,7 +228,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       invoiceCode: paymentIntentId || checkoutSessionId,
       paymentMethodType: "stripe_card",
       status: "approved",
-      adminRemarks: "Stripe payment completed automatically.",
+      adminRemarks: "Advance payment received. The service request is pending legitimacy and provisioning review.",
       gateway: "stripe",
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
@@ -613,6 +622,10 @@ stripeRouter.post(
         userId: user._id,
       });
 
+      if (["cancelled", "rejected"].includes(order.status)) {
+        throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
+      }
+
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");
       }
@@ -696,6 +709,10 @@ stripeRouter.post(
         orderId: req.body.orderId,
         userId: user._id,
       });
+
+      if (["cancelled", "rejected"].includes(order.status)) {
+        throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
+      }
 
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");

@@ -26,7 +26,9 @@ import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { uploadImage } from "../../middleware/uploads.js";
 import { persistUploadedFile } from "../../services/storage-service.js";
 import { env } from "../../config/env.js";
-import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { addBillingPeriod, processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import { refundStripePayment } from "../../services/stripe-service.js";
+import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification, sendServiceAccessNotification } from "../../services/email-service.js";
 import { blockCustomer, reactivateCustomer, suspendCustomer } from "../../services/account-status-service.js";
 import { contactSubmissionUpdateSchema } from "../../services/contact-submission-service.js";
@@ -54,6 +56,10 @@ const approveContractSchema = z.object({
 
 const blockUserSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
+});
+
+const rejectServiceRequestSchema = z.object({
+  reason: z.string().trim().min(3).max(2000),
 });
 
 function isSuspendedOrBlockedCustomer(user) {
@@ -372,7 +378,7 @@ adminRouter.get(
       .filter((sub) => sub.status === "active" && ["six_month", "yearly"].includes(sub.billingCycle))
       .reduce((sum, subscription) => sum + Number(subscription.metadata?.billingAmount || 0), 0);
 
-    const unpaidInvoices = allInvoices.filter((invoice) => invoice.status !== "paid");
+    const unpaidInvoices = allInvoices.filter((invoice) => ["pending", "rejected"].includes(invoice.status));
     const unpaidInvoiceTotal = unpaidInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
     const activeSubscriptions = subscriptions.filter((sub) => sub.status === "active").length;
 
@@ -713,7 +719,25 @@ adminRouter.patch(
           }))
           .filter((item) => item.label && item.value)
       : [];
+    const categorySlug = subscription.productPlanId?.categoryId?.slug || "";
     const hasAssignedAccess = Boolean(username || password || ipAddress);
+    const isManagedServer = ["vps", "vds"].includes(categorySlug);
+    const isAppHosting = ["hermes-ai-hosting", "openclaw-hosting", "nextcloud-hosting"].includes(categorySlug);
+    const hasDeliveryDetails = isManagedServer
+      ? Boolean(username && password && ipAddress)
+      : isAppHosting
+        ? hasAssignedAccess
+        : Boolean(sharedDetails.length);
+    const [order, invoice] = await Promise.all([
+      subscription.orderId ? Order.findById(subscription.orderId) : Promise.resolve(null),
+      subscription.orderId ? Invoice.findOne({ orderId: subscription.orderId }) : Promise.resolve(null),
+    ]);
+    const activatesPaidOrder = Boolean(
+      order &&
+      invoice?.status === "paid" &&
+      order.status === "pending_verification" &&
+      hasDeliveryDetails,
+    );
 
     subscription.serviceAccess = {
       username,
@@ -723,6 +747,27 @@ adminRouter.patch(
       assignedBy: hasAssignedAccess ? req.staff._id : null,
     };
     subscription.sharedDetails = sharedDetails;
+
+    if (activatesPaidOrder) {
+      const activatedAt = new Date();
+      subscription.status = "active";
+      subscription.startDate = activatedAt;
+      subscription.renewalDate = addBillingPeriod(activatedAt, subscription.billingCycle);
+      subscription.metadata = {
+        ...subscription.metadata,
+        advancePaymentStatus: "approved",
+        legitimacyReviewedAt: activatedAt.toISOString(),
+        legitimacyReviewedBy: String(req.staff._id),
+      };
+      order.status = "approved";
+      order.metadata = {
+        ...order.metadata,
+        advancePaymentStatus: "approved",
+        legitimacyReviewedAt: activatedAt.toISOString(),
+        legitimacyReviewedBy: String(req.staff._id),
+      };
+      await order.save();
+    }
 
     await subscription.save();
 
@@ -739,6 +784,7 @@ adminRouter.patch(
         hasPassword: Boolean(password),
         hasIpAddress: Boolean(ipAddress),
         sharedDetailCount: sharedDetails.length,
+        activatedPaidOrder: activatesPaidOrder,
       },
     });
 
@@ -756,7 +802,177 @@ adminRouter.patch(
       });
     }
 
-    res.json({ subscription });
+    res.json({ subscription, order, activated: activatesPaidOrder });
+  }),
+);
+
+adminRouter.post(
+  "/subscriptions/:id/reject",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { reason } = rejectServiceRequestSchema.parse(req.body);
+    const subscription = await Subscription.findById(req.params.id)
+      .populate("userId")
+      .populate("productPlanId");
+
+    if (!subscription) {
+      throw new HttpError(404, "Subscription not found.");
+    }
+
+    const [order, invoice] = await Promise.all([
+      subscription.orderId ? Order.findById(subscription.orderId).populate("productPlanId") : Promise.resolve(null),
+      subscription.orderId ? Invoice.findOne({ orderId: subscription.orderId }) : Promise.resolve(null),
+    ]);
+
+    if (!order) {
+      throw new HttpError(404, "The linked order could not be found.");
+    }
+
+    if (["approved", "rejected", "cancelled"].includes(order.status)) {
+      throw new HttpError(400, "Only service requests pending review can be rejected.");
+    }
+
+    const submission = await PaymentSubmission.findOne({
+      orderId: order._id,
+      submissionType: "order_payment",
+      status: "approved",
+    }).sort({ submittedAt: -1 });
+    const paidAmount = invoice?.status === "paid" ? Number(invoice.amount || 0) : 0;
+    const paymentMethodType = submission?.paymentMethodType || invoice?.paymentMethodType || "";
+    let refundReference = "";
+    let refundMethod = "none";
+
+    if (paidAmount > 0 && paymentMethodType === "stripe_card") {
+      const paymentIntentId = submission?.gatewayPaymentId || invoice?.paymentReferenceCode || "";
+      const refund = await refundStripePayment({
+        paymentIntentId,
+        idempotencyKey: `service-rejection-${order._id}`,
+        metadata: {
+          orderId: order._id,
+          subscriptionId: subscription._id,
+          invoiceId: invoice?._id,
+          rejectedBy: req.staff._id,
+        },
+      });
+      refundReference = refund.id;
+      refundMethod = "stripe_card";
+    } else if (paidAmount > 0 && paymentMethodType === "wallet_balance") {
+      refundReference = `wallet_refund_${invoice.invoiceNumber}_${Date.now()}`;
+      refundMethod = "wallet_balance";
+    } else if (paidAmount > 0) {
+      throw new HttpError(400, "The original payment method could not be identified for an automatic refund.");
+    }
+
+    await withTransaction(async () => {
+      const reviewedAt = new Date();
+
+      if (paidAmount > 0 && refundMethod === "wallet_balance") {
+        await User.findOneAndUpdate(
+          { _id: subscription.userId._id },
+          { $inc: { accountBalance: paidAmount } },
+          { new: true },
+        );
+      }
+
+      order.status = "rejected";
+      order.metadata = {
+        ...order.metadata,
+        advancePaymentStatus: paidAmount > 0 ? "refunded" : "rejected",
+        legitimacyRejectedAt: reviewedAt.toISOString(),
+        legitimacyRejectedBy: String(req.staff._id),
+        legitimacyRejectionReason: reason,
+        refundMethod,
+        refundReference,
+      };
+      await order.save();
+
+      subscription.status = "rejected";
+      subscription.cancelAtPeriodEnd = false;
+      subscription.metadata = {
+        ...subscription.metadata,
+        advancePaymentStatus: paidAmount > 0 ? "refunded" : "rejected",
+        legitimacyRejectedAt: reviewedAt.toISOString(),
+        legitimacyRejectedBy: String(req.staff._id),
+        legitimacyRejectionReason: reason,
+        refundMethod,
+        refundReference,
+      };
+      await subscription.save();
+
+      if (invoice) {
+        invoice.status = paidAmount > 0 ? "refunded" : "void";
+        invoice.metadata = {
+          ...invoice.metadata,
+          refundedAt: paidAmount > 0 ? reviewedAt.toISOString() : undefined,
+          refundMethod,
+          refundReference,
+          rejectionReason: reason,
+        };
+        await invoice.save();
+      }
+
+      if (submission) {
+        submission.status = paidAmount > 0 ? "refunded" : "rejected";
+        submission.adminRemarks = `Service request rejected: ${reason}`;
+        submission.reviewedAt = reviewedAt;
+        submission.reviewedBy = req.staff._id;
+        submission.metadata = {
+          ...submission.metadata,
+          refundMethod,
+          refundReference,
+        };
+        await submission.save();
+      }
+    });
+
+    if (invoice) {
+      const pdfData = await generateInvoicePdf({
+        invoice,
+        customer: subscription.userId,
+        planName: subscription.productPlanId?.name || order.productPlanId?.name || "Managed Service",
+        supportEmail: env.supportEmail,
+      });
+      invoice.pdfPath = pdfData.pdfPath;
+      invoice.pdfUrl = pdfData.pdfUrl;
+      invoice.pdfStorageKey = pdfData.pdfStorageKey;
+      invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
+      await invoice.save();
+
+      await sendInvoiceNotification({
+        customer: subscription.userId,
+        invoice,
+        planName: subscription.productPlanId?.name || order.productPlanId?.name || "Managed Service",
+        eventType: paidAmount > 0 ? "invoice_refunded" : "invoice_rejected",
+      });
+    }
+
+    await recordActivity({
+      actorId: req.staff._id,
+      actorRole: req.staff.role,
+      action: "service_request.rejected",
+      targetType: "order",
+      targetId: String(order._id),
+      metadata: {
+        subscriptionId: String(subscription._id),
+        invoiceId: invoice?._id ? String(invoice._id) : "",
+        reason,
+        paidAmount,
+        refundMethod,
+        refundReference,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: paidAmount > 0
+        ? "The service request was rejected and the advance payment was refunded."
+        : "The unpaid service request was rejected.",
+      order,
+      subscription,
+      invoice,
+      refundMethod,
+      refundReference,
+    });
   }),
 );
 
@@ -811,11 +1027,16 @@ adminRouter.post(
     invoice.pdfStorageKey = pdfData.pdfStorageKey;
     invoice.pdfStorageProvider = pdfData.pdfStorageProvider;
     await invoice.save();
+    const isRenewalInvoice = String(invoice.paymentReferenceCode || "").startsWith("renewal_");
     await sendInvoiceNotification({
       customer,
       invoice,
       planName: subscription?.productPlanId?.name || "Managed Service",
-      eventType: invoice.status === "paid" ? "invoice_paid" : "invoice_created",
+      eventType: invoice.status === "refunded"
+        ? "invoice_refunded"
+        : invoice.status === "paid"
+          ? isRenewalInvoice ? "renewal_paid" : "invoice_paid"
+          : "invoice_created",
     });
     res.json({ invoice });
   }),

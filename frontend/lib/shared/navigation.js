@@ -95,6 +95,7 @@ export const portalFilters = {
       { value: "", label: "All invoices" },
       { value: "outstanding", label: "Outstanding" },
       { value: "paid", label: "Paid" },
+      { value: "refunded", label: "Refunded" },
     ],
   },
   "/portal/subscriptions": {
@@ -103,6 +104,7 @@ export const portalFilters = {
     options: [
       { value: "", label: "All" },
       { value: "active", label: "Active" },
+      { value: "rejected", label: "Rejected" },
       { value: "cancelled", label: "Cancelled" },
       { value: "expired", label: "Expired" },
     ],

@@ -59,7 +59,8 @@ export function InvoicesPage({
   const walletPayableCount = contractApproved ? outstandingInvoices.filter((invoice) => walletBalance >= Number(invoice.amount || 0)).length : 0;
   const visibleInvoices = invoices.filter((invoice) => {
     if (statusFilter === "paid") return invoice.status === "paid";
-    if (statusFilter === "outstanding") return invoice.status !== "paid";
+    if (statusFilter === "outstanding") return isWalletPayable(invoice);
+    if (statusFilter) return invoice.status === statusFilter;
     return true;
   });
 

@@ -20,6 +20,7 @@ import { PageLoader } from "@/components/shared/page-loader";
 import { Topbar } from "@/components/shared/topbar";
 import { useStaffQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
+import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
 
 const SERVER_CATEGORY_SLUGS = new Set(["vps", "vds"]);
 const EDGE_STORAGE_CATEGORY_SLUGS = new Set(["cdn", "object-storage"]);
@@ -128,18 +129,19 @@ export default function AdminSubscriptionsPage() {
   const [form, setForm] = useState({ username: "", password: "", ipAddress: "" });
   const [sharedDetails, setSharedDetails] = useState([createDetailRow()]);
   const [state, setState] = useState({ saving: false, message: "", error: "" });
+  const [reviewAction, setReviewAction] = useState("");
 
   const subscriptions = (data?.subscriptions || []).filter(canShowSubscription);
 
   const pendingCredentialCount = useMemo(
-    () => subscriptions.filter((item) => credentialState(item) === "pending" && !["cancelled", "expired"].includes(item.status)).length,
+    () => subscriptions.filter((item) => credentialState(item) === "pending" && !["cancelled", "expired", "rejected"].includes(item.status)).length,
     [subscriptions],
   );
 
   const visibleSubscriptions = useMemo(() => {
     const term = search.trim().toLowerCase();
     return subscriptions.filter((sub) => {
-      if (filter === "needs-credentials" && !(credentialState(sub) === "pending" && !["cancelled", "expired"].includes(sub.status))) {
+      if (filter === "needs-credentials" && !(credentialState(sub) === "pending" && !["cancelled", "expired", "rejected"].includes(sub.status))) {
         return false;
       }
       if (filter === "servers" && !isServerSubscription(sub)) {
@@ -151,7 +153,7 @@ export default function AdminSubscriptionsPage() {
       if (filter === "app-hosting" && !isAppHostingSubscription(sub)) {
         return false;
       }
-      if (["active", "cancelled", "expired"].includes(filter) && sub.status !== filter) {
+      if (["active", "rejected", "cancelled", "expired"].includes(filter) && sub.status !== filter) {
         return false;
       }
       if (!term) {
@@ -195,7 +197,7 @@ export default function AdminSubscriptionsPage() {
     }
     setState({ saving: true, message: "", error: "" });
     try {
-      await apiFetch(`/admin/subscriptions/${selectedSubscription._id}/access`, {
+      const response = await apiFetch(`/admin/subscriptions/${selectedSubscription._id}/access`, {
         method: "PATCH",
         authMode: "staff",
         body: {
@@ -206,16 +208,46 @@ export default function AdminSubscriptionsPage() {
         },
       });
       await refetch();
-      setState({ saving: false, message: "Subscription details saved.", error: "" });
+      const successMessage = response.activated
+        ? "The request was approved and the service is now active."
+        : "Subscription details saved.";
+      setState({ saving: false, message: successMessage, error: "" });
       showToast({
         type: "success",
         action: "Subscriptions",
-        title: "Subscription updated",
-        description: "Credentials and shared details have been saved and are now visible to the customer.",
+        title: response.activated ? "Request approved" : "Subscription updated",
+        description: response.activated
+          ? "The advance payment was accepted, the billing period started, and the handoff details are now visible to the customer."
+          : "Credentials and shared details have been saved and are now visible to the customer.",
       });
     } catch (error) {
       setState({ saving: false, message: "", error: error.message });
       showToast({ type: "error", action: "Subscriptions", title: "Update failed", description: error.message });
+    }
+  }
+
+  async function handleReject(reason) {
+    if (!selectedSubscription || state.saving) return;
+
+    setState({ saving: true, message: "", error: "" });
+    try {
+      const response = await apiFetch(`/admin/subscriptions/${selectedSubscription._id}/reject`, {
+        method: "POST",
+        authMode: "staff",
+        body: { reason },
+      });
+      await refetch();
+      setReviewAction("");
+      setState({ saving: false, message: response.message || "The service request was rejected.", error: "" });
+      showToast({
+        type: "success",
+        action: "Service review",
+        title: "Request rejected",
+        description: response.message || "Any collected advance payment was returned through its original source.",
+      });
+    } catch (error) {
+      setState({ saving: false, message: "", error: error.message });
+      showToast({ type: "error", action: "Service review", title: "Rejection failed", description: error.message });
     }
   }
 
@@ -225,6 +257,13 @@ export default function AdminSubscriptionsPage() {
   const selectedUsesAccess = selectedIsServer || selectedIsAppHosting;
   const selectedCustomerNote = String(selectedSubscription?.metadata?.customerNote || "").trim();
   const selectedServiceConfiguration = selectedSubscription?.metadata?.serviceConfiguration || null;
+  const selectedAwaitingReview = selectedSubscription?.status === "pending_verification"
+    && selectedSubscription?.metadata?.advancePaymentStatus === "pending_review";
+  const hasReviewDeliveryDetails = selectedIsServer
+    ? Boolean(form.username.trim() && form.password && form.ipAddress.trim())
+    : selectedIsAppHosting
+      ? Boolean(form.username.trim() || form.password || form.ipAddress.trim())
+      : sharedDetails.some((item) => item.label.trim() && item.value.trim());
   const detailLabelPlaceholder = selectedIsAppHosting
     ? "App URL / SSH host / Setup status"
     : selectedIsEdgeStorage
@@ -284,6 +323,7 @@ export default function AdminSubscriptionsPage() {
                     <option value="edge-storage">CDN / Storage only</option>
                     <option value="app-hosting">Apps / Agents only</option>
                     <option value="active">Active</option>
+                    <option value="rejected">Rejected</option>
                     <option value="cancelled">Cancelled</option>
                     <option value="expired">Expired</option>
                   </Select>
@@ -357,6 +397,11 @@ export default function AdminSubscriptionsPage() {
             <CardContent>
               {selectedSubscription ? (
                 <form className="space-y-5" onSubmit={handleSubmit}>
+                  {selectedAwaitingReview ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                      Review the customer request before activation. Saving and publishing valid handoff details approves a paid request and starts its billing period. Rejecting the request automatically returns a collected card payment or restores wallet funds.
+                    </div>
+                  ) : null}
                   <div className="rounded-lg border border-line bg-slate-50/70 p-4 text-sm text-slate-600">
                     <p><span className="font-semibold text-slate-900">Customer:</span> {selectedSubscription.userId?.name || "Unknown"}</p>
                     <p className="mt-1"><span className="font-semibold text-slate-900">Email:</span> {selectedSubscription.userId?.email || "No customer email"}</p>
@@ -453,9 +498,9 @@ export default function AdminSubscriptionsPage() {
                   {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
                   {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
 
-                  <div className="flex gap-3">
-                    <Button type="submit" disabled={state.saving}>
-                      {state.saving ? "Saving…" : "Save & publish"}
+                  <div className="flex flex-wrap gap-3">
+                    <Button type="submit" disabled={state.saving || (selectedAwaitingReview && !hasReviewDeliveryDetails)}>
+                      {state.saving ? "Saving…" : selectedAwaitingReview ? "Approve & publish" : "Save & publish"}
                     </Button>
                     <Button
                       type="button"
@@ -468,6 +513,11 @@ export default function AdminSubscriptionsPage() {
                     >
                       Reset
                     </Button>
+                    {selectedAwaitingReview ? (
+                      <Button type="button" variant="destructive" disabled={state.saving} onClick={() => setReviewAction("reject")}>
+                        Reject & refund
+                      </Button>
+                    ) : null}
                   </div>
                 </form>
               ) : (
@@ -477,6 +527,25 @@ export default function AdminSubscriptionsPage() {
           </Card>
         </div>
       </div>
+      <DeleteReasonModal
+        open={reviewAction === "reject"}
+        title="Reject service request"
+        subtitle={`Reject ${selectedSubscription?.productPlanId?.name || "this request"}? Any collected advance payment will be returned automatically.`}
+        confirmLabel="Reject & refund"
+        pendingLabel="Processing refund..."
+        reasonLabel="Reason for rejection"
+        otherLabel="Explain why this request cannot be approved"
+        reasons={[
+          "Identity or account verification failed",
+          "Requested use violates service policy",
+          "Service cannot be provisioned as requested",
+          "Duplicate or suspicious request",
+          "Other",
+        ]}
+        isDeleting={state.saving && reviewAction === "reject"}
+        onConfirm={handleReject}
+        onClose={() => !state.saving && setReviewAction("")}
+      />
     </div>
   );
 }

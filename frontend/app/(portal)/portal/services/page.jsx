@@ -31,7 +31,7 @@ function hasAssignedCredentials(subscription) {
 }
 
 function getCurrentSubscriptions(subscriptions) {
-  return subscriptions.filter((subscription) => !["cancelled", "expired"].includes(subscription.status));
+  return subscriptions.filter((subscription) => !["cancelled", "expired", "rejected"].includes(subscription.status));
 }
 
 function getServiceSection(subscription) {
