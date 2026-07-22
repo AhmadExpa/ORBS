@@ -11,6 +11,7 @@ const stripe = env.stripeSecretKey
 
 export const CUSTOMER_PRESENT_THREE_D_SECURE_MODE = "challenge";
 export const WALLET_TOPUP_THREE_D_SECURE_MODE = CUSTOMER_PRESENT_THREE_D_SECURE_MODE;
+const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/u;
 
 function assertStripeConfigured() {
   if (!stripe) {
@@ -26,11 +27,20 @@ function normalizeMetadata(metadata = {}) {
   );
 }
 
+export function normalizePaymentPhoneNumber(value) {
+  const compact = String(value || "")
+    .trim()
+    .replace(/[\s().-]/gu, "");
+  const normalized = compact.startsWith("00") ? `+${compact.slice(2)}` : compact;
+  return E164_PHONE_PATTERN.test(normalized) ? normalized : "";
+}
+
 export function normalizePaymentBillingDetails(value) {
+  const normalizedPhone = normalizePaymentPhoneNumber(value?.phone);
   const details = {
     name: String(value?.name || "").trim(),
     email: String(value?.email || "").trim().toLowerCase(),
-    phone: String(value?.phone || "").trim(),
+    phone: normalizedPhone,
     line1: String(value?.line1 || "").trim(),
     line2: String(value?.line2 || "").trim(),
     city: String(value?.city || "").trim(),
@@ -45,8 +55,8 @@ export function normalizePaymentBillingDetails(value) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
     throw new HttpError(400, "Enter a valid payment email address.");
   }
-  if (details.phone.replace(/\D/gu, "").length < 7) {
-    throw new HttpError(400, "Enter a valid phone number, including the country code.");
+  if (!details.phone) {
+    throw new HttpError(400, "Enter the phone number in international format, such as +14155552671.");
   }
   if (!details.line1 || !details.city || !details.postalCode) {
     throw new HttpError(400, "Enter the complete billing street address, city, and postal code.");
@@ -597,6 +607,24 @@ export async function retrievePaymentIntent(paymentIntentId) {
   return stripe.paymentIntents.retrieve(paymentIntentId, {
     expand: ["payment_method", "latest_charge"],
   });
+}
+
+export async function listRecentCustomerPaymentIntents({ customerId, createdAfter, limit = 100 }) {
+  assertStripeConfigured();
+
+  if (!customerId) {
+    return [];
+  }
+
+  const result = await stripe.paymentIntents.list({
+    customer: customerId,
+    created: {
+      gte: Math.floor(Number(createdAfter || 0)),
+    },
+    limit: Math.min(Math.max(Number(limit || 100), 1), 100),
+  });
+
+  return result.data;
 }
 
 export async function retrieveCharge(chargeId) {

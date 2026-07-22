@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   Archive,
   BarChart3,
   Bot,
@@ -52,6 +53,7 @@ import {
   Route,
   Settings2,
   Shield,
+  ShoppingCart,
   SlidersHorizontal,
   StepForward,
   Target,
@@ -99,6 +101,8 @@ import { Topbar } from "@/components/shared/topbar";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { apiFetch } from "@/lib/api/client";
+import { useCart } from "@/lib/cart/use-cart";
+import { OrderJourney } from "@/components/portal/order-journey";
 
 function getBillingSuffix(billingCycle) {
   if (billingCycle === "yearly") {
@@ -616,8 +620,9 @@ const TRIAL_ELIGIBLE_SLUGS = new Set([
 
 export function OrderConfigurator({ slug }) {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { userId } = useAuth();
   const { showToast } = useActionToast();
+  const { item: cartItem, isHydrated: cartIsHydrated, saveItem } = useCart(userId);
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedAddonIds, setSelectedAddonIds] = useState([]);
   const [selectedRegionId, setSelectedRegionId] = useState("");
@@ -631,6 +636,7 @@ export function OrderConfigurator({ slug }) {
   const [trialRequested, setTrialRequested] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [restoredCartVersion, setRestoredCartVersion] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["catalog-plan", slug],
@@ -720,6 +726,31 @@ export function OrderConfigurator({ slug }) {
     setBillingCycle(availableBillingCycles.includes("monthly") ? "monthly" : availableBillingCycles[0]);
   }, [availableBillingCycles, billingCycle]);
 
+  useEffect(() => {
+    if (
+      !cartIsHydrated ||
+      !plan ||
+      addonsQuery.isLoading ||
+      cartItem?.plan?.id !== plan._id ||
+      restoredCartVersion === cartItem.updatedAt
+    ) {
+      return;
+    }
+
+    const payload = cartItem.payload || {};
+    setBillingCycle(payload.billingCycle || "monthly");
+    setSelectedAddonIds(payload.addonIds || []);
+    setSelectedRegionId(payload.selectedRegionId || "");
+    setSelectedImageId(payload.selectedImageId || "");
+    setSelectedStorageId(payload.selectedStorageId || "");
+    setStorageQuantity(payload.storageQuantity ? String(payload.storageQuantity) : "");
+    setServiceAnswers(payload.serviceConfiguration?.answers || {});
+    setFinalNote(payload.finalNote || "");
+    setShowFinalNote(Boolean(payload.finalNote));
+    setTrialRequested(Boolean(payload.trialRequested));
+    setRestoredCartVersion(cartItem.updatedAt);
+  }, [addonsQuery.isLoading, cartIsHydrated, cartItem, plan, restoredCartVersion]);
+
   const minimumStorageQuantity = selectedStorage ? getStorageMinimumQuantity(selectedStorage) : 0;
   const storageQuantityInput = selectedStorage
     ? storageQuantity === ""
@@ -802,7 +833,7 @@ export function OrderConfigurator({ slug }) {
     }
   }
 
-  async function handleCreateOrder() {
+  function handleAddToCart() {
     if (!plan || plan.contactSalesOnly) {
       router.push("/contact");
       return;
@@ -817,49 +848,63 @@ export function OrderConfigurator({ slug }) {
       });
       if (!intakeValidation.ok) {
         setServiceAnswerErrors(intakeValidation.errors);
-        throw new Error("Please complete the required service requirements before creating the order.");
+        throw new Error("Please complete the required service requirements before adding this service to your cart.");
       }
 
-      const token = await getToken();
-      const data = await apiFetch("/orders", {
-        method: "POST",
-        token,
-        body: {
-          productPlanId: plan._id,
-          addonIds: activeFeatureIds,
-          billingCycle,
-          selectedRegionId: activeRegionId || undefined,
-          selectedImageId: activeImageId || undefined,
-          selectedStorageId: activeStorageId || undefined,
-          storageQuantity: normalizedStorageQuantity || undefined,
-          serviceConfiguration: {
-            answers: serviceAnswers,
-          },
-          finalNote: finalNote.trim() || undefined,
-          trialRequested: trialRequested || undefined,
+      const payload = {
+        productPlanId: plan._id,
+        addonIds: activeFeatureIds,
+        billingCycle,
+        selectedRegionId: activeRegionId || undefined,
+        selectedImageId: activeImageId || undefined,
+        selectedStorageId: activeStorageId || undefined,
+        storageQuantity: normalizedStorageQuantity || undefined,
+        serviceConfiguration: {
+          answers: serviceAnswers,
+        },
+        finalNote: finalNote.trim() || undefined,
+        trialRequested: trialRequested || undefined,
+      };
+
+      saveItem({
+        plan: {
+          id: plan._id,
+          slug: plan.slug,
+          name: plan.name,
+          categoryName: plan.categoryId?.name || "Managed Service",
+          categorySlug,
+        },
+        payload,
+        billingCycle,
+        summaryItems,
+        monthlyTotal,
+        total,
+        dueToday,
+        trialRequested,
+        selections: {
+          region: selectedRegion?.name || "",
+          image: selectedImage?.name || "",
+          storage: selectedStorage
+            ? `${normalizedStorageQuantity} ${selectedStorage.unitLabel || "GB"} ${selectedStorage.name}`
+            : "",
+          features: selectedFeatures.map((addon) => addon.name),
+          requirementCount: intakeValidation.configuration?.summary?.length || 0,
+          hasNote: Boolean(finalNote.trim()),
         },
       });
       showToast({
         type: "success",
-        action: "Order",
-        title: trialRequested ? "Trial requested" : "Order created",
-        description: trialRequested
-          ? "Your 3-day trial request has been saved for ElevenOrbits review."
-          : "Your configuration has been saved and moved to checkout.",
+        action: "Cart",
+        title: "Configuration added to cart",
+        description: "Review the details and total before you initiate checkout.",
       });
-      router.push(trialRequested ? `/portal/checkout/${data.order._id}/thank-you` : `/portal/checkout/${data.order._id}`);
+      router.push("/portal/cart");
     } catch (requestError) {
-      if (requestError.redirectUrl) {
-        router.push(requestError.redirectUrl);
-      }
-      if (requestError.details?.fields) {
-        setServiceAnswerErrors(requestError.details.fields);
-      }
       setError(requestError.message);
       showToast({
         type: "error",
-        action: "Order",
-        title: "Order creation failed",
+        action: "Cart",
+        title: "Could not add to cart",
         description: requestError.message,
       });
     } finally {
@@ -883,14 +928,26 @@ export function OrderConfigurator({ slug }) {
     <div>
       <Topbar
         title={`Configure ${plan.name}`}
-        subtitle="Choose billing, service details, optional add-ons, and provisioning notes before checkout."
+        subtitle="Build your managed service with clear pricing, then review everything in your cart before checkout."
+        actions={
+          <Link href="/portal/cart">
+            <Button variant="ghost">
+              <ShoppingCart className="h-4 w-4" />
+              View cart
+            </Button>
+          </Link>
+        }
       />
-      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Flow</CardTitle>
+      <div className="mx-auto w-full max-w-[1680px] px-6 pt-6 md:px-8 md:pt-8">
+        <OrderJourney current="configure" />
+      </div>
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-950 to-slate-800 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-300">Managed service builder</p>
+            <CardTitle className="mt-2 text-xl text-white">Configure your service</CardTitle>
             <CardDescription>
-              Choose billing, service preferences, and any available managed add-ons. ElevenOrbits will handle provisioning and ongoing support.
+              <span className="text-slate-300">Choose the contract, deployment preferences, and managed add-ons that fit your workload.</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -1265,10 +1322,11 @@ export function OrderConfigurator({ slug }) {
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
+        <Card className="h-fit lg:sticky lg:top-[8.5rem]">
           <CardHeader>
-            <CardTitle>Pricing Summary</CardTitle>
-            <CardDescription>Provisioning and support coverage included</CardDescription>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700">Live estimate</p>
+            <CardTitle className="mt-1">Your configuration</CardTitle>
+            <CardDescription>Transparent pricing before anything enters checkout.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <SummaryRow label="Plan" value={plan.name} />
@@ -1317,9 +1375,21 @@ export function OrderConfigurator({ slug }) {
               </div>
             ) : null}
 
-            <Button className="w-full" onClick={handleCreateOrder} disabled={isSubmitting}>
-              {isSubmitting ? "Creating order..." : plan.contactSalesOnly ? "Talk to Sales" : trialRequested ? "Request 3-Day Trial" : "Create Order"}
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+              <div className="flex items-start gap-2.5">
+                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                <p className="text-xs leading-5 text-emerald-800">
+                  No charge is made here. You can review, edit, or remove this configuration from your cart first.
+                </p>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleAddToCart} disabled={isSubmitting}>
+              <ShoppingCart className="h-4 w-4" />
+              {isSubmitting ? "Saving configuration..." : plan.contactSalesOnly ? "Talk to Sales" : "Add to cart"}
+              {!isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
+            <p className="text-center text-xs leading-5 text-slate-500">Next: review your cart and initiate secure checkout.</p>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, CircleDollarSign, CreditCard, History, Plus, ReceiptText, ShieldCheck, Sparkles, Wallet, Zap } from "lucide-react";
@@ -121,6 +121,7 @@ export function WalletPaymentsPage() {
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
+  const reconciliationStartedRef = useRef(false);
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
     action: "",
@@ -149,10 +150,85 @@ export function WalletPaymentsPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
+      return;
+    }
+
+    reconciliationStartedRef.current = true;
+    let isActive = true;
+
+    async function reconcileSuccessfulPayments() {
+      try {
+        const token = await getToken({ skipCache: true });
+        const result = await apiFetch("/stripe/reconcile", {
+          method: "POST",
+          token,
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        if (result.reconciled > 0) {
+          await Promise.all([refetchPayments(), refetchProfile()]);
+          showToast({
+            type: "success",
+            action: "Wallet Top-up",
+            title: "Payment synchronized",
+            description: result.reconciled === 1
+              ? "A successful Stripe payment was recovered and added to your wallet."
+              : `${result.reconciled} successful Stripe payments were recovered and added to your wallet.`,
+          });
+        }
+      } catch {
+        // The signed Stripe webhook remains the primary recovery path. A later page load retries reconciliation.
+        reconciliationStartedRef.current = false;
+      }
+    }
+
+    reconcileSuccessfulPayments();
+    return () => {
+      isActive = false;
+    };
+  }, [contractApproved, getToken, refetchPayments, refetchProfile, showToast, user?._id]);
+
   async function syncPortalPayments() {
     await Promise.all([refetchPayments(), refetchProfile()]);
     await wait(1200);
     await Promise.all([refetchPayments(), refetchProfile()]);
+  }
+
+  async function finalizeConfirmedStripeResource(body) {
+    let lastError;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const token = await getToken({ skipCache: true });
+        const response = await apiFetch("/stripe/finalize", {
+          method: "POST",
+          token,
+          body,
+        });
+        return { completed: true, response };
+      } catch (error) {
+        lastError = error;
+        if (attempt === 0) {
+          await wait(500);
+        }
+      }
+    }
+
+    return { completed: false, error: lastError };
+  }
+
+  async function syncPortalPaymentsSafely() {
+    try {
+      await syncPortalPayments();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function handleSaveCard({ stripe, cardElement, billingDetails }) {
@@ -186,22 +262,15 @@ export function WalletPaymentsPage() {
       throw new Error("Stripe confirmed the card setup but did not return a setup intent ID.");
     }
 
-    try {
-      await apiFetch("/stripe/finalize", {
-        method: "POST",
-        token,
-        body: {
-          setupIntentId: result.setupIntent.id,
-        },
-      });
-    } catch (error) {
-      if (error.redirectUrl) {
-        router.push(error.redirectUrl);
-      }
-      throw error;
+    const finalization = await finalizeConfirmedStripeResource({
+      setupIntentId: result.setupIntent.id,
+    });
+    await syncPortalPaymentsSafely();
+
+    if (!finalization.completed) {
+      return "Stripe verified the card. Its saved-card status is synchronizing automatically; do not submit it again.";
     }
 
-    await syncPortalPayments();
     return hasSavedCard
       ? "Your card has been saved and set as the primary card."
       : "Your card has been saved and set as the primary card. You can switch to wallet-only mode any time.";
@@ -247,25 +316,18 @@ export function WalletPaymentsPage() {
       throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
     }
 
-    try {
-      await apiFetch("/stripe/finalize", {
-        method: "POST",
-        token,
-        body: {
-          paymentIntentId: result.paymentIntent.id,
-        },
-      });
-    } catch (error) {
-      if (error.redirectUrl) {
-        router.push(error.redirectUrl);
-      }
-      throw error;
-    }
-
-    await syncPortalPayments();
+    const finalization = await finalizeConfirmedStripeResource({
+      paymentIntentId: result.paymentIntent.id,
+    });
+    await syncPortalPaymentsSafely();
     setInstantAmount("");
     setTopupBillingDetails(createEmptyPaymentBillingDetails());
     setActiveSection("overview");
+
+    if (!finalization.completed) {
+      return "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.";
+    }
+
     return "Your wallet payment was received. The balance has been refreshed.";
   }
 
@@ -312,15 +374,10 @@ export function WalletPaymentsPage() {
         throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
       }
 
-      await apiFetch("/stripe/finalize", {
-        method: "POST",
-        token,
-        body: {
-          paymentIntentId: result.paymentIntent.id,
-        },
+      const finalization = await finalizeConfirmedStripeResource({
+        paymentIntentId: result.paymentIntent.id,
       });
-
-      await syncPortalPayments();
+      await syncPortalPaymentsSafely();
       setInstantAmount("");
       setTopupBillingDetails(createEmptyPaymentBillingDetails());
       setBlockedSavedTopupCardId("");
@@ -328,13 +385,17 @@ export function WalletPaymentsPage() {
       setSavedTopupState({
         savingId: "",
         error: "",
-        message: response.message || "Your saved card was charged and the wallet balance has been refreshed.",
+        message: finalization.completed
+          ? response.message || "Your saved card was charged and the wallet balance has been refreshed."
+          : "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.",
       });
       showToast({
         type: "success",
         action: "Wallet Top-up",
-        title: "Wallet funded",
-        description: response.message || "Your saved card was charged and the wallet balance has been refreshed.",
+        title: finalization.completed ? "Wallet funded" : "Payment approved",
+        description: finalization.completed
+          ? response.message || "Your saved card was charged and the wallet balance has been refreshed."
+          : "The wallet credit is synchronizing automatically. Do not submit the payment again.",
       });
     } catch (error) {
       const normalizedError = normalizePaymentActionError(error);

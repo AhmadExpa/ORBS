@@ -11,6 +11,7 @@ import {
   createSetupCheckoutSession,
   createSetupIntent,
   getUserSavedPaymentMethods,
+  listRecentCustomerPaymentIntents,
   removeUserPaymentMethod,
   removeUserDefaultPaymentMethod,
   setUserPrimaryPaymentMethod,
@@ -52,6 +53,19 @@ function normalizePaymentMethodId(paymentMethod) {
 
 function normalizeChargeId(charge) {
   return typeof charge === "string" ? charge : charge?.id || "";
+}
+
+function assertStripePaymentAmount({ expectedAmount, amountReceived, currency }) {
+  const expectedMinorUnits = Math.round(Number(expectedAmount || 0) * 100);
+  const receivedMinorUnits = Math.round(Number(amountReceived || 0));
+
+  if (String(currency || "").toLowerCase() !== String(env.stripeCurrency || "").toLowerCase()) {
+    throw new HttpError(400, "The Stripe payment currency does not match the configured billing currency.");
+  }
+
+  if (!expectedMinorUnits || expectedMinorUnits !== receivedMinorUnits) {
+    throw new HttpError(400, "The completed Stripe payment amount does not match the expected amount.");
+  }
 }
 
 async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionId, chargeId }) {
@@ -117,7 +131,7 @@ async function findOrderPaymentContext({ orderId, userId }) {
   return { order, subscription, invoice };
 }
 
-async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId }) {
+async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId, amountReceived, currency }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
     await requireApprovedContract(user.clerkId);
@@ -125,6 +139,11 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
     const { order, subscription, invoice } = await findOrderPaymentContext({
       orderId: metadata?.orderId,
       userId: user._id,
+    });
+    assertStripePaymentAmount({
+      expectedAmount: order.totalAmount,
+      amountReceived,
+      currency,
     });
 
     const existingSubmission = await findExistingGatewaySubmission({
@@ -242,7 +261,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
   return result.submission;
 }
 
-async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId }) {
+async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId, amountReceived, currency }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
     await requireApprovedContract(user.clerkId);
@@ -268,9 +287,18 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
     if (!amount || amount <= 0) {
       throw new HttpError(400, "Stripe wallet top-up metadata is missing a valid amount.");
     }
+    assertStripePaymentAmount({
+      expectedAmount: amount,
+      amountReceived,
+      currency,
+    });
 
-    user.accountBalance = Number(user.accountBalance || 0) + amount;
-    await user.save();
+    const creditedUser = await User.findByIdAndUpdate(
+      user._id,
+      { $inc: { accountBalance: amount } },
+      { new: true },
+    );
+    user.accountBalance = creditedUser.accountBalance;
     await processSubscriptionRenewals({ userIds: [user._id] });
 
     const submission = await PaymentSubmission.create({
@@ -304,13 +332,14 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       submission,
       amount,
       reference: paymentIntentId || checkoutSessionId,
+      customer: creditedUser,
       shouldNotify: true,
     };
   });
 
   if (result.shouldNotify) {
     await sendWalletTopupNotification({
-      customer: user,
+      customer: result.customer || user,
       amount: result.amount,
       reference: result.reference,
     });
@@ -373,6 +402,8 @@ async function finalizeCheckoutSession({ session, user }) {
       user,
       paymentMethodId,
       customerId,
+      amountReceived: session.amount_total,
+      currency: session.currency,
     });
 
     return { type: metadataType, submission };
@@ -391,6 +422,8 @@ async function finalizeCheckoutSession({ session, user }) {
       user,
       paymentMethodId,
       customerId,
+      amountReceived: session.amount_total,
+      currency: session.currency,
     });
 
     return { type: metadataType, submission };
@@ -430,6 +463,8 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       user,
       paymentMethodId,
       customerId,
+      amountReceived: paymentIntent.amount_received,
+      currency: paymentIntent.currency,
     });
 
     return { type: metadataType, submission };
@@ -443,6 +478,8 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       user,
       paymentMethodId,
       customerId,
+      amountReceived: paymentIntent.amount_received,
+      currency: paymentIntent.currency,
     });
 
     return { type: metadataType, submission };
@@ -471,6 +508,53 @@ async function finalizeSetupIntent({ setupIntent, user }) {
   });
 
   return { type: metadataType, card };
+}
+
+async function reconcileRecentStripePayments({ user }) {
+  if (!user.stripeCustomerId) {
+    return { examined: 0, reconciled: 0, settledPaymentIntentIds: [], failures: [] };
+  }
+
+  const createdAfter = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000);
+  const paymentIntents = await listRecentCustomerPaymentIntents({
+    customerId: user.stripeCustomerId,
+    createdAfter,
+  });
+  const candidates = paymentIntents.filter((paymentIntent) =>
+    paymentIntent.status === "succeeded" &&
+    String(paymentIntent.metadata?.userId || "") === String(user._id) &&
+    ["wallet_topup", "order_payment"].includes(paymentIntent.metadata?.type),
+  );
+  const settledPaymentIntentIds = [];
+  const failures = [];
+  let reconciled = 0;
+
+  for (const paymentIntent of candidates) {
+    const existingSubmission = await findExistingGatewaySubmission({
+      paymentIntentId: paymentIntent.id,
+      chargeId: normalizeChargeId(paymentIntent.latest_charge),
+    });
+
+    try {
+      await finalizePaymentIntent({ paymentIntent, user });
+      settledPaymentIntentIds.push(paymentIntent.id);
+      if (!existingSubmission) {
+        reconciled += 1;
+      }
+    } catch (error) {
+      failures.push({
+        paymentIntentId: paymentIntent.id,
+        message: error?.message || "Payment reconciliation failed.",
+      });
+    }
+  }
+
+  return {
+    examined: candidates.length,
+    reconciled,
+    settledPaymentIntentIds,
+    failures,
+  };
 }
 
 stripeRouter.post(
@@ -681,6 +765,21 @@ stripeRouter.post(
     }
 
     throw new HttpError(400, "A Stripe checkout session, payment intent, or setup intent ID is required.");
+  }),
+);
+
+stripeRouter.post(
+  "/reconcile",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    await requireApprovedContract(req.auth.clerkId);
+    const result = await reconcileRecentStripePayments({ user });
+    res.json({ success: true, ...result });
   }),
 );
 

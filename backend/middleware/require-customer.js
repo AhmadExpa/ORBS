@@ -20,7 +20,9 @@ export async function findUserFromRequest(req, { allowUnsynced = false, ignoreIn
       return null;
     }
 
-    throw error;
+    throw new HttpError(401, "Your customer session expired. Please sign in again.", {
+      code: "CUSTOMER_SESSION_EXPIRED",
+    });
   }
 
   if (!payload?.sub) {

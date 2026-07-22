@@ -4,6 +4,7 @@ import {
   createEmptyPaymentBillingDetails,
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
+  normalizePaymentPhoneNumber,
   toStripeBillingDetails,
 } from "../lib/payments/billing-details.js";
 
@@ -34,7 +35,7 @@ test("payment billing details are normalized without account-profile defaults", 
   assert.deepEqual(normalizePaymentBillingDetails(validDetails), {
     name: "Card Holder",
     email: "card@example.com",
-    phone: "+1 813 555 0199",
+    phone: "+18135550199",
     line1: "123 Billing Street",
     line2: "Suite 5",
     city: "Tampa",
@@ -49,6 +50,16 @@ test("payment billing details require identity, contact, and address fields", ()
   assert.equal(getPaymentBillingDetailsValidationError(validDetails), "");
 });
 
+test("payment phone numbers are normalized to E.164", () => {
+  assert.equal(normalizePaymentPhoneNumber("+1 (813) 555-0199"), "+18135550199");
+  assert.equal(normalizePaymentPhoneNumber("0044 7700 900123"), "+447700900123");
+  assert.equal(normalizePaymentPhoneNumber("8135550199"), "");
+  assert.match(
+    getPaymentBillingDetailsValidationError({ ...validDetails, phone: "8135550199" }),
+    /international format/,
+  );
+});
+
 test("Stripe billing details use Stripe address field names", () => {
   const details = toStripeBillingDetails(validDetails);
 
@@ -56,4 +67,3 @@ test("Stripe billing details use Stripe address field names", () => {
   assert.equal(details.address.postal_code, "33601");
   assert.equal(details.address.country, "US");
 });
-

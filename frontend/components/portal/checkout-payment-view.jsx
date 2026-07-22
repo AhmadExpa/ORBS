@@ -17,6 +17,7 @@ import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
 import { DeleteReasonModal } from "@/components/portal/delete-reason-modal";
+import { OrderJourney } from "@/components/portal/order-journey";
 
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
@@ -143,20 +144,31 @@ export function CheckoutPaymentView({ orderId }) {
       throw new Error("Stripe confirmed the payment but did not return a payment intent ID.");
     }
 
-    try {
-      const token = await getToken();
-      await apiFetch("/stripe/finalize", {
-        method: "POST",
-        token,
-        body: {
-          paymentIntentId: result.paymentIntent.id,
-        },
-      });
-    } catch (error) {
-      if (error.redirectUrl) {
-        router.push(error.redirectUrl);
+    let finalized = false;
+    for (let attempt = 0; attempt < 2 && !finalized; attempt += 1) {
+      try {
+        const token = await getToken({ skipCache: true });
+        await apiFetch("/stripe/finalize", {
+          method: "POST",
+          token,
+          body: {
+            paymentIntentId: result.paymentIntent.id,
+          },
+        });
+        finalized = true;
+      } catch {
+        if (attempt === 0) {
+          await wait(500);
+        }
       }
-      throw error;
+    }
+
+    if (!finalized) {
+      const pendingError = new Error(
+        "Your card was charged successfully, but the order update is still synchronizing. Do not submit this payment again; open Payment Activity after signing in again.",
+      );
+      pendingError.preventSameCardRetry = true;
+      throw pendingError;
     }
 
     await syncOrderState();
@@ -285,9 +297,12 @@ export function CheckoutPaymentView({ orderId }) {
   return (
     <div>
       <Topbar
-        title="Checkout & Payment"
-        subtitle="Review your plan, pay the order, and let the admin team assign the final server login details after approval and provisioning."
+        title="Secure Checkout"
+        subtitle="Confirm the order and complete payment. The ElevenOrbits team will review and provision your managed service after approval."
       />
+      <div className="mx-auto w-full max-w-[1680px] px-6 pt-6 md:px-8 md:pt-8">
+        <OrderJourney current="payment" />
+      </div>
       <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>

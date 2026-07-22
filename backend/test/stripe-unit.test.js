@@ -4,6 +4,7 @@ import {
   buildUserInitiatedCardPaymentIntentParams,
   CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
   normalizePaymentBillingDetails,
+  normalizePaymentPhoneNumber,
   WALLET_TOPUP_THREE_D_SECURE_MODE,
 } from "../services/stripe-service.js";
 
@@ -72,7 +73,14 @@ test("provided billing details are validated and mapped to Stripe fields", () =>
 
   assert.equal(details.name, "Card Holder");
   assert.equal(details.email, "card@example.com");
+  assert.equal(details.phone, "+18135550199");
   assert.equal(details.address.postal_code, "33601");
   assert.equal(details.address.country, "US");
   assert.throws(() => normalizePaymentBillingDetails({}), /full name/);
+});
+
+test("payment phone numbers use E.164 before Stripe receives them", () => {
+  assert.equal(normalizePaymentPhoneNumber("+1 (813) 555-0199"), "+18135550199");
+  assert.equal(normalizePaymentPhoneNumber("0044 7700 900123"), "+447700900123");
+  assert.equal(normalizePaymentPhoneNumber("08135550199"), "");
 });

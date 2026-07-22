@@ -12,11 +12,21 @@ export function createEmptyPaymentBillingDetails() {
   };
 }
 
+const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/u;
+
+export function normalizePaymentPhoneNumber(value) {
+  const compact = String(value || "")
+    .trim()
+    .replace(/[\s().-]/gu, "");
+  const normalized = compact.startsWith("00") ? `+${compact.slice(2)}` : compact;
+  return E164_PHONE_PATTERN.test(normalized) ? normalized : "";
+}
+
 export function normalizePaymentBillingDetails(value = {}) {
   return {
     name: String(value.name || "").trim(),
     email: String(value.email || "").trim().toLowerCase(),
-    phone: String(value.phone || "").trim(),
+    phone: normalizePaymentPhoneNumber(value.phone),
     line1: String(value.line1 || "").trim(),
     line2: String(value.line2 || "").trim(),
     city: String(value.city || "").trim(),
@@ -35,8 +45,8 @@ export function getPaymentBillingDetailsValidationError(value) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
     return "Enter a valid payment email address.";
   }
-  if (details.phone.replace(/\D/gu, "").length < 7) {
-    return "Enter a valid phone number, including the country code.";
+  if (!details.phone) {
+    return "Enter the phone number in international format, such as +14155552671.";
   }
   if (!details.line1) {
     return "Enter the cardholder's billing street address.";
@@ -71,4 +81,3 @@ export function toStripeBillingDetails(value) {
     },
   };
 }
-

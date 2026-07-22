@@ -61,7 +61,8 @@ export function PaymentBillingDetailsFields({ value, onChange, disabled = false 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
         <div>
           <label htmlFor={`${id}-phone`} className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
-          <TextInput id={`${id}-phone`} type="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+1 813 555 0199" />
+          <TextInput id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+14155552671" />
+          <p className="mt-1.5 text-xs text-slate-500">Include + and the country calling code.</p>
         </div>
         <div>
           <label htmlFor={`${id}-country`} className="mb-2 block text-sm font-medium text-slate-700">Country code</label>

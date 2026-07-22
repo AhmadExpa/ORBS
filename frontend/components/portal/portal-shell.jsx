@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import {
   AlertTriangle,
   Check,
@@ -18,6 +18,7 @@ import {
   Plus,
   Receipt,
   Server,
+  ShoppingBag,
   UserRound,
   Wallet,
   X,
@@ -32,6 +33,7 @@ import { BrandLogo } from "@/components/shared/brand-logo";
 import { isContractSubmittedForPortal } from "@/components/portal/contract-gate";
 import { PortalSectionNav, getActiveSection } from "@/components/portal/portal-section-nav";
 import { PortalFooter } from "@/components/portal/portal-footer";
+import { useCart } from "@/lib/cart/use-cart";
 
 const iconMap = {
   "layout-dashboard": LayoutDashboard,
@@ -63,6 +65,8 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useClerk();
+  const { userId } = useAuth();
+  const { itemCount } = useCart(userId);
 
   const [openGroup, setOpenGroup] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -261,6 +265,26 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
             <div className="ml-auto flex items-center gap-2">
               {!portalLocked && !isAgent ? (
                 <Link
+                  href="/portal/cart"
+                  aria-label={itemCount ? `Cart with ${itemCount} item` : "Cart"}
+                  className={cn(
+                    "relative flex h-9 w-9 items-center justify-center rounded-md border text-white transition-colors",
+                    pathname === "/portal/cart"
+                      ? "border-accent-400 bg-accent-600"
+                      : "border-white/15 bg-white/5 hover:bg-white/10",
+                  )}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  {itemCount ? (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-slate-950 ring-2 ring-[#0f1115]">
+                      {itemCount}
+                    </span>
+                  ) : null}
+                </Link>
+              ) : null}
+
+              {!portalLocked && !isAgent ? (
+                <Link
                   href="/portal/payments"
                   className="hidden items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:flex"
                 >
@@ -356,10 +380,17 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
                   );
                 })}
                  {!isAgent ? (
-                  <Link href="/portal/services" className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white">
-                    <Plus className="h-4 w-4" />
-                    Order an app
-                  </Link>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Link href="/portal/cart" className="relative flex items-center justify-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-semibold text-white">
+                      <ShoppingBag className="h-4 w-4" />
+                      Cart
+                      {itemCount ? <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{itemCount}</span> : null}
+                    </Link>
+                    <Link href="/portal/services" className="flex items-center justify-center gap-1.5 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white">
+                      <Plus className="h-4 w-4" />
+                      Order an app
+                    </Link>
+                  </div>
                 ) : null}
               </nav>
             </div>
