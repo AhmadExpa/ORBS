@@ -11,12 +11,35 @@ const stripe = env.stripeSecretKey
 
 export const CUSTOMER_PRESENT_THREE_D_SECURE_MODE = "challenge";
 export const WALLET_TOPUP_THREE_D_SECURE_MODE = CUSTOMER_PRESENT_THREE_D_SECURE_MODE;
+export const CARD_VERIFICATION_MODE_STANDARD = "standard";
+export const CARD_VERIFICATION_MODE_3DS = "three_d_secure";
+export const STANDARD_THREE_D_SECURE_MODE = "automatic";
 const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/u;
 
 function assertStripeConfigured() {
   if (!stripe) {
     throw new HttpError(503, "Stripe is not configured yet.");
   }
+}
+
+export function resolveCustomerCardVerificationMode(value) {
+  const cardVerificationMode = String(value || CARD_VERIFICATION_MODE_3DS).trim().toLowerCase();
+
+  if (cardVerificationMode === CARD_VERIFICATION_MODE_STANDARD) {
+    return {
+      cardVerificationMode,
+      requestThreeDSecure: STANDARD_THREE_D_SECURE_MODE,
+    };
+  }
+
+  if (cardVerificationMode === CARD_VERIFICATION_MODE_3DS) {
+    return {
+      cardVerificationMode,
+      requestThreeDSecure: CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+    };
+  }
+
+  throw new HttpError(400, "Choose either standard card processing or 3D Secure verification.");
 }
 
 function normalizeMetadata(metadata = {}) {

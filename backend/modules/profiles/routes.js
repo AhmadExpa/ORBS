@@ -17,6 +17,7 @@ import { isDelegateActor, requirePortalActor, serializeDelegateSession } from ".
 import { verifyClerkRequestToken } from "../../services/clerk-auth-service.js";
 import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { syncCustomerProfile } from "../../services/customer-profile-service.js";
+import { getCustomerSupportPin } from "../../services/support-chat-service.js";
 
 export const profilesRouter = express.Router();
 
@@ -344,6 +345,18 @@ profilesRouter.get(
       user,
       actorType: isDelegateActor(req) ? "delegate" : "owner",
       delegate: isDelegateActor(req) ? serializeDelegateSession(req.auth.delegate, user) : null,
+    });
+  }),
+);
+
+profilesRouter.get(
+  "/support-pin",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json({
+      supportPin: getCustomerSupportPin(req.auth.user),
+      location: "Portal → Account → Support & security",
     });
   }),
 );

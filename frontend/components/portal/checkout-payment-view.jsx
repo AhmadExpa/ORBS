@@ -12,7 +12,11 @@ import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import { toStripeBillingDetails } from "@/lib/payments/billing-details";
 import { createStripePaymentError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
-import { PortalCardForm } from "@/components/portal/portal-card-form";
+import {
+  CARD_VERIFICATION_MODE_3DS,
+  CardVerificationModeSelector,
+  PortalCardForm,
+} from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
@@ -70,6 +74,7 @@ export function CheckoutPaymentView({ orderId }) {
     error: "",
   });
   const [reasonAction, setReasonAction] = useState("");
+  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_3DS);
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
@@ -159,6 +164,7 @@ export function CheckoutPaymentView({ orderId }) {
           type: "order_payment",
           orderId,
           billingDetails,
+          cardVerificationMode,
         },
       });
     } catch (error) {
@@ -213,6 +219,20 @@ export function CheckoutPaymentView({ orderId }) {
     await syncOrderState();
     router.replace(`/portal/checkout/${orderId}/thank-you`);
     return "Your advance payment was received. The request is now pending review.";
+  }
+
+  async function handleCardPreflight({ billingDetails }) {
+    const token = await getToken();
+    return apiFetch("/stripe/preflight", {
+      method: "POST",
+      token,
+      body: {
+        type: "order_payment",
+        orderId,
+        billingDetails,
+        cardVerificationMode,
+      },
+    });
   }
 
   async function handleOrderCancel(reason) {
@@ -481,15 +501,25 @@ export function CheckoutPaymentView({ orderId }) {
                         <span className="h-px flex-1 bg-slate-200" />
                       </div>
 
+                      <CardVerificationModeSelector
+                        value={cardVerificationMode}
+                        onChange={setCardVerificationMode}
+                        disabled={!canTriggerPayments || state.isSubmitting}
+                      />
+
                       <PortalCardForm
                         disabled={!canTriggerPayments || state.isSubmitting}
                         submitLabel="Pay advance by Card"
-                        pendingLabel="Waiting for 3D Secure verification..."
+                        pendingLabel={cardVerificationMode === CARD_VERIFICATION_MODE_3DS ? "Waiting for 3D Secure verification..." : "Processing card payment..."}
                         onSubmit={handleCardPayment}
-                        note="Every card payment requests 3D Secure. Enter the cardholder's billing details; the portal account email is not used for this charge."
+                        note={cardVerificationMode === CARD_VERIFICATION_MODE_3DS
+                          ? "3D Secure is requested for this charge. Enter the cardholder's billing details; the portal account email is not used."
+                          : "Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details; the portal account email is not used."}
                         successTitle="Advance payment completed"
                         errorTitle="Card payment failed"
                         actionLabel="Order Advance Payment"
+                        onPreflight={handleCardPreflight}
+                        preflightKey={`${orderId}:${cardVerificationMode}`}
                       />
                     </div>
                   )}

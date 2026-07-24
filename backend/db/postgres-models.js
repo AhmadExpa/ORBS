@@ -376,6 +376,14 @@ export const PaymentSetting = createPostgresModel("PaymentSetting", {
 export const SupportTicket = createPostgresModel("SupportTicket", {
   collection: "support_tickets",
   defaults: {
+    ticketNumber: "",
+    source: "portal",
+    requesterType: "customer",
+    requester: {},
+    verificationStatus: "not_required",
+    verifiedAt: null,
+    emailVerification: {},
+    aiTriage: null,
     priority: "medium",
     status: "open",
     serviceId: "",
@@ -390,7 +398,7 @@ export const SupportTicket = createPostgresModel("SupportTicket", {
     createdByDelegateId: "CustomerDelegate",
     assignedTo: "StaffUser",
   },
-  dateFields: ["lastReplyAt"],
+  dateFields: ["lastReplyAt", "verifiedAt"],
 });
 
 export const SupportMessage = createPostgresModel("SupportMessage", {

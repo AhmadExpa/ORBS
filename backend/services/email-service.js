@@ -306,6 +306,80 @@ export async function sendEmailTestNotification({ to }) {
   });
 }
 
+export async function sendSupportTicketVerificationEmail({ email, ticketNumber, verificationCode, question }) {
+  return sendTransactionalEmail({
+    to: email,
+    subject: `Verify support request ${ticketNumber}`,
+    title: "Verify your support request",
+    preheader: `Use the verification code to confirm support request ${ticketNumber}.`,
+    badge: "Support Verification",
+    intro: "We received a support request from the ElevenOrbits website. Enter the code below in the chat widget to verify your email and place the request in the active support queue.",
+    rows: [
+      { label: "Ticket", value: ticketNumber },
+      { label: "Verification code", value: verificationCode },
+      { label: "Email", value: email },
+      { label: "Request", value: question },
+    ],
+    action: {
+      label: "Return to ElevenOrbits",
+      href: env.appUrl,
+    },
+    notes: [
+      "This code expires in 15 minutes.",
+      "If you did not submit this request, do not share the code and ignore this email.",
+    ],
+  });
+}
+
+export async function sendSupportTicketConfirmationEmail({ customer, ticket, question }) {
+  const recipient = getCustomerEmail(customer);
+  return sendTransactionalEmail({
+    to: recipient,
+    subject: `Support request ${ticket.ticketNumber} received`,
+    title: "Your support request is in the queue",
+    preheader: `The ElevenOrbits team received support request ${ticket.ticketNumber}.`,
+    badge: "Support Ticket",
+    intro: "Your request has been securely attached to your customer account. Our team will review the details and send the next response or quotation through your support thread.",
+    rows: [
+      { label: "Ticket", value: ticket.ticketNumber },
+      { label: "Customer", value: getCustomerName(customer) },
+      { label: "Status", value: humanizeValue(ticket.status) },
+      { label: "Request", value: question },
+    ],
+    action: {
+      label: "Open Support Ticket",
+      href: `${env.appUrl}/portal/support/${ticket._id}`,
+    },
+    notes: ["Keep the ticket number for future reference."],
+  });
+}
+
+export async function sendSupportReplyNotification({ recipient, ticket, reply, isPortalCustomer = false }) {
+  return sendTransactionalEmail({
+    to: recipient?.email,
+    subject: `Update on support request ${ticket.ticketNumber || ticket._id}`,
+    title: "Your support request has an update",
+    preheader: `The ElevenOrbits team replied to ${ticket.ticketNumber || ticket._id}.`,
+    badge: "Support Reply",
+    intro: "An ElevenOrbits team member reviewed your support request and sent the response below.",
+    rows: [
+      { label: "Ticket", value: ticket.ticketNumber || ticket._id },
+      { label: "Customer", value: recipient?.name || recipient?.email },
+      { label: "Status", value: humanizeValue(ticket.status) },
+      { label: "Response", value: reply },
+    ],
+    action: {
+      label: isPortalCustomer ? "Open Support Thread" : "Open ElevenOrbits",
+      href: isPortalCustomer ? `${env.appUrl}/portal/support/${ticket._id}` : env.appUrl,
+    },
+    notes: [
+      isPortalCustomer
+        ? "Reply securely from the customer portal if the team needs more information."
+        : "If the team requests more information, return to the ElevenOrbits chat widget and reference this ticket number.",
+    ],
+  });
+}
+
 function getCustomerEmail(customer) {
   return customer?.email || customer?.primaryEmail || customer?.primaryEmailAddress?.emailAddress || "";
 }

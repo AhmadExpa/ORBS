@@ -60,7 +60,10 @@ export function TicketThread({ ticketId }) {
 
   return (
     <div>
-      <Topbar title={ticket?.subject || "Ticket Thread"} subtitle={ticket?.category || "Support"} />
+      <Topbar
+        title={ticket?.subject || "Ticket Thread"}
+        subtitle={`${ticket?.ticketNumber || ticketId} · ${ticket?.category || "Support"}`}
+      />
       <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
@@ -94,6 +97,10 @@ export function TicketThread({ ticketId }) {
             <CardDescription>Current status and priority for this thread.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-slate-500">Ticket number</span>
+              <span className="font-mono text-sm font-semibold text-slate-900">{ticket?.ticketNumber || ticketId}</span>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-500">Status</span>
               <StatusBadge status={ticket?.status || "open"} />

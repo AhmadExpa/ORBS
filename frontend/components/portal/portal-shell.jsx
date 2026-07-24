@@ -13,7 +13,6 @@ import {
   LifeBuoy,
   Lock,
   LogOut,
-  Menu,
   Package,
   Plus,
   Receipt,
@@ -21,7 +20,6 @@ import {
   ShoppingBag,
   UserRound,
   Wallet,
-  X,
 } from "lucide-react";
 import { portalNavGroups } from "@/lib/shared";
 import { formatCurrency } from "@/lib/shared";
@@ -34,6 +32,7 @@ import { isContractSubmittedForPortal } from "@/components/portal/contract-gate"
 import { PortalSectionNav, getActiveSection } from "@/components/portal/portal-section-nav";
 import { PortalFooter } from "@/components/portal/portal-footer";
 import { useCart } from "@/lib/cart/use-cart";
+import { AnimatedMenuButton, FullScreenMobileMenu } from "@/components/shared/mobile-menu";
 
 const iconMap = {
   "layout-dashboard": LayoutDashboard,
@@ -146,6 +145,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   }
 
   async function handleSignOut() {
+    setMobileOpen(false);
     if (isAgent) {
       try {
         await apiFetch("/delegate/auth/logout", { method: "POST", authMode: "delegate" });
@@ -304,7 +304,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
               ) : null}
 
               {/* User menu */}
-              <div className="relative">
+              <div className="relative hidden lg:block">
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((open) => !open)}
@@ -346,22 +346,68 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
               </div>
 
               {/* Mobile menu toggle */}
-              <button
-                type="button"
+              <AnimatedMenuButton
+                open={mobileOpen}
+                controls="portal-mobile-menu"
                 onClick={() => setMobileOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10 lg:hidden"
-                aria-label="Toggle navigation"
-              >
-                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
+                className="h-9 w-9 text-white transition-colors hover:bg-white/10 lg:hidden"
+              />
             </div>
           </div>
 
-          {/* Mobile nav sheet */}
-          {mobileOpen ? (
-            <div className="border-t border-white/10 bg-[#0f1115] px-4 py-3 lg:hidden">
-              <nav className="space-y-1">
-                {flattenLinks(visibleGroups).map((item) => {
+          <FullScreenMobileMenu
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            id="portal-mobile-menu"
+            label={isAgent ? "Agent portal navigation" : "Customer portal navigation"}
+            breakpointClassName="lg:hidden"
+            desktopMinWidth={1024}
+            className={isAgent ? "bg-[#07111f] text-white" : "bg-[#0f1115] text-white"}
+          >
+            <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-4 sm:px-6 sm:py-5">
+              <div className="eo-mobile-menu-item flex items-center justify-between gap-3" style={{ "--eo-menu-index": 0 }}>
+                <Link
+                  href={isAgent ? "/agent/services" : "/portal"}
+                  aria-label={isAgent ? "ElevenOrbits agent portal" : "ElevenOrbits customer portal"}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <BrandLogo className="h-8 w-[170px]" imageClassName="brightness-0 invert" priority />
+                </Link>
+                <AnimatedMenuButton
+                  open
+                  controls="portal-mobile-menu"
+                  label="Close navigation"
+                  onClick={() => setMobileOpen(false)}
+                  className="border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                />
+              </div>
+
+              <div
+                className="eo-mobile-menu-item mt-7 rounded-2xl border border-white/10 bg-white/[0.05] p-4"
+                style={{ "--eo-menu-index": 1 }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-600 text-base font-semibold text-white ring-1 ring-white/15">
+                    {initial}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-white">{displayName}</p>
+                    {displayEmail ? <p className="mt-1 truncate text-sm text-white/50">{displayEmail}</p> : null}
+                  </div>
+                </div>
+                {!isAgent ? (
+                  <div className="mt-4 flex items-center justify-between rounded-xl border border-white/10 bg-black/10 px-3 py-2.5">
+                    <span className="flex items-center gap-2 text-sm text-white/60">
+                      <Wallet className="h-4 w-4 text-emerald-400" />
+                      Wallet balance
+                    </span>
+                    <span className="text-sm font-semibold text-white">{formatCurrency(walletBalance)}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              <nav className="mt-7 flex-1 border-t border-white/10 pt-4" aria-label="Portal pages">
+                {flattenLinks(visibleGroups).map((item, index) => {
                   const ItemIcon = iconMap[item.icon] || LayoutDashboard;
                   const active = isLinkActive(pathname, item.href);
                   const locked = portalLocked && item.href !== "/portal/contracts";
@@ -369,32 +415,87 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
                     <Link
                       key={item.href}
                       href={lockHrefFor(item.href)}
+                      onClick={() => setMobileOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors",
-                        active ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
+                        "eo-mobile-menu-item mb-1 flex items-center gap-3 rounded-xl border px-3.5 py-3.5 transition-colors",
+                        active
+                          ? "border-white/15 bg-white/10 text-white"
+                          : "border-transparent text-white/65 hover:border-white/10 hover:bg-white/[0.05] hover:text-white",
                       )}
+                      style={{ "--eo-menu-index": index + 2 }}
                     >
-                      {locked ? <Lock className="h-4 w-4 text-amber-400" /> : <ItemIcon className={cn("h-4 w-4", active ? "text-accent-500" : "text-white/40")} />}
-                      {item.label}
+                      <span className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border",
+                        active ? "border-accent-400/30 bg-accent-500/15 text-accent-300" : "border-white/10 bg-white/5 text-white/45",
+                      )}>
+                        {locked ? <Lock className="h-4 w-4 text-amber-400" /> : <ItemIcon className="h-[18px] w-[18px]" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{item.label}</span>
+                        {item.description ? <span className="mt-0.5 block text-xs leading-5 text-white/40">{item.description}</span> : null}
+                      </span>
+                      {active ? <Check className="h-4 w-4 text-accent-400" /> : null}
                     </Link>
                   );
                 })}
-                 {!isAgent ? (
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <Link href="/portal/cart" className="relative flex items-center justify-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-semibold text-white">
+              </nav>
+
+              <div
+                className="eo-mobile-menu-item mt-6 space-y-3 border-t border-white/10 pt-5"
+                style={{ "--eo-menu-index": flattenLinks(visibleGroups).length + 2 }}
+              >
+                {!isAgent ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href="/portal/cart"
+                      onClick={() => setMobileOpen(false)}
+                      className="relative flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-sm font-semibold text-white"
+                    >
                       <ShoppingBag className="h-4 w-4" />
                       Cart
                       {itemCount ? <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{itemCount}</span> : null}
                     </Link>
-                    <Link href="/portal/services" className="flex items-center justify-center gap-1.5 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white">
+                    <Link
+                      href="/portal/services"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-accent-600 px-3 py-3 text-sm font-semibold text-white"
+                    >
                       <Plus className="h-4 w-4" />
                       Order an app
                     </Link>
                   </div>
                 ) : null}
-              </nav>
+                <div className={cn("grid gap-2", isAgent ? "grid-cols-1" : "grid-cols-2")}>
+                  {!isAgent ? (
+                    <Link
+                      href="/portal/account"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-3 text-sm font-semibold text-white"
+                    >
+                      <UserRound className="h-4 w-4" />
+                      Account
+                    </Link>
+                  ) : null}
+                  <Link
+                    href={isAgent ? "/agent/support" : "/portal/support"}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-3 text-sm font-semibold text-white"
+                  >
+                    <LifeBuoy className="h-4 w-4" />
+                    Support
+                  </Link>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-3 text-sm font-semibold text-rose-200"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
             </div>
-          ) : null}
+          </FullScreenMobileMenu>
         </header>
 
         {portalLocked ? (

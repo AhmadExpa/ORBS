@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { FeedbackProvider } from "./feedback-layer";
+import { SupportChatWidget } from "./support-chat-widget";
 
 export function Providers({ children }) {
   const [queryClient] = useState(
@@ -40,7 +41,10 @@ export function Providers({ children }) {
       signUpFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || "/portal"}
     >
       <QueryClientProvider client={queryClient}>
-        <FeedbackProvider>{children}</FeedbackProvider>
+        <FeedbackProvider>
+          {children}
+          <SupportChatWidget />
+        </FeedbackProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

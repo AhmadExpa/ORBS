@@ -104,6 +104,73 @@ select {
     0 4px 10px -4px rgba(16, 24, 40, 0.1);
 }
 
+@keyframes eo-mobile-menu-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes eo-mobile-menu-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0) scale(0.99);
+  }
+}
+
+@keyframes eo-mobile-menu-item-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.eo-mobile-menu[data-state="open"] {
+  animation: eo-mobile-menu-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.eo-mobile-menu[data-state="closed"] {
+  animation: eo-mobile-menu-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+.eo-mobile-menu[data-state="open"] .eo-mobile-menu-item {
+  animation: eo-mobile-menu-item-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--eo-menu-index, 0) * 34ms + 60ms);
+}
+
+.eo-mobile-submenu {
+  display: grid;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+}
+
+.eo-mobile-submenu[data-state="open"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.eo-mobile-submenu[data-state="closed"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
 .eo-scrollbar-none {
   scrollbar-width: none;
 }

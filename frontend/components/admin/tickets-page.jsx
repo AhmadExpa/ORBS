@@ -87,6 +87,21 @@ function getResponderName(selectedValue, supportAgents, fallbackName = "") {
   return supportAgents.find((agent) => agent._id === selectedValue)?.name || fallbackName || "Support Team";
 }
 
+function ticketRequesterName(ticket) {
+  return ticket?.userId?.name || ticket?.requester?.name || ticket?.requester?.email || "Website visitor";
+}
+
+function ticketRequesterEmail(ticket) {
+  return ticket?.userId?.email || ticket?.requester?.email || "";
+}
+
+function humanize(value, fallback = "Not available") {
+  const normalized = String(value || "").trim();
+  return normalized
+    ? normalized.replace(/_/gu, " ").replace(/\b\w/gu, (letter) => letter.toUpperCase())
+    : fallback;
+}
+
 export function AdminTicketsPage() {
   const { showToast } = useActionToast();
   const ticketsQuery = useStaffQuery({
@@ -121,6 +136,10 @@ export function AdminTicketsPage() {
   const selectedAssignedName = selectedTicket?.assignedTo?.name || "";
   const canChooseResponder = currentStaffUser?.role === "admin";
   const responderName = getResponderName(respondAs, supportAgents, currentStaffUser?.name || selectedAssignedName);
+  const selectedRequester = selectedTicket?.requester || {};
+  const selectedVisitorNeedsVerification =
+    selectedTicket?.requesterType === "visitor" &&
+    selectedTicket?.verificationStatus !== "verified";
 
   useEffect(() => {
     if (!selectedId && tickets.length) {
@@ -192,7 +211,7 @@ export function AdminTicketsPage() {
     setReplyState({ sending: true, message: "", error: "" });
 
     try {
-      await apiFetch(`/tickets/${selectedId}/messages`, {
+      const response = await apiFetch(`/tickets/${selectedId}/messages`, {
         method: "POST",
         authMode: "staff",
         body: {
@@ -204,12 +223,19 @@ export function AdminTicketsPage() {
       });
       setReplyMessage("");
       await refreshTicketData();
-      setReplyState({ sending: false, message: "Reply sent.", error: "" });
+      const emailFailed = response.notification && !response.notification.delivered;
+      setReplyState({
+        sending: false,
+        message: emailFailed ? "Reply saved to the ticket, but the email was not delivered." : "Reply sent.",
+        error: "",
+      });
       showToast({
-        type: "success",
+        type: emailFailed ? "warning" : "success",
         action: "Tickets",
-        title: "Reply sent",
-        description: `The reply was sent as ${responderName}.`,
+        title: emailFailed ? "Reply saved; email not delivered" : "Reply sent",
+        description: emailFailed
+          ? "Review the ticket verification and mail delivery status before following up."
+          : `The reply was sent as ${responderName}.`,
       });
     } catch (error) {
       setReplyState({ sending: false, message: "", error: error.message });
@@ -275,11 +301,25 @@ export function AdminTicketsPage() {
                             className={ticket._id === selectedId ? "ring-2 ring-brand-600/40" : ""}
                           >
                             <p className="text-sm font-semibold leading-5 text-slate-900">{ticket.subject}</p>
-                            <p className="mt-1 text-xs text-slate-500">{formatTicketAge(ticket.createdAt)}</p>
+                            <p className="mt-1 text-xs text-slate-500">{ticket.ticketNumber || ticket._id} · {formatTicketAge(ticket.createdAt)}</p>
                             <div className="mt-3 flex items-center justify-between gap-2">
-                              <span className="truncate text-xs font-medium text-slate-500">{ticket.userId?.name || "Unknown customer"}</span>
+                              <span className="truncate text-xs font-medium text-slate-500">{ticketRequesterName(ticket)}</span>
                               <PriorityTag priority={ticket.priority} />
                             </div>
+                            {ticket.aiTriage?.possibleQuotationRequest || ticket.aiTriage?.requiresUrgentReview ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {ticket.aiTriage.requiresUrgentReview ? (
+                                  <span className="rounded-md bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
+                                    Urgent review
+                                  </span>
+                                ) : null}
+                                {ticket.aiTriage.possibleQuotationRequest ? (
+                                  <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                                    Quote intent
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : null}
                             <p className="mt-2 truncate text-[11px] font-medium text-slate-400">
                               {ticket.assignedTo?.name ? `Assigned to ${ticket.assignedTo.name}` : "Unassigned"}
                             </p>
@@ -305,7 +345,8 @@ export function AdminTicketsPage() {
                         </button>
                       ),
                     },
-                    { key: "customer", label: "Customer", render: (row) => row.userId?.name || "Unknown" },
+                    { key: "ticketNumber", label: "Ticket", render: (row) => row.ticketNumber || row._id },
+                    { key: "customer", label: "Customer", render: (row) => ticketRequesterName(row) },
                     { key: "assignedTo", label: "Assigned", render: (row) => row.assignedTo?.name || "Unassigned" },
                     { key: "priority", label: "Priority", render: (row) => <PriorityTag priority={row.priority} /> },
                     { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
@@ -346,7 +387,13 @@ export function AdminTicketsPage() {
               {selectedTicket ? (
                 <div className="rounded-lg border border-line bg-slate-50 p-4 text-sm text-slate-600">
                   <p>
-                    <span className="font-semibold text-slate-900">Customer:</span> {selectedTicket.userId?.name || "Unknown"}
+                    <span className="font-semibold text-slate-900">Customer:</span> {ticketRequesterName(selectedTicket)}
+                  </p>
+                  <p className="mt-2">
+                    <span className="font-semibold text-slate-900">Ticket:</span> {selectedTicket.ticketNumber || selectedTicket._id}
+                  </p>
+                  <p className="mt-2">
+                    <span className="font-semibold text-slate-900">Verification:</span> {humanize(selectedTicket.verificationStatus, "Legacy ticket")}
                   </p>
                   <p className="mt-2">
                     <span className="font-semibold text-slate-900">Category:</span> {selectedTicket.category || "General"}
@@ -379,7 +426,7 @@ export function AdminTicketsPage() {
               <CardContent className="min-w-0 space-y-4">
                 {detailQuery.isLoading ? <p className="text-sm text-slate-500">Loading conversation...</p> : null}
                 {messages.map((entry) => (
-                  <div key={entry._id} className={`rounded-lg border p-4 ${entry.senderType === "customer" ? "border-brand-100 bg-brand-50/60" : "border-line bg-slate-50"}`}>
+                  <div key={entry._id} className={`rounded-lg border p-4 ${["customer", "visitor", "customer_delegate"].includes(entry.senderType) ? "border-brand-100 bg-brand-50/60" : "border-line bg-slate-50"}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{entry.senderName || entry.displayName || "Unknown sender"}</p>
@@ -394,6 +441,11 @@ export function AdminTicketsPage() {
                 ))}
                 {!messages.length && !detailQuery.isLoading ? <p className="text-sm text-slate-500">No replies yet.</p> : null}
                 <form className="space-y-4 rounded-lg border border-line bg-slate-50/50 p-5" onSubmit={handleReply}>
+                  {selectedVisitorNeedsVerification ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                      This visitor has not verified the email address yet. Email replies remain disabled until verification succeeds.
+                    </div>
+                  ) : null}
                   <div>
                     <FieldLabel>Respond as</FieldLabel>
                     {canChooseResponder ? (
@@ -413,7 +465,7 @@ export function AdminTicketsPage() {
                   <TextArea value={replyMessage} onChange={(event) => setReplyMessage(event.target.value)} placeholder="Write a reply to the customer…" required />
                   {replyState.message ? <p className="text-sm font-medium text-emerald-700">{replyState.message}</p> : null}
                   {replyState.error ? <p className="text-sm font-medium text-rose-600">{replyState.error}</p> : null}
-                  <Button type="submit" disabled={replyState.sending || !selectedId}>
+                  <Button type="submit" disabled={replyState.sending || !selectedId || selectedVisitorNeedsVerification}>
                     {replyState.sending ? "Sending..." : "Send Reply"}
                   </Button>
                 </form>
@@ -426,13 +478,102 @@ export function AdminTicketsPage() {
                 <CardDescription>Customer context and routing details for the selected conversation.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-slate-600">
+                {selectedTicket.aiTriage ? (
+                  <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-800">
+                        AI-assisted triage
+                      </p>
+                      <span className="rounded-md border border-sky-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                        Human review required
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm font-medium leading-6 text-slate-900">
+                      {selectedTicket.aiTriage.summary || "No summary was generated."}
+                    </p>
+                    {selectedTicket.aiTriage.agentNotes ? (
+                      <p className="mt-2 text-xs leading-5 text-slate-600">
+                        <span className="font-semibold text-slate-800">Routing note:</span>{" "}
+                        {selectedTicket.aiTriage.agentNotes}
+                      </p>
+                    ) : null}
+                    {selectedTicket.aiTriage.clarifyingQuestion ? (
+                      <p className="mt-2 text-xs leading-5 text-slate-600">
+                        <span className="font-semibold text-slate-800">Suggested follow-up:</span>{" "}
+                        {selectedTicket.aiTriage.clarifyingQuestion}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedTicket.aiTriage.requiresUrgentReview ? (
+                        <span className="rounded-md bg-rose-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-rose-800">
+                          Urgent review
+                        </span>
+                      ) : null}
+                      {selectedTicket.aiTriage.possibleQuotationRequest ? (
+                        <span className="rounded-md bg-sky-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+                          Possible quotation
+                        </span>
+                      ) : null}
+                      {!selectedTicket.aiTriage.available ? (
+                        <span className="rounded-md bg-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
+                          Rules-based fallback
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex items-start justify-between gap-4">
                   <span>Customer</span>
                   <div className="text-right">
-                    <p className="font-semibold text-slate-900">{selectedTicket.userId?.name || "Unknown"}</p>
-                    <p>{selectedTicket.userId?.email || "No email available"}</p>
+                    <p className="font-semibold text-slate-900">{ticketRequesterName(selectedTicket)}</p>
+                    <p>{ticketRequesterEmail(selectedTicket) || "No email available"}</p>
                   </div>
                 </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Ticket number</span>
+                  <span className="font-semibold text-slate-900">{selectedTicket.ticketNumber || selectedTicket._id}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Source</span>
+                  <span className="font-semibold text-slate-900">{humanize(selectedTicket.source, "Portal")}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Identity check</span>
+                  <span className="font-semibold text-slate-900">{humanize(selectedTicket.verificationStatus, "Legacy ticket")}</span>
+                </div>
+                {selectedRequester.company ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Company</span>
+                    <span className="font-semibold text-slate-900">{selectedRequester.company}</span>
+                  </div>
+                ) : null}
+                {selectedRequester.phone ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Phone</span>
+                    <span className="font-semibold text-slate-900">{selectedRequester.phone}</span>
+                  </div>
+                ) : null}
+                {selectedRequester.customerId ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Customer ID</span>
+                    <span className="break-all text-right font-semibold text-slate-900">{selectedRequester.customerId}</span>
+                  </div>
+                ) : null}
+                {selectedRequester.accountStatus ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Account status</span>
+                    <span className="font-semibold text-slate-900">{humanize(selectedRequester.accountStatus)}</span>
+                  </div>
+                ) : null}
+                {selectedRequester.network?.maskedIp ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Network signal</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedRequester.network.maskedIp}
+                      {selectedRequester.network.country ? ` · ${selectedRequester.network.country}` : ""}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-4">
                   <span>Status</span>
                   <StatusBadge status={selectedTicket.status || "open"} />

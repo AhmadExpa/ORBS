@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   Activity,
   Building2,
+  Check,
+  Copy,
   CreditCard,
   Eye,
   EyeOff,
@@ -45,6 +47,13 @@ const tabs = [
     label: "Delegated access",
     description: "Service agents and ticket access",
     icon: UsersRound,
+    ownerOnly: true,
+  },
+  {
+    id: "security",
+    label: "Support & security",
+    description: "Support PIN and secure assistance",
+    icon: ShieldCheck,
     ownerOnly: true,
   },
   {
@@ -506,6 +515,86 @@ function AccountActivityPanel() {
   );
 }
 
+function SupportSecurityPanel() {
+  const supportPinQuery = useCustomerQuery({
+    queryKey: ["portal-support-pin"],
+    path: "/profile/support-pin",
+  });
+  const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const supportPin = supportPinQuery.data?.supportPin || "";
+
+  async function copySupportPin() {
+    if (!supportPin || typeof navigator === "undefined" || !navigator.clipboard) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(supportPin);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  if (supportPinQuery.isLoading && !supportPinQuery.data) {
+    return (
+      <div className="flex justify-center py-16">
+        <LogoSpinner size={56} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Support PIN</CardTitle>
+          <CardDescription>Use this private 6-digit PIN when the website support widget needs to confirm your customer account.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Your private support PIN</p>
+                <p className="mt-3 font-mono text-3xl font-semibold tracking-[0.28em] text-slate-950">
+                  {visible ? supportPin : "••••••"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="ghost" onClick={() => setVisible((current) => !current)}>
+                  {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {visible ? "Hide PIN" : "Reveal PIN"}
+                </Button>
+                <Button type="button" variant="ghost" onClick={copySupportPin} disabled={!supportPin}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Copied" : "Copy PIN"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {supportPinQuery.error ? (
+            <p className="text-sm font-medium text-rose-600">{supportPinQuery.error.message}</p>
+          ) : null}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-950">What it verifies</p>
+              <p className="mt-2 text-sm leading-6 text-emerald-900/80">
+                The PIN confirms that a signed-in support request belongs to this customer account before account context is attached.
+              </p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-950">Keep it private</p>
+              <p className="mt-2 text-sm leading-6 text-amber-900/80">
+                ElevenOrbits staff will only request it through the secure website widget. Never send it in public messages or screenshots.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function AccountSettingsPage() {
   const [tab, setTab] = useState("general");
   const profileQuery = useCustomerQuery({
@@ -578,6 +667,8 @@ export function AccountSettingsPage() {
               <GeneralAccountPanel onEditBusiness={() => setTab("business")} />
             ) : tab === "delegates" && !isDelegate ? (
               <DelegateAccessPanel />
+            ) : tab === "security" && !isDelegate ? (
+              <SupportSecurityPanel />
             ) : tab === "activity" ? (
               <AccountActivityPanel />
             ) : (

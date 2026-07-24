@@ -2,6 +2,7 @@ import express from "express";
 import { env } from "../../config/env.js";
 import { Invoice, Order, PaymentSubmission, Subscription, User } from "../../db/models/index.js";
 import { requireCustomer } from "../../middleware/require-customer.js";
+import { rateLimit } from "../../middleware/rate-limit.js";
 import {
   constructWebhookEvent,
   createCheckoutLineItem,
@@ -11,16 +12,18 @@ import {
   createSetupCheckoutSession,
   createSetupIntent,
   getUserSavedPaymentMethods,
+  isStripeConfigured,
   listRecentCustomerPaymentIntents,
+  normalizePaymentBillingDetails,
   removeUserPaymentMethod,
   removeUserDefaultPaymentMethod,
+  resolveCustomerCardVerificationMode,
   setUserPrimaryPaymentMethod,
   retrieveCheckoutSession,
   retrievePaymentIntent,
   retrieveSetupIntent,
   updateUserCardAutoBilling,
   updateUserDefaultPaymentMethod,
-  WALLET_TOPUP_THREE_D_SECURE_MODE,
 } from "../../services/stripe-service.js";
 import { handleStripeDisputeEvent } from "../../services/stripe-dispute-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -31,6 +34,7 @@ import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification, sendWalletTopupNotification } from "../../services/email-service.js";
 import { requireApprovedContract } from "../../services/contract-service.js";
+import { buildCountryConsistencyChecks, getPaymentNetworkSignal } from "../../services/payment-preflight-service.js";
 
 export const stripeRouter = express.Router();
 export const stripeWebhookRouter = express.Router();
@@ -184,6 +188,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       advancePaymentStatus: "pending_review",
       paymentReceivedAt: paymentReceivedAt.toISOString(),
       paymentMethodType: "stripe_card",
+      cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
     };
     await order.save();
 
@@ -195,6 +200,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
         advancePayment: true,
         advancePaymentStatus: "pending_review",
         paymentReceivedAt: paymentReceivedAt.toISOString(),
+        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
         lastStripePaymentIntentId: paymentIntentId,
         ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
       };
@@ -233,6 +239,10 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
+      metadata: {
+        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+        threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+      },
       submittedAt: new Date(),
       reviewedAt: new Date(),
     });
@@ -246,6 +256,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       metadata: {
         orderId: String(order._id),
         amount: order.totalAmount,
+        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
       },
     });
 
@@ -322,6 +333,10 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
+      metadata: {
+        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+        threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+      },
       submittedAt: new Date(),
       reviewedAt: new Date(),
     });
@@ -334,6 +349,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       targetId: String(submission._id),
       metadata: {
         amount,
+        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
       },
     });
 
@@ -567,6 +583,228 @@ async function reconcileRecentStripePayments({ user }) {
 }
 
 stripeRouter.post(
+  "/preflight",
+  requireCustomer,
+  rateLimit({
+    name: "payment-preflight",
+    windowMs: 5 * 60 * 1000,
+    max: 30,
+    keyFn: (req) => req.auth?.clerkId || req.ip,
+  }),
+  asyncHandler(async (req, res) => {
+    const user = req.auth.user;
+    const paymentType = String(req.body.type || "").trim();
+    if (!["order_payment", "wallet_topup"].includes(paymentType)) {
+      throw new HttpError(400, "Choose a supported payment type for the pre-charge check.");
+    }
+
+    const checks = [
+      {
+        id: "session",
+        label: "Secure customer session",
+        status: "passed",
+        detail: "The payment request is attached to your authenticated customer account.",
+      },
+      {
+        id: "account",
+        label: "Account status",
+        status: user.accountStatus === "active" ? "passed" : "failed",
+        detail: user.accountStatus === "active"
+          ? "The account is active and eligible to initiate a payment."
+          : "The account is not currently eligible to initiate a payment.",
+      },
+      {
+        id: "profile",
+        label: "Customer profile",
+        status: user.name && user.email ? "passed" : "failed",
+        detail: user.name && user.email
+          ? "The customer name and account email are present."
+          : "Complete the customer name and account email before payment.",
+      },
+    ];
+
+    try {
+      await requireApprovedContract(req.auth.clerkId);
+      checks.push({
+        id: "agreement",
+        label: "Managed Service Agreement",
+        status: "passed",
+        detail: "The signed agreement is approved for billing.",
+      });
+    } catch (error) {
+      checks.push({
+        id: "agreement",
+        label: "Managed Service Agreement",
+        status: "failed",
+        detail: error.status && error.status < 500
+          ? error.message
+          : "The agreement could not be verified for billing.",
+      });
+    }
+
+    let normalizedBillingDetails = null;
+    try {
+      normalizedBillingDetails = normalizePaymentBillingDetails(req.body.billingDetails);
+      checks.push({
+        id: "billing",
+        label: "Billing identity",
+        status: "passed",
+        detail: "The cardholder contact and billing-address fields are complete.",
+      });
+    } catch (error) {
+      checks.push({
+        id: "billing",
+        label: "Billing identity",
+        status: "failed",
+        detail: error.message || "Complete the cardholder billing details.",
+      });
+    }
+
+    try {
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      checks.push({
+        id: "verification-mode",
+        label: "Card verification mode",
+        status: "passed",
+        detail: verification.cardVerificationMode === "three_d_secure"
+          ? "This charge will request 3D Secure authentication whenever supported."
+          : "Stripe will use standard processing and request authentication when required.",
+      });
+    } catch (error) {
+      checks.push({
+        id: "verification-mode",
+        label: "Card verification mode",
+        status: "failed",
+        detail: error.message,
+      });
+    }
+
+    if (paymentType === "order_payment") {
+      try {
+        const { order, invoice } = await findOrderPaymentContext({
+          orderId: req.body.orderId,
+          userId: user._id,
+        });
+        const payable =
+          !["cancelled", "rejected", "approved"].includes(order.status) &&
+          invoice?.status !== "paid" &&
+          Number(order.totalAmount || 0) > 0;
+        checks.push({
+          id: "payable",
+          label: "Order and invoice",
+          status: payable ? "passed" : "failed",
+          detail: payable
+            ? `The order invoice is payable for ${Number(order.totalAmount).toFixed(2)} ${String(invoice?.currency || env.stripeCurrency).toUpperCase()}.`
+            : "This order is not currently eligible for another card charge.",
+        });
+      } catch (error) {
+        checks.push({
+          id: "payable",
+          label: "Order and invoice",
+          status: "failed",
+          detail: error.status && error.status < 500
+            ? error.message
+            : "The linked order and invoice could not be verified.",
+        });
+      }
+    } else {
+      const amount = Number(req.body.amount || 0);
+      checks.push({
+        id: "payable",
+        label: "Wallet top-up amount",
+        status: Number.isFinite(amount) && amount > 0 ? "passed" : "failed",
+        detail: Number.isFinite(amount) && amount > 0
+          ? `The ${amount.toFixed(2)} ${env.stripeCurrency.toUpperCase()} top-up amount is valid.`
+          : "Enter a positive wallet top-up amount.",
+      });
+    }
+
+    const paymentMethodId = String(req.body.paymentMethodId || "").trim();
+    if (paymentMethodId) {
+      const savedCard = getUserSavedPaymentMethods(user)
+        .find((card) => String(card.id) === paymentMethodId);
+      const expiryMonth = Number(savedCard?.expMonth || 0);
+      const expiryYear = Number(savedCard?.expYear || 0);
+      const now = new Date();
+      const expiryKnown = expiryMonth >= 1 && expiryMonth <= 12 && expiryYear > 0;
+      const cardExpired = expiryKnown && (
+        expiryYear < now.getFullYear() ||
+        (expiryYear === now.getFullYear() && expiryMonth < now.getMonth() + 1)
+      );
+      checks.push({
+        id: "saved-card",
+        label: "Saved card",
+        status: !savedCard ? "failed" : cardExpired ? "failed" : expiryKnown ? "passed" : "warning",
+        detail: !savedCard
+          ? "The selected saved card could not be verified for this account."
+          : cardExpired
+            ? "The selected saved card appears to be expired. Choose another card."
+            : expiryKnown
+              ? `The selected card ending in ${savedCard.last4 || "••••"} belongs to this account and its stored expiry date is current.`
+              : "The selected saved card belongs to this account, but its expiry date is unavailable for preflight.",
+      });
+    }
+
+    const network = getPaymentNetworkSignal(req);
+    checks.push({
+      id: "network",
+      label: "Network signal",
+      status: network.detected ? "passed" : "info",
+      detail: network.detected
+        ? `A network address was detected (${network.maskedIp || "masked"}). The full address is not displayed.`
+        : "A network address could not be displayed. This does not predict issuer approval.",
+    });
+    checks.push({
+      id: "transport",
+      label: "Secure transport",
+      status: network.secureTransport ? "passed" : "warning",
+      detail: network.secureTransport
+        ? "The payment preflight arrived over a secure or trusted local transport."
+        : "A secure transport signal was not detected. Refresh the HTTPS portal before paying.",
+    });
+    checks.push(...buildCountryConsistencyChecks({
+      billingCountry: normalizedBillingDetails?.address?.country,
+      accountCountry: user.billingAddress?.country,
+      networkCountry: network.country,
+    }));
+    checks.push({
+      id: "processor",
+      label: "Payment processor",
+      status: isStripeConfigured() ? "passed" : "failed",
+      detail: isStripeConfigured()
+        ? "Stripe is configured and ready to create the payment request."
+        : "Card processing is not configured right now.",
+    });
+    checks.push({
+      id: "issuer",
+      label: "Issuer decision",
+      status: "info",
+      detail: "A bank approval or decline cannot be known until authorization. These checks only reduce preventable setup errors.",
+    });
+
+    const failedCount = checks.filter((check) => check.status === "failed").length;
+    const warningCount = checks.filter((check) => check.status === "warning").length;
+
+    res.json({
+      checkedAt: new Date().toISOString(),
+      canProceed: failedCount === 0,
+      riskLevel: failedCount > 0 ? "blocked" : warningCount > 0 ? "caution" : "clear",
+      headline: failedCount > 0
+        ? "Resolve the failed checks before charging the card."
+        : warningCount > 0
+          ? "The payment can continue, but review the warnings first."
+          : "All available pre-charge checks passed.",
+      checks,
+      network: {
+        maskedIp: network.maskedIp,
+        country: network.country,
+      },
+      disclaimer: "This readiness check cannot guarantee approval or predict an issuer decline.",
+    });
+  }),
+);
+
+stripeRouter.post(
   "/intents",
   requireCustomer,
   asyncHandler(async (req, res) => {
@@ -596,6 +834,7 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
 
       const intent = await createPaymentIntent({
         user,
@@ -603,12 +842,13 @@ stripeRouter.post(
         description: "ElevenOrbits wallet top-up",
         billingDetails: req.body.billingDetails,
         saveForFutureUse: false,
-        requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
+        requestThreeDSecure: verification.requestThreeDSecure,
         metadata: {
           type: "wallet_topup",
           userId: user._id,
           amount: amount.toFixed(2),
-          threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
+          cardVerificationMode: verification.cardVerificationMode,
+          threeDSecurePolicy: verification.requestThreeDSecure,
         },
       });
 
@@ -629,17 +869,21 @@ stripeRouter.post(
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");
       }
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
 
       const intent = await createPaymentIntent({
         user,
         amount: order.totalAmount,
         description: invoice?.invoiceNumber || order.productPlanId?.name || "Managed service payment",
         billingDetails: req.body.billingDetails,
+        requestThreeDSecure: verification.requestThreeDSecure,
         metadata: {
           type: "order_payment",
           userId: user._id,
           orderId: order._id,
           subscriptionId: subscription?._id,
+          cardVerificationMode: verification.cardVerificationMode,
+          threeDSecurePolicy: verification.requestThreeDSecure,
         },
       });
 
@@ -678,13 +922,14 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
 
       const session = await createPaymentCheckoutSession({
         user,
         successUrl: successUrl("/portal/payments", "wallet_topup"),
         cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
         saveForFutureUse: false,
-        requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
+        requestThreeDSecure: verification.requestThreeDSecure,
         lineItems: [
           createCheckoutLineItem({
             name: "ElevenOrbits Wallet Top-up",
@@ -696,7 +941,8 @@ stripeRouter.post(
           type: "wallet_topup",
           userId: user._id,
           amount: amount.toFixed(2),
-          threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
+          cardVerificationMode: verification.cardVerificationMode,
+          threeDSecurePolicy: verification.requestThreeDSecure,
         },
       });
 
@@ -717,11 +963,13 @@ stripeRouter.post(
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");
       }
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
 
       const session = await createPaymentCheckoutSession({
         user,
         successUrl: successUrl(`/portal/checkout/${order._id}`, "order_payment"),
         cancelUrl: cancelUrl(`/portal/checkout/${order._id}`, "order_payment"),
+        requestThreeDSecure: verification.requestThreeDSecure,
         lineItems: [
           createCheckoutLineItem({
             name: invoice?.invoiceNumber || order.productPlanId?.name || "Managed Service",
@@ -734,6 +982,8 @@ stripeRouter.post(
           userId: user._id,
           orderId: order._id,
           subscriptionId: subscription?._id,
+          cardVerificationMode: verification.cardVerificationMode,
+          threeDSecurePolicy: verification.requestThreeDSecure,
         },
       });
 
@@ -832,6 +1082,7 @@ stripeRouter.post(
     if (!amount || amount <= 0) {
       throw new HttpError(400, "A valid top-up amount is required.");
     }
+    const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
 
     const paymentIntent = await createSavedCardPaymentIntent({
       user,
@@ -839,13 +1090,14 @@ stripeRouter.post(
       amount,
       description: "ElevenOrbits wallet top-up from saved card",
       billingDetails: req.body.billingDetails,
-      requestThreeDSecure: WALLET_TOPUP_THREE_D_SECURE_MODE,
+      requestThreeDSecure: verification.requestThreeDSecure,
       metadata: {
         type: "wallet_topup",
         userId: user._id,
         amount: amount.toFixed(2),
         preserveSavedCard: "true",
-        threeDSecurePolicy: WALLET_TOPUP_THREE_D_SECURE_MODE,
+        cardVerificationMode: verification.cardVerificationMode,
+        threeDSecurePolicy: verification.requestThreeDSecure,
       },
     });
 

@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildUserInitiatedCardPaymentIntentParams,
+  CARD_VERIFICATION_MODE_3DS,
+  CARD_VERIFICATION_MODE_STANDARD,
   CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
   normalizePaymentBillingDetails,
   normalizePaymentPhoneNumber,
+  resolveCustomerCardVerificationMode,
+  STANDARD_THREE_D_SECURE_MODE,
   WALLET_TOPUP_THREE_D_SECURE_MODE,
 } from "../services/stripe-service.js";
 
@@ -56,6 +60,21 @@ test("one-time customer-present payments default to 3DS and do not request futur
 
   assert.equal(params.setup_future_usage, undefined);
   assert.equal(params.payment_method_options.card.request_three_d_secure, "challenge");
+});
+
+test("customers can choose standard processing or request 3D Secure", () => {
+  assert.deepEqual(resolveCustomerCardVerificationMode(CARD_VERIFICATION_MODE_STANDARD), {
+    cardVerificationMode: CARD_VERIFICATION_MODE_STANDARD,
+    requestThreeDSecure: STANDARD_THREE_D_SECURE_MODE,
+  });
+  assert.deepEqual(resolveCustomerCardVerificationMode(CARD_VERIFICATION_MODE_3DS), {
+    cardVerificationMode: CARD_VERIFICATION_MODE_3DS,
+    requestThreeDSecure: CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  });
+  assert.throws(
+    () => resolveCustomerCardVerificationMode("disable_security"),
+    /standard card processing or 3D Secure verification/,
+  );
 });
 
 test("provided billing details are validated and mapped to Stripe fields", () => {

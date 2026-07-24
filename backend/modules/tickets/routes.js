@@ -9,6 +9,11 @@ import { HttpError } from "../../utils/http-error.js";
 import { CustomerDelegate, StaffUser, Subscription, SupportMessage, SupportTicket, User } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
 import { persistUploadedFile } from "../../services/storage-service.js";
+import { sendSupportReplyNotification } from "../../services/email-service.js";
+import {
+  buildCustomerSupportRequester,
+  reserveSupportTicketNumber,
+} from "../../services/support-chat-service.js";
 
 export const ticketsRouter = express.Router();
 
@@ -46,6 +51,7 @@ function getSenderContext(req) {
 function serializeTicketForCustomer(ticket) {
   return {
     _id: ticket._id,
+    ticketNumber: ticket.ticketNumber || ticket._id,
     subject: ticket.subject,
     category: ticket.category,
     priority: ticket.priority,
@@ -62,7 +68,7 @@ function serializeTicketForCustomer(ticket) {
 async function loadMessageActors(messages) {
   const customerIds = [...new Set(messages.filter((item) => item.senderType === "customer").map((item) => String(item.senderId)))];
   const delegateIds = [...new Set(messages.filter((item) => item.senderType === "customer_delegate").map((item) => String(item.senderId)))];
-  const staffIds = [...new Set(messages.filter((item) => !["customer", "customer_delegate"].includes(item.senderType)).map((item) => String(item.senderId)))];
+  const staffIds = [...new Set(messages.filter((item) => !["customer", "customer_delegate", "visitor"].includes(item.senderType)).map((item) => String(item.senderId)))];
 
   const [customers, delegates, staffUsers] = await Promise.all([
     customerIds.length ? User.find({ _id: { $in: customerIds } }).select("name email") : [],
@@ -85,12 +91,14 @@ async function serializeMessages(messages, req) {
     const customer = customerMap.get(String(message.senderId));
     const delegate = delegateMap.get(String(message.senderId));
     const staffUser = staffMap.get(String(message.senderId));
-    const isCustomerSide = ["customer", "customer_delegate"].includes(message.senderType);
+    const isCustomerSide = ["customer", "customer_delegate", "visitor"].includes(message.senderType);
     const senderName =
       message.senderType === "customer"
         ? customer?.name || customer?.email || "Customer"
         : message.senderType === "customer_delegate"
           ? delegate?.displayName || delegate?.username || record.publicSenderName || "Account agent"
+          : message.senderType === "visitor"
+            ? record.publicSenderName || "Website visitor"
           : staffUser?.name || "Support Team";
     const publicSenderName = isCustomerSide
       ? record.publicSenderName || senderName
@@ -243,8 +251,23 @@ ticketsRouter.post(
     const attachments = await Promise.all(
       (req.files || []).map((file) => persistUploadedFile({ file, directory: "support-attachments" })),
     );
+    const ticketNumber = await reserveSupportTicketNumber();
     const ticket = await SupportTicket.create({
       userId: req.auth.user._id,
+      ticketNumber,
+      source: "portal",
+      requesterType: isDelegateActor(req) ? "customer_delegate" : "customer",
+      requester: {
+        ...buildCustomerSupportRequester(req.auth.user),
+        ...(isDelegateActor(req)
+          ? {
+              delegateId: String(req.auth.delegate._id),
+              delegateName: req.auth.delegate.displayName || req.auth.delegate.username,
+            }
+          : {}),
+      },
+      verificationStatus: "authenticated",
+      verifiedAt: new Date(),
       subject: payload.subject,
       category: payload.category,
       priority: payload.priority,
@@ -337,6 +360,38 @@ ticketsRouter.post(
       targetId: String(ticket._id),
     });
 
-    res.status(201).json({ message });
+    let notification = null;
+    if (req.staff) {
+      const portalCustomer = ticket.userId ? await User.findById(ticket.userId) : null;
+      const recipient = portalCustomer
+        ? {
+            name: portalCustomer.name || portalCustomer.email,
+            email: portalCustomer.email,
+          }
+        : {
+            name: ticket.requester?.name || ticket.requester?.email || "Website visitor",
+            email: ticket.requester?.email || "",
+          };
+      const visitorVerified =
+        ticket.requesterType !== "visitor" ||
+        ticket.verificationStatus === "verified";
+
+      notification = visitorVerified
+        ? await sendSupportReplyNotification({
+            recipient,
+            ticket,
+            reply: payload.message,
+            isPortalCustomer: Boolean(portalCustomer),
+          })
+        : {
+            delivered: false,
+            status: "skipped",
+            code: "VISITOR_EMAIL_NOT_VERIFIED",
+          };
+      message.notification = notification;
+      await message.save();
+    }
+
+    res.status(201).json({ message, notification });
   }),
 );

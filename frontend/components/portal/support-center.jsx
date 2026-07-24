@@ -46,7 +46,7 @@ export function SupportCenter() {
 
     try {
       const token = userId ? await getToken() : undefined;
-      await apiFetch("/tickets", {
+      const response = await apiFetch("/tickets", {
         method: "POST",
         token,
         authMode: userId ? "customer" : "delegate",
@@ -61,7 +61,11 @@ export function SupportCenter() {
         message: "",
       });
       await refetch();
-      setState({ saving: false, message: "Ticket created successfully.", error: "" });
+      setState({
+        saving: false,
+        message: `Ticket ${response.ticket?.ticketNumber || response.ticket?._id || ""} created successfully.`,
+        error: "",
+      });
       showToast({
         type: "success",
         action: "Support Ticket",
@@ -146,6 +150,7 @@ export function SupportCenter() {
                       </Link>
                     ),
                   },
+                  { key: "ticketNumber", label: "Ticket", render: (row) => row.ticketNumber || row._id },
                   { key: "category", label: "Category", render: (row) => <span className="capitalize">{row.category || "general"}</span> },
                   { key: "priority", label: "Priority", render: (row) => <span className="capitalize">{row.priority || "medium"}</span> },
                   { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },

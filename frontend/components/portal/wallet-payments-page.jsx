@@ -17,7 +17,14 @@ import {
 } from "@/lib/payments/billing-details";
 import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
-import { PaymentBillingDetailsFields, PortalCardForm, portalStripePromise } from "@/components/portal/portal-card-form";
+import {
+  CARD_VERIFICATION_MODE_3DS,
+  CardVerificationModeSelector,
+  PaymentBillingDetailsFields,
+  PaymentReadinessReport,
+  PortalCardForm,
+  portalStripePromise,
+} from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
 import { ContractApprovalLock, isContractApprovedForPayments } from "@/components/portal/contract-approval-lock";
@@ -119,8 +126,10 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
+  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_3DS);
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
+  const [savedTopupPreflight, setSavedTopupPreflight] = useState(null);
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const reconciliationStartedRef = useRef(false);
   const checkoutPrefillAppliedRef = useRef(false);
@@ -165,6 +174,10 @@ export function WalletPaymentsPage() {
     checkoutPrefillAppliedRef.current = true;
     setInstantAmount(requestedAmount.toFixed(2));
   }, [requestedAmount]);
+
+  useEffect(() => {
+    setSavedTopupPreflight(null);
+  }, [cardVerificationMode, instantAmount, topupBillingDetails]);
 
   useEffect(() => {
     if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
@@ -308,6 +321,7 @@ export function WalletPaymentsPage() {
           type: "wallet_topup",
           amount: numericAmount,
           billingDetails,
+          cardVerificationMode,
         },
       });
     } catch (error) {
@@ -351,6 +365,21 @@ export function WalletPaymentsPage() {
     return "Your wallet payment was received. The balance has been refreshed.";
   }
 
+  async function runWalletTopupPreflight({ billingDetails, paymentMethodId = "" }) {
+    const token = await getToken();
+    return apiFetch("/stripe/preflight", {
+      method: "POST",
+      token,
+      body: {
+        type: "wallet_topup",
+        amount: Number(instantAmount || 0),
+        billingDetails,
+        paymentMethodId,
+        cardVerificationMode,
+      },
+    });
+  }
+
   async function handleSavedCardTopup(paymentMethodId) {
     const numericAmount = Number(instantAmount || 0);
     if (!numericAmount || numericAmount <= 0) {
@@ -364,6 +393,33 @@ export function WalletPaymentsPage() {
       return;
     }
 
+    const hasCurrentPreflight =
+      savedTopupPreflight?.canProceed &&
+      savedTopupPreflight?.paymentMethodId === paymentMethodId;
+
+    if (!hasCurrentPreflight) {
+      setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
+      try {
+        const report = await runWalletTopupPreflight({
+          billingDetails: normalizePaymentBillingDetails(topupBillingDetails),
+          paymentMethodId,
+        });
+        setSavedTopupPreflight({ ...report, paymentMethodId });
+        setSavedTopupState({
+          savingId: "",
+          error: report.canProceed ? "" : report.headline || "Resolve the failed checks before charging the saved card.",
+          message: report.canProceed ? "Readiness checks completed. Review the results, then confirm the saved-card charge." : "",
+        });
+      } catch (error) {
+        setSavedTopupState({
+          savingId: "",
+          error: error.message || "The pre-charge checks could not be completed.",
+          message: "",
+        });
+      }
+      return;
+    }
+
     setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
 
     try {
@@ -374,6 +430,7 @@ export function WalletPaymentsPage() {
         body: {
           amount: numericAmount,
           billingDetails: normalizePaymentBillingDetails(topupBillingDetails),
+          cardVerificationMode,
         },
       });
 
@@ -401,6 +458,7 @@ export function WalletPaymentsPage() {
       setInstantAmount("");
       setTopupBillingDetails(createEmptyPaymentBillingDetails());
       setBlockedSavedTopupCardId("");
+      setSavedTopupPreflight(null);
       setActiveSection("overview");
       setSavedTopupState({
         savingId: "",
@@ -1041,6 +1099,16 @@ export function WalletPaymentsPage() {
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardContent className="p-5 sm:p-6">
+                  <CardVerificationModeSelector
+                    value={cardVerificationMode}
+                    onChange={setCardVerificationMode}
+                    disabled={!contractApproved || Boolean(savedTopupState.savingId)}
+                  />
+                </CardContent>
+              </Card>
+
               {primaryCard ? (
                 <Card>
                   <CardContent className="p-5 sm:p-6">
@@ -1070,12 +1138,23 @@ export function WalletPaymentsPage() {
                         className="min-w-[190px]"
                       >
                         {savedTopupState.savingId === primaryCard.id
-                          ? "Charging card..."
+                          ? savedTopupPreflight?.canProceed
+                            ? "Charging card..."
+                            : "Running checks..."
                           : blockedSavedTopupCardId === primaryCard.id
                             ? "Choose another card"
-                            : `Add ${formatCurrency(Number(instantAmount || 0))}`}
+                            : savedTopupPreflight?.canProceed
+                              ? `Confirm · Add ${formatCurrency(Number(instantAmount || 0))}`
+                              : savedTopupPreflight
+                                ? "Run checks again"
+                                : "Check before charging"}
                       </Button>
                     </div>
+                    {savedTopupPreflight ? (
+                      <div className="mt-5">
+                        <PaymentReadinessReport report={savedTopupPreflight} />
+                      </div>
+                    ) : null}
                     {savedTopupState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{savedTopupState.error}</p> : null}
                     {savedTopupState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{savedTopupState.message}</p> : null}
                   </CardContent>
@@ -1097,8 +1176,10 @@ export function WalletPaymentsPage() {
                     <PortalCardForm
                       disabled={!instantAmount || Number(instantAmount) <= 0}
                       submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel="Waiting for 3D Secure verification..."
-                      note="Your bank may open a secure verification prompt before approving this wallet top-up."
+                      pendingLabel={cardVerificationMode === CARD_VERIFICATION_MODE_3DS ? "Waiting for 3D Secure verification..." : "Processing card payment..."}
+                      note={cardVerificationMode === CARD_VERIFICATION_MODE_3DS
+                        ? "3D Secure is requested for this wallet top-up. Your bank may open a verification prompt."
+                        : "Stripe will use standard processing and request authentication only when the bank, regulation, or risk checks require it."}
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"
@@ -1106,6 +1187,8 @@ export function WalletPaymentsPage() {
                       billingDetails={topupBillingDetails}
                       onBillingDetailsChange={setTopupBillingDetails}
                       showBillingDetails={false}
+                      onPreflight={({ billingDetails }) => runWalletTopupPreflight({ billingDetails })}
+                      preflightKey={`${instantAmount}:${cardVerificationMode}:${JSON.stringify(topupBillingDetails)}`}
                     />
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />

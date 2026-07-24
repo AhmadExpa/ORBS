@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import {
   ArrowRight,
@@ -16,18 +15,17 @@ import {
   HardDrive,
   Headset,
   LogIn,
-  Menu,
   PhoneCall,
   Server,
   ShieldCheck,
   Workflow,
-  X,
 } from "lucide-react";
 import { Button, cn } from "@/lib/ui";
 import { getLoginPath, getOrderPath, getSignupPath, productPlanSeeds } from "@/lib/shared";
 import { industryPages, resourcePages } from "@/lib/marketing-content";
 import { ServiceLogo } from "@/components/marketing/service-branding";
 import { BrandLogo } from "./brand-logo";
+import { AnimatedMenuButton, FullScreenMobileMenu } from "./mobile-menu";
 
 const planMap = new Map(productPlanSeeds.map((plan) => [plan.slug, plan]));
 
@@ -654,9 +652,12 @@ function LearnMegaMenu({ onNavigate }) {
 }
 
 
-function MobileSection({ title, open, onToggle, children }) {
+function MobileSection({ title, open, onToggle, children, index = 0 }) {
   return (
-    <section className="border-t border-white/10 py-5">
+    <section
+      className="eo-mobile-menu-item border-t border-white/10 py-5"
+      style={{ "--eo-menu-index": index }}
+    >
       <button
         type="button"
         className="flex w-full items-center justify-between gap-4 rounded-md py-2 text-left text-2xl font-semibold leading-tight sm:text-3xl"
@@ -664,9 +665,18 @@ function MobileSection({ title, open, onToggle, children }) {
         onClick={onToggle}
       >
         {title}
-        <ChevronDown className={cn("h-6 w-6 shrink-0 text-white/50 transition", open && "rotate-180")} />
+        <ChevronDown className={cn("h-6 w-6 shrink-0 text-white/50 transition-transform duration-300", open && "rotate-180 text-white")} />
       </button>
-      {open ? <div className="mt-4 grid gap-3">{children}</div> : null}
+      <div
+        className="eo-mobile-submenu"
+        data-state={open ? "open" : "closed"}
+        aria-hidden={!open}
+        {...(!open ? { inert: "" } : {})}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-4 grid gap-3 pb-1">{children}</div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -689,7 +699,6 @@ function MobileLink({ href, label, description, onClick, icon: Icon }) {
 export function SiteHeader() {
   const { user } = useUser();
   const headerRef = useRef(null);
-  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileOpenSection, setMobileOpenSection] = useState("services");
   const [activeDesktopMenu, setActiveDesktopMenu] = useState(null);
@@ -708,41 +717,12 @@ export function SiteHeader() {
   );
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
     const updateScrolled = () => setHasScrolled(window.scrollY > 8);
     updateScrolled();
     window.addEventListener("scroll", updateScrolled, { passive: true });
 
     return () => window.removeEventListener("scroll", updateScrolled);
   }, []);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) {
-      return;
-    }
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setMobileMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (!activeDesktopMenu) {
@@ -873,42 +853,38 @@ export function SiteHeader() {
             <Link href="/portal" className="hidden sm:block">
               <Button variant="ghost" className="min-h-10 rounded-md px-4 py-2 text-white hover:bg-white/10 hover:text-white">Portal</Button>
             </Link>
-            <UserButton />
+            <span className="hidden xl:block">
+              <UserButton />
+            </span>
           </SignedIn>
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-white/15 bg-white/[0.06] text-white shadow-sm transition hover:border-white/25 hover:bg-white/10 xl:hidden"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="site-mobile-menu"
+          <AnimatedMenuButton
+            open={mobileMenuOpen}
+            controls="site-mobile-menu"
             onClick={toggleMobileMenu}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            className="border border-white/15 bg-white/[0.06] text-white shadow-sm transition hover:border-white/25 hover:bg-white/10 xl:hidden"
+          />
         </div>
       </div>
 
-      {mounted && mobileMenuOpen
-        ? createPortal(
-            <div
-              id="site-mobile-menu"
-              role="dialog"
-              aria-modal="true"
-              className="fixed inset-0 z-[100] overflow-x-hidden overflow-y-auto bg-slate-950 text-white xl:hidden"
-            >
-              <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-4 sm:px-5 sm:py-5">
-                <div className="flex min-w-0 items-center justify-between gap-3">
+      <FullScreenMobileMenu
+        open={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        id="site-mobile-menu"
+        label="Website navigation"
+        className="bg-slate-950 text-white"
+      >
+        <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-4 sm:px-5 sm:py-5">
+                <div className="eo-mobile-menu-item flex min-w-0 items-center justify-between gap-3" style={{ "--eo-menu-index": 0 }}>
                   <Link href="/" className="min-w-0 shrink" aria-label="ElevenOrbits home" onClick={closeMobileMenu}>
                     <BrandLogo className="h-9 w-[168px] sm:h-10 sm:w-[188px]" imageClassName="brightness-0 invert" priority />
                   </Link>
-                  <button
-                    type="button"
+                  <AnimatedMenuButton
+                    open
+                    controls="site-mobile-menu"
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white sm:h-11 sm:w-11"
-                    aria-label="Close menu"
+                    label="Close menu"
                     onClick={closeMobileMenu}
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+                  />
                 </div>
 
                 <nav className="mt-7 min-w-0 flex-1 sm:mt-9">
@@ -916,6 +892,7 @@ export function SiteHeader() {
                     title="Services"
                     open={mobileOpenSection === "services"}
                     onToggle={() => setMobileOpenSection((current) => (current === "services" ? "" : "services"))}
+                    index={1}
                   >
                     {serviceChoices.map((choice) => (
                       <MobileLink
@@ -933,6 +910,7 @@ export function SiteHeader() {
                     title="Industries"
                     open={mobileOpenSection === "solutions"}
                     onToggle={() => setMobileOpenSection((current) => (current === "solutions" ? "" : "solutions"))}
+                    index={2}
                   >
                     {industryPages.slice(0, 6).map((industry) => (
                       <MobileLink
@@ -950,6 +928,7 @@ export function SiteHeader() {
                     title="Resources"
                     open={mobileOpenSection === "learn"}
                     onToggle={() => setMobileOpenSection((current) => (current === "learn" ? "" : "learn"))}
+                    index={3}
                   >
                     {resourcePages.slice(0, 6).map((resource) => (
                       <MobileLink
@@ -963,7 +942,7 @@ export function SiteHeader() {
                     ))}
                   </MobileSection>
 
-                  <div className="border-t border-white/10 py-5">
+                  <div className="eo-mobile-menu-item border-t border-white/10 py-5" style={{ "--eo-menu-index": 4 }}>
                     <div className="grid gap-2">
                       <MobileLink href="/pricing" label="Pricing" description="Compare plans, fixed pricing, and contact-sales services." icon={FileText} onClick={closeMobileMenu} />
                       <MobileLink href="/contact" label="Contact" description="Route sales, support, billing, and security requests." icon={Headset} onClick={closeMobileMenu} />
@@ -971,7 +950,7 @@ export function SiteHeader() {
                   </div>
                 </nav>
 
-                <div className="mt-8 grid gap-3 border-t border-white/10 pt-6">
+                <div className="eo-mobile-menu-item mt-8 grid gap-3 border-t border-white/10 pt-6" style={{ "--eo-menu-index": 5 }}>
                   <SignedOut>
                     <Link href={getSignupPath()} className="rounded-md bg-white px-4 py-3 text-center text-base font-semibold text-slate-950" onClick={closeMobileMenu}>
                       Get Started
@@ -987,10 +966,7 @@ export function SiteHeader() {
                   </SignedIn>
                 </div>
               </div>
-            </div>,
-            document.body,
-          )
-        : null}
+      </FullScreenMobileMenu>
     </header>
   );
 }
