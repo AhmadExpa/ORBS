@@ -103,7 +103,6 @@ export function SupportChatWidget() {
     pinSessionToken: "",
     ticketNumber: "",
     ticketId: "",
-    clarifyingQuestion: "",
   });
   const messagesEndRef = useRef(null);
 
@@ -153,7 +152,6 @@ export function SupportChatWidget() {
       pinSessionToken: "",
       ticketNumber: "",
       ticketId: "",
-      clarifyingQuestion: "",
     });
     setInput("");
     setError("");
@@ -169,26 +167,8 @@ export function SupportChatWidget() {
       }
       addUser(value);
       setDraft((current) => ({ ...current, initialQuery: value }));
-      setSending(true);
-      try {
-        const response = await apiFetch("/chat-support/assistant", {
-          method: "POST",
-          body: {
-            phase: "visitor_initial",
-            message: value,
-          },
-        });
-        setDraft((current) => ({
-          ...current,
-          clarifyingQuestion: response.clarifyingQuestion || "",
-        }));
-        addBot(response.reply);
-      } catch {
-        addBot("I understand the request. I’ll collect a verified contact address next, then ask for the details the support team needs.");
-      } finally {
-        setSending(false);
-      }
       setPhase("visitor_email");
+      addBot("Thanks. I’ll collect a verified contact address, then the details our support team needs.");
       addBot("What email address should we use for verification and support updates?");
       return;
     }
@@ -203,9 +183,6 @@ export function SupportChatWidget() {
       setDraft((current) => ({ ...current, email }));
       setPhase("visitor_question");
       addBot("Email format looks good. Now describe the full question, any affected service, and what outcome you need.");
-      if (draft.clarifyingQuestion) {
-        addBot(draft.clarifyingQuestion);
-      }
       return;
     }
 
@@ -229,9 +206,6 @@ export function SupportChatWidget() {
           ...current,
           ticketNumber: response.ticketNumber,
         }));
-        if (response.assistantMessage) {
-          addBot(response.assistantMessage);
-        }
         addBot(`Your ticket number is ${response.ticketNumber}.`);
         if (response.emailSent) {
           setPhase("visitor_verify");
@@ -326,13 +300,7 @@ export function SupportChatWidget() {
           ticketNumber: response.ticketNumber,
         }));
         setPhase("customer_complete");
-        if (response.assistantMessage) {
-          addBot(response.assistantMessage);
-        }
         addBot(`Your ticket number is ${response.ticketNumber}. ${response.message}`);
-        if (response.clarifyingQuestion) {
-          addBot(`A useful follow-up for the support team is: ${response.clarifyingQuestion} You can add that detail in the ticket thread.`);
-        }
         addBot("Stay tuned—once our team reviews your request, we’ll send the next response or quotation through your support thread.");
       } catch (requestError) {
         if (requestError.message?.toLowerCase().includes("support verification")) {
@@ -387,7 +355,7 @@ export function SupportChatWidget() {
                   <p className="text-sm font-semibold">ElevenOrbits Support</p>
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-300">
                     <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    AI-assisted secure intake
+                    Secure support intake
                   </p>
                 </div>
               </div>

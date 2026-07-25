@@ -84,6 +84,7 @@ const resolvedAppUrl = normalizeAppOrigin(process.env.FRONTEND_URL || process.en
 const resolvedBackendUrl = normalizePublicApiOrigin(process.env.BACKEND_URL || process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL);
 const resolvedPublicApiUrl = normalizePublicApiOrigin(process.env.PUBLIC_FILE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL);
 const resolvedSmtpHost = process.env.SMTP_HOST || "mail.elevenorbits.com";
+const configuredAiAdvisorLimit = Number(process.env.AI_ADVISOR_MONTHLY_MESSAGE_LIMIT || 200);
 
 function resolveSmtpTlsServername() {
   const configuredServername = String(process.env.SMTP_TLS_SERVERNAME || "").trim();
@@ -135,8 +136,12 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "change-me",
   supportPinSecret: process.env.SUPPORT_PIN_SECRET || process.env.JWT_SECRET || "change-me",
   openRouterApiKey: process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY || "",
-  openRouterModel: process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash-lite",
-  openRouterTimeoutMs: Math.max(3000, Math.min(Number(process.env.OPENROUTER_TIMEOUT_MS || 10000), 30000)),
+  openRouterModel: process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash",
+  openRouterTimeoutMs: Math.max(5000, Math.min(Number(process.env.OPENROUTER_TIMEOUT_MS || 30000), 60000)),
+  aiAdvisorMonthlyMessageLimit:
+    Number.isFinite(configuredAiAdvisorLimit) && configuredAiAdvisorLimit > 0
+      ? Math.floor(configuredAiAdvisorLimit)
+      : 200,
   supportEmail: process.env.SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@elevenorbits.com",
   companyAddress: process.env.COMPANY_ADDRESS || process.env.NEXT_PUBLIC_COMPANY_ADDRESS || "3326 Anna Gorge Dr. Valrico, FL 33596",
   notificationFromEmail: process.env.NOTIFICATION_FROM_EMAIL || process.env.SMTP_USER || "noreply@elevenorbits.com",

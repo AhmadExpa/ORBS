@@ -1,5 +1,6 @@
 export const portalNavigation = [
   { href: "/portal", label: "Dashboard", icon: "layout-dashboard" },
+  { href: "/portal/ai-advisor", label: "AI Advisor", icon: "message-square-text" },
   { href: "/portal/services", label: "Apps", icon: "server" },
   { href: "/portal/subscriptions", label: "Subscriptions", icon: "package" },
   { href: "/portal/invoices", label: "Invoices", icon: "receipt" },
@@ -13,6 +14,7 @@ export const portalNavigation = [
 // Single links use `href`; groups expose a dropdown via `items`.
 export const portalNavGroups = [
   { label: "Dashboard", href: "/portal", icon: "layout-dashboard" },
+  { label: "AI Advisor", href: "/portal/ai-advisor", icon: "message-square-text" },
   {
     label: "Services",
     icon: "server",

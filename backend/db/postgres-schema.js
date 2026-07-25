@@ -12,6 +12,7 @@ const documentIndexes = [
   ["eo_documents_collection_subscription_idx", "collection, (data->>'subscriptionId')"],
   ["eo_documents_collection_plan_idx", "collection, (data->>'productPlanId')"],
   ["eo_documents_collection_category_idx", "collection, (data->>'categoryId')"],
+  ["eo_documents_collection_conversation_idx", "collection, (data->>'conversationId'), created_at"],
   ["eo_documents_collection_invoice_number_idx", "collection, (data->>'invoiceNumber')"],
   ["eo_documents_collection_gateway_payment_idx", "collection, (data->>'gatewayPaymentId')"],
   ["eo_documents_collection_gateway_checkout_idx", "collection, (data->>'gatewayCheckoutSessionId')"],

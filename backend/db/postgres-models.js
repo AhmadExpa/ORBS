@@ -383,7 +383,6 @@ export const SupportTicket = createPostgresModel("SupportTicket", {
     verificationStatus: "not_required",
     verifiedAt: null,
     emailVerification: {},
-    aiTriage: null,
     priority: "medium",
     status: "open",
     serviceId: "",
@@ -411,4 +410,39 @@ export const SupportMessage = createPostgresModel("SupportMessage", {
     ticketId: "SupportTicket",
   },
   arrayFields: ["attachments"],
+});
+
+export const AiAdvisorConversation = createPostgresModel("AiAdvisorConversation", {
+  collection: "ai_advisor_conversations",
+  defaults: {
+    title: "New advisory conversation",
+    preview: "",
+    status: "active",
+    lastMessageAt: dateNow,
+  },
+  refs: {
+    userId: "User",
+  },
+  dateFields: ["lastMessageAt"],
+});
+
+export const AiAdvisorMessage = createPostgresModel("AiAdvisorMessage", {
+  collection: "ai_advisor_messages",
+  defaults: {
+    role: "user",
+    content: "",
+    recommendations: [],
+    nextSteps: [],
+    shouldContactTeam: false,
+    model: "",
+    promptTokens: 0,
+    completionTokens: 0,
+  },
+  refs: {
+    userId: "User",
+    conversationId: "AiAdvisorConversation",
+  },
+  arrayFields: ["recommendations", "nextSteps"],
+  booleanFields: ["shouldContactTeam"],
+  numericFields: ["promptTokens", "completionTokens"],
 });

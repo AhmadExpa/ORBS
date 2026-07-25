@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  classifySupportRequest,
   createSupportTicketNumber,
   createSupportTicketSubject,
   getCustomerSupportPin,
@@ -55,4 +56,19 @@ test("support tickets receive readable references and concise subjects", () => {
   );
   assert.equal(createSupportTicketSubject("  VPS   cannot reach the network  "), "VPS cannot reach the network");
   assert.equal(createSupportTicketSubject("x".repeat(120)).length, 90);
+});
+
+test("support requests are routed locally without an external model", () => {
+  assert.deepEqual(
+    classifySupportRequest("Our production server is down and unreachable."),
+    { category: "hosting", priority: "critical" },
+  );
+  assert.deepEqual(
+    classifySupportRequest("Please provide a quotation for a new order."),
+    { category: "sales", priority: "medium" },
+  );
+  assert.deepEqual(
+    classifySupportRequest("I need help with an invoice payment."),
+    { category: "billing", priority: "medium" },
+  );
 });

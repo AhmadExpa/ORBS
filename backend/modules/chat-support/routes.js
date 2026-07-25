@@ -11,9 +11,9 @@ import {
   sendSupportTicketVerificationEmail,
 } from "../../services/email-service.js";
 import { getPaymentNetworkSignal } from "../../services/payment-preflight-service.js";
-import { getSupportAssistantInsight } from "../../services/openrouter-support-service.js";
 import {
   buildCustomerSupportRequester,
+  classifySupportRequest,
   createSupportPinSession,
   createSupportTicketSubject,
   createSupportVerificationCode,
@@ -49,11 +49,6 @@ const customerTicketSchema = z.object({
   question: z.string().trim().min(10).max(4000),
 });
 
-const assistantTurnSchema = z.object({
-  phase: z.enum(["visitor_initial"]),
-  message: z.string().trim().min(3).max(1000),
-});
-
 function supportNetworkContext(req) {
   const network = getPaymentNetworkSignal(req);
   return {
@@ -68,30 +63,6 @@ function supportNetworkContext(req) {
 chatSupportRouter.use(requireSameOrigin);
 
 chatSupportRouter.post(
-  "/assistant",
-  rateLimit({
-    name: "chat-support-assistant",
-    windowMs: 10 * 60 * 1000,
-    max: 20,
-    keyFn: (req) => req.auth?.clerkId || req.ip,
-  }),
-  asyncHandler(async (req, res) => {
-    const payload = assistantTurnSchema.parse(req.body);
-    const insight = await getSupportAssistantInsight({
-      stage: "initial",
-      requesterType: req.auth?.user ? "customer" : "visitor",
-      initialQuery: payload.message,
-    });
-
-    res.json({
-      reply: insight.customerReply,
-      clarifyingQuestion: insight.clarifyingQuestion,
-      assistantAvailable: insight.available,
-    });
-  }),
-);
-
-chatSupportRouter.post(
   "/visitor/tickets",
   rateLimit({
     name: "chat-support-visitor-ticket",
@@ -101,12 +72,7 @@ chatSupportRouter.post(
   }),
   asyncHandler(async (req, res) => {
     const payload = visitorTicketSchema.parse(req.body);
-    const assistantInsight = await getSupportAssistantInsight({
-      stage: "ticket",
-      requesterType: "visitor",
-      initialQuery: payload.initialQuery,
-      question: payload.question,
-    });
+    const routing = classifySupportRequest(`${payload.initialQuery}\n${payload.question}`);
     const ticketNumber = await reserveSupportTicketNumber();
     const verificationCode = createSupportVerificationCode();
     const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -134,19 +100,9 @@ chatSupportRouter.post(
         attempts: 0,
         deliveryStatus: "pending",
       },
-      aiTriage: {
-        available: assistantInsight.available,
-        model: assistantInsight.model,
-        summary: assistantInsight.summary,
-        agentNotes: assistantInsight.agentNotes,
-        clarifyingQuestion: assistantInsight.clarifyingQuestion,
-        possibleQuotationRequest: assistantInsight.possibleQuotationRequest,
-        requiresUrgentReview: assistantInsight.requiresUrgentReview,
-        generatedAt: new Date().toISOString(),
-      },
-      subject: assistantInsight.subject || createSupportTicketSubject(payload.initialQuery),
-      category: assistantInsight.category,
-      priority: assistantInsight.priority,
+      subject: createSupportTicketSubject(payload.initialQuery),
+      category: routing.category,
+      priority: routing.priority,
       status: "pending",
       serviceId: "",
       lastReplyAt: new Date(),
@@ -197,8 +153,6 @@ chatSupportRouter.post(
       emailStatus: emailDelivery.code,
       email: payload.email,
       expiresAt: verificationExpiresAt.toISOString(),
-      assistantMessage: assistantInsight.customerReply,
-      clarifyingQuestion: assistantInsight.clarifyingQuestion,
       message: emailDelivery.delivered
         ? "Your ticket was created. Check your email for the 6-digit verification code."
         : `Your ticket was created, but the verification email could not be delivered. Contact ${env.supportEmail} and include your ticket number.`,
@@ -329,11 +283,7 @@ chatSupportRouter.post(
     const user = req.auth.user;
     verifySupportPinSession(payload.pinSessionToken, user);
 
-    const assistantInsight = await getSupportAssistantInsight({
-      stage: "ticket",
-      requesterType: "customer",
-      question: payload.question,
-    });
+    const routing = classifySupportRequest(payload.question);
     const ticketNumber = await reserveSupportTicketNumber();
     const requester = {
       ...buildCustomerSupportRequester(user),
@@ -348,19 +298,9 @@ chatSupportRouter.post(
       requester,
       verificationStatus: "support_pin_verified",
       verifiedAt: new Date(),
-      aiTriage: {
-        available: assistantInsight.available,
-        model: assistantInsight.model,
-        summary: assistantInsight.summary,
-        agentNotes: assistantInsight.agentNotes,
-        clarifyingQuestion: assistantInsight.clarifyingQuestion,
-        possibleQuotationRequest: assistantInsight.possibleQuotationRequest,
-        requiresUrgentReview: assistantInsight.requiresUrgentReview,
-        generatedAt: new Date().toISOString(),
-      },
-      subject: assistantInsight.subject || createSupportTicketSubject(payload.question),
-      category: assistantInsight.category,
-      priority: assistantInsight.priority,
+      subject: createSupportTicketSubject(payload.question),
+      category: routing.category,
+      priority: routing.priority,
       status: "open",
       serviceId: "",
       lastReplyAt: new Date(),
@@ -400,8 +340,6 @@ chatSupportRouter.post(
       emailSent: emailDelivery.delivered,
       emailStatus: emailDelivery.code,
       email: user.email,
-      assistantMessage: assistantInsight.customerReply,
-      clarifyingQuestion: assistantInsight.clarifyingQuestion,
       message: emailDelivery.delivered
         ? "Your ticket is in the support queue. Check your email for the confirmation."
         : "Your ticket is in the support queue and available in the customer portal.",

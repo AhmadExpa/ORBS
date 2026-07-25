@@ -13,6 +13,7 @@ import {
   LifeBuoy,
   Lock,
   LogOut,
+  MessageSquareText,
   Package,
   Plus,
   Receipt,
@@ -42,6 +43,7 @@ const iconMap = {
   wallet: Wallet,
   "file-signature": FileSignature,
   "life-buoy": LifeBuoy,
+  "message-square-text": MessageSquareText,
   "user-round": UserRound,
 };
 
@@ -81,11 +83,12 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
   const hasContractStatus = !routeIsAgent && contractQuery.isSuccess && Boolean(contractQuery.data);
   const portalLocked = hasContractStatus && !isContractSubmittedForPortal(contractStatus);
+  const aiAdvisorRoute = pathname?.startsWith("/portal/ai-advisor");
 
   const profileQuery = useCustomerQuery({
     queryKey: ["portal-profile"],
     path: "/profile/me",
-    enabled: !portalLocked,
+    enabled: !portalLocked || aiAdvisorRoute,
   });
   const activeSection = getActiveSection(pathname);
   const isDelegate = profileQuery.data?.actorType === "delegate";
@@ -141,7 +144,8 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
   }, []);
 
   function lockHrefFor(href) {
-    return portalLocked && href !== "/portal/contracts" ? "/portal/contracts" : href;
+    const availableBeforeContract = href === "/portal/contracts" || href === "/portal/ai-advisor";
+    return portalLocked && !availableBeforeContract ? "/portal/contracts" : href;
   }
 
   async function handleSignOut() {
@@ -226,7 +230,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
                         {(group.items || []).map((item) => {
                           const ItemIcon = iconMap[item.icon] || Server;
                           const itemActive = isLinkActive(pathname, item.href);
-                          const locked = portalLocked && item.href !== "/portal/contracts";
+                          const locked = portalLocked && !["/portal/contracts", "/portal/ai-advisor"].includes(item.href);
                           return (
                             <Link
                               key={item.href}
@@ -328,6 +332,12 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
                         Account settings
                       </Link>
                     ) : null}
+                    {!isAgent ? (
+                      <Link href="/portal/ai-advisor" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                        <MessageSquareText className="h-4 w-4 text-slate-400" />
+                        AI Service Advisor
+                      </Link>
+                    ) : null}
                     <Link href={isAgent ? "/agent/support" : "/portal/support"} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
                       <LifeBuoy className="h-4 w-4 text-slate-400" />
                       Support
@@ -410,7 +420,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
                 {flattenLinks(visibleGroups).map((item, index) => {
                   const ItemIcon = iconMap[item.icon] || LayoutDashboard;
                   const active = isLinkActive(pathname, item.href);
-                  const locked = portalLocked && item.href !== "/portal/contracts";
+                  const locked = portalLocked && !["/portal/contracts", "/portal/ai-advisor"].includes(item.href);
                   return (
                     <Link
                       key={item.href}

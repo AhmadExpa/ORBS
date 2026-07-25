@@ -122,6 +122,36 @@ export function createSupportTicketSubject(value) {
   return normalized.length > 90 ? `${normalized.slice(0, 87).trimEnd()}...` : normalized;
 }
 
+export function classifySupportRequest(value) {
+  const normalized = String(value || "").toLowerCase();
+  let category = "general";
+
+  if (/\b(invoice|billing|charge|payment|refund|wallet)\b/u.test(normalized)) {
+    category = "billing";
+  } else if (/\b(vps|vds|server|hosting|ssh|network|ip address|downtime)\b/u.test(normalized)) {
+    category = "hosting";
+  } else if (/\b(ai|model|gpu|inference)\b/u.test(normalized)) {
+    category = "ai";
+  } else if (/\b(workflow|automation|n8n|webhook|integration)\b/u.test(normalized)) {
+    category = "workflow";
+  } else if (/\b(login|account|password|access|support pin)\b/u.test(normalized)) {
+    category = "account";
+  } else if (/\b(security|breach|malware|phishing|compromised|attack)\b/u.test(normalized)) {
+    category = "security";
+  } else if (/\b(quote|quotation|price|pricing|sales|buy|order)\b/u.test(normalized)) {
+    category = "sales";
+  }
+
+  let priority = "medium";
+  if (/\b(active breach|data breach|compromised|ransomware|service down|server (?:is )?down|production down)\b/u.test(normalized)) {
+    priority = "critical";
+  } else if (category === "security" || /\b(urgent|outage|cannot access|unreachable)\b/u.test(normalized)) {
+    priority = "high";
+  }
+
+  return { category, priority };
+}
+
 export function buildCustomerSupportRequester(user) {
   return {
     customerId: String(user?._id || ""),

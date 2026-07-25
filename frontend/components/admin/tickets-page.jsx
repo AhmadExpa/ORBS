@@ -306,20 +306,6 @@ export function AdminTicketsPage() {
                               <span className="truncate text-xs font-medium text-slate-500">{ticketRequesterName(ticket)}</span>
                               <PriorityTag priority={ticket.priority} />
                             </div>
-                            {ticket.aiTriage?.possibleQuotationRequest || ticket.aiTriage?.requiresUrgentReview ? (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {ticket.aiTriage.requiresUrgentReview ? (
-                                  <span className="rounded-md bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
-                                    Urgent review
-                                  </span>
-                                ) : null}
-                                {ticket.aiTriage.possibleQuotationRequest ? (
-                                  <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
-                                    Quote intent
-                                  </span>
-                                ) : null}
-                              </div>
-                            ) : null}
                             <p className="mt-2 truncate text-[11px] font-medium text-slate-400">
                               {ticket.assignedTo?.name ? `Assigned to ${ticket.assignedTo.name}` : "Unassigned"}
                             </p>
@@ -478,50 +464,6 @@ export function AdminTicketsPage() {
                 <CardDescription>Customer context and routing details for the selected conversation.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-slate-600">
-                {selectedTicket.aiTriage ? (
-                  <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-800">
-                        AI-assisted triage
-                      </p>
-                      <span className="rounded-md border border-sky-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
-                        Human review required
-                      </span>
-                    </div>
-                    <p className="mt-3 text-sm font-medium leading-6 text-slate-900">
-                      {selectedTicket.aiTriage.summary || "No summary was generated."}
-                    </p>
-                    {selectedTicket.aiTriage.agentNotes ? (
-                      <p className="mt-2 text-xs leading-5 text-slate-600">
-                        <span className="font-semibold text-slate-800">Routing note:</span>{" "}
-                        {selectedTicket.aiTriage.agentNotes}
-                      </p>
-                    ) : null}
-                    {selectedTicket.aiTriage.clarifyingQuestion ? (
-                      <p className="mt-2 text-xs leading-5 text-slate-600">
-                        <span className="font-semibold text-slate-800">Suggested follow-up:</span>{" "}
-                        {selectedTicket.aiTriage.clarifyingQuestion}
-                      </p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {selectedTicket.aiTriage.requiresUrgentReview ? (
-                        <span className="rounded-md bg-rose-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-rose-800">
-                          Urgent review
-                        </span>
-                      ) : null}
-                      {selectedTicket.aiTriage.possibleQuotationRequest ? (
-                        <span className="rounded-md bg-sky-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
-                          Possible quotation
-                        </span>
-                      ) : null}
-                      {!selectedTicket.aiTriage.available ? (
-                        <span className="rounded-md bg-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
-                          Rules-based fallback
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
                 <div className="flex items-start justify-between gap-4">
                   <span>Customer</span>
                   <div className="text-right">

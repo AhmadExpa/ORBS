@@ -14,13 +14,14 @@ export function isContractSubmittedForPortal(status) {
 export function ContractGate({ children }) {
   const pathname = usePathname();
   const isContractRoute = pathname?.startsWith("/portal/contracts");
+  const isAiAdvisorRoute = pathname?.startsWith("/portal/ai-advisor");
   const contractQuery = useCustomerQuery({
     queryKey: ["portal-contract-current"],
     path: "/contracts/current",
-    enabled: !isContractRoute,
+    enabled: !isContractRoute && !isAiAdvisorRoute,
   });
 
-  if (isContractRoute) {
+  if (isContractRoute || isAiAdvisorRoute) {
     return children;
   }
 
