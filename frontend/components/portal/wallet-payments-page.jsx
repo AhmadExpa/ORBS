@@ -19,6 +19,7 @@ import { createStripePaymentError, normalizePaymentActionError } from "@/lib/pay
 import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_3DS,
+  CARD_VERIFICATION_MODE_STANDARD,
   CardVerificationModeSelector,
   PaymentBillingDetailsFields,
   PaymentReadinessReport,
@@ -39,6 +40,10 @@ const walletSections = [
 const topupPresets = [25, 50, 100, 250];
 
 function submissionTypeLabel(type) {
+  if (type === "wallet_auto_topup") {
+    return "Monthly Wallet Top-up";
+  }
+
   if (type === "wallet_topup") {
     return "Wallet Top-up";
   }
@@ -96,6 +101,23 @@ function cardExpiryLabel(card) {
   return `Expires ${String(card.expMonth).padStart(2, "0")}/${String(card.expYear).slice(-2)}`;
 }
 
+function formatScheduleDate(value) {
+  if (!value) {
+    return "Not scheduled";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Not scheduled";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function wait(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -126,7 +148,7 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
-  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_3DS);
+  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [savedTopupPreflight, setSavedTopupPreflight] = useState(null);
@@ -139,6 +161,8 @@ export function WalletPaymentsPage() {
     message: "",
     error: "",
   });
+  const [autoTopupForm, setAutoTopupForm] = useState({ amount: "", dayOfMonth: "1" });
+  const [autoTopupState, setAutoTopupState] = useState({ isSaving: false, message: "", error: "" });
 
   const user = profileData?.user;
   const contractStatus = contractQuery.data?.contract?.status || contractQuery.data?.status || "NOT_STARTED";
@@ -152,6 +176,15 @@ export function WalletPaymentsPage() {
   const autoCardBillingEnabled = Boolean(primaryCard) && user?.autoCardBillingEnabled !== false;
   const renewalModeLabel = autoCardBillingEnabled ? "Wallet first, primary-card fallback" : "Wallet-only top-up mode";
   const walletBalance = Number(user?.accountBalance || 0);
+  const walletAutoTopup = {
+    enabled: Boolean(user?.walletAutoTopupEnabled),
+    amount: Number(user?.walletAutoTopupAmount || 0),
+    dayOfMonth: Number(user?.walletAutoTopupDayOfMonth || 1),
+    nextRunAt: user?.walletAutoTopupNextRunAt || "",
+    lastRunAt: user?.walletAutoTopupLastRunAt || "",
+    lastStatus: user?.walletAutoTopupLastStatus || "",
+    lastMessage: user?.walletAutoTopupLastMessage || "",
+  };
   const recentSubmissions = submissions.slice(0, 4);
   const requestedAmount = Number(searchParams.get("amount") || 0);
   const requestedReturnUrl = searchParams.get("return_url") || "";
@@ -174,6 +207,17 @@ export function WalletPaymentsPage() {
     checkoutPrefillAppliedRef.current = true;
     setInstantAmount(requestedAmount.toFixed(2));
   }, [requestedAmount]);
+
+  useEffect(() => {
+    if (!user?._id) {
+      return;
+    }
+
+    setAutoTopupForm({
+      amount: user.walletAutoTopupAmount ? Number(user.walletAutoTopupAmount).toFixed(2) : "",
+      dayOfMonth: String(Number(user.walletAutoTopupDayOfMonth || 1)),
+    });
+  }, [user?._id, user?.walletAutoTopupAmount, user?.walletAutoTopupDayOfMonth]);
 
   useEffect(() => {
     setSavedTopupPreflight(null);
@@ -579,6 +623,101 @@ export function WalletPaymentsPage() {
     }
   }
 
+  async function handleWalletAutoTopupSave(event) {
+    event.preventDefault();
+
+    const amount = Number(autoTopupForm.amount || 0);
+    const dayOfMonth = Math.trunc(Number(autoTopupForm.dayOfMonth || 0));
+
+    if (!amount || amount < 1) {
+      setAutoTopupState({ isSaving: false, message: "", error: "Enter a monthly top-up amount of at least $1.00." });
+      return;
+    }
+
+    if (dayOfMonth < 1 || dayOfMonth > 31) {
+      setAutoTopupState({ isSaving: false, message: "", error: "Choose a monthly billing date from 1 to 31." });
+      return;
+    }
+
+    setAutoTopupState({ isSaving: true, message: "", error: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/wallet-auto-topup", {
+        method: "PATCH",
+        token,
+        body: {
+          enabled: true,
+          amount,
+          dayOfMonth,
+        },
+      });
+
+      await syncPortalPayments();
+      setAutoTopupState({
+        isSaving: false,
+        message: response.message || "Monthly wallet auto top-up has been scheduled.",
+        error: "",
+      });
+      showToast({
+        type: "success",
+        action: "Wallet Auto Top-up",
+        title: "Monthly top-up scheduled",
+        description: response.message || "Monthly wallet auto top-up has been scheduled.",
+      });
+    } catch (error) {
+      setAutoTopupState({
+        isSaving: false,
+        message: "",
+        error: error.message || "Monthly wallet auto top-up could not be saved.",
+      });
+      showToast({
+        type: "error",
+        action: "Wallet Auto Top-up",
+        title: "Schedule failed",
+        description: error.message || "Monthly wallet auto top-up could not be saved.",
+      });
+    }
+  }
+
+  async function handleWalletAutoTopupDisable() {
+    setAutoTopupState({ isSaving: true, message: "", error: "" });
+
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/wallet-auto-topup", {
+        method: "PATCH",
+        token,
+        body: { enabled: false },
+      });
+
+      await syncPortalPayments();
+      setAutoTopupState({
+        isSaving: false,
+        message: response.message || "Monthly wallet auto top-up has been disabled.",
+        error: "",
+      });
+      showToast({
+        type: "success",
+        action: "Wallet Auto Top-up",
+        title: "Monthly top-up disabled",
+        description: response.message || "Monthly wallet auto top-up has been disabled.",
+      });
+    } catch (error) {
+      setAutoTopupState({
+        isSaving: false,
+        message: "",
+        error: error.message || "Monthly wallet auto top-up could not be disabled.",
+      });
+      showToast({
+        type: "error",
+        action: "Wallet Auto Top-up",
+        title: "Update failed",
+        description: error.message || "Monthly wallet auto top-up could not be disabled.",
+      });
+    }
+  }
+
   async function handleRemoveSavedCard(paymentMethodId) {
     setCardManagementState({ savingId: paymentMethodId, action: "remove", message: "", error: "" });
 
@@ -919,6 +1058,98 @@ export function WalletPaymentsPage() {
                       <p className="mt-1 text-sm leading-6 text-emerald-700">{renewalModeLabel}. A saved card only covers a remaining renewal shortfall.</p>
                     </div>
                   </div>
+
+                  <form onSubmit={handleWalletAutoTopupSave} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-accent-600 ring-1 ring-slate-200">
+                          <RefreshCw className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-950">Monthly wallet auto top-up</p>
+                            {walletAutoTopup.enabled ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">Active</span> : null}
+                          </div>
+                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                            Charge the primary saved card once each month and add the verified payment to your wallet.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 lg:text-right">
+                        <span className="block font-semibold text-slate-950">Next run</span>
+                        {formatScheduleDate(walletAutoTopup.nextRunAt)}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                      <div>
+                        <label htmlFor="wallet-auto-topup-amount" className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Monthly amount</label>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">$</span>
+                          <TextInput
+                            id="wallet-auto-topup-amount"
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            value={autoTopupForm.amount}
+                            onChange={(event) => setAutoTopupForm((current) => ({ ...current, amount: event.target.value }))}
+                            placeholder="50.00"
+                            className="pl-8"
+                            disabled={autoTopupState.isSaving}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="wallet-auto-topup-day" className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Billing date</label>
+                        <TextInput
+                          id="wallet-auto-topup-day"
+                          type="number"
+                          min="1"
+                          max="31"
+                          step="1"
+                          value={autoTopupForm.dayOfMonth}
+                          onChange={(event) => setAutoTopupForm((current) => ({ ...current, dayOfMonth: event.target.value }))}
+                          placeholder="1"
+                          disabled={autoTopupState.isSaving}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-500 sm:grid-cols-2">
+                      <p>If a month has fewer days, the charge runs on that month's final day.</p>
+                      <p>Each scheduled attempt is verified through Stripe and emailed to your account address.</p>
+                    </div>
+
+                    {walletAutoTopup.lastStatus ? (
+                      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-950">Last check: {formatScheduleDate(walletAutoTopup.lastRunAt)}</p>
+                          {walletAutoTopup.lastMessage ? <p className="mt-1 text-xs leading-5 text-slate-500">{walletAutoTopup.lastMessage}</p> : null}
+                        </div>
+                        <StatusBadge status={walletAutoTopup.lastStatus} />
+                      </div>
+                    ) : null}
+
+                    {!primaryCard ? <p className="mt-4 text-sm font-medium text-amber-700">Save a primary card before enabling monthly wallet auto top-up.</p> : null}
+                    {primaryCard && !contractApproved ? <p className="mt-4 text-sm font-medium text-amber-700">Monthly wallet auto top-up unlocks after your signed agreement is approved.</p> : null}
+                    {autoTopupState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{autoTopupState.error}</p> : null}
+                    {autoTopupState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{autoTopupState.message}</p> : null}
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button type="submit" disabled={!primaryCard || !contractApproved || autoTopupState.isSaving}>
+                        {autoTopupState.isSaving
+                          ? "Saving..."
+                          : walletAutoTopup.enabled
+                            ? "Update monthly top-up"
+                            : "Enable monthly top-up"}
+                      </Button>
+                      {walletAutoTopup.enabled ? (
+                        <Button type="button" variant="ghost" disabled={autoTopupState.isSaving} onClick={handleWalletAutoTopupDisable}>
+                          Disable monthly top-up
+                        </Button>
+                      ) : null}
+                    </div>
+                  </form>
 
                   {cardManagementState.message ? <p className="text-sm font-medium text-emerald-700">{cardManagementState.message}</p> : null}
                   {cardManagementState.error ? <p className="text-sm font-medium text-rose-600">{cardManagementState.error}</p> : null}

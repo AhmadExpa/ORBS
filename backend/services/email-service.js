@@ -595,3 +595,48 @@ export async function sendWalletTopupNotification({ customer, amount, reference 
     notes: ["Wallet balance changes are also visible in your customer portal payment activity."],
   });
 }
+
+export async function sendWalletAutoTopupNotification({
+  customer,
+  amount,
+  reference,
+  scheduledFor,
+  nextRunAt,
+  status,
+  errorMessage = "",
+}) {
+  const succeeded = status === "approved" || status === "success";
+
+  return sendTransactionalEmail({
+    to: getCustomerEmail(customer),
+    subject: succeeded
+      ? "Your monthly ElevenOrbits wallet top-up is complete"
+      : "Your monthly ElevenOrbits wallet top-up failed",
+    title: succeeded ? "Monthly wallet top-up complete" : "Monthly wallet top-up failed",
+    preheader: succeeded
+      ? "Your scheduled wallet funding was verified and completed."
+      : "Your scheduled wallet funding could not be completed.",
+    badge: succeeded ? "Auto Top-up Complete" : "Auto Top-up Failed",
+    intro: succeeded
+      ? "Your monthly wallet auto top-up was charged successfully, verified through Stripe, and added to your ElevenOrbits wallet balance."
+      : "Your monthly wallet auto top-up was attempted, but Stripe did not approve the saved-card charge. Your wallet balance was not changed.",
+    rows: [
+      { label: "Customer", value: getCustomerName(customer) },
+      { label: "Amount", value: formatMoney(amount, env.stripeCurrency.toUpperCase()) },
+      { label: "Scheduled date", value: formatDate(scheduledFor) },
+      { label: "Status", value: succeeded ? "Successful" : "Failed" },
+      { label: "Reference", value: reference || "Stripe payment" },
+      { label: "Next scheduled date", value: nextRunAt ? formatDate(nextRunAt) : "Not scheduled" },
+      { label: "Failure reason", value: succeeded ? "" : errorMessage || "The saved card was not approved." },
+    ],
+    action: {
+      label: "Open Wallet",
+      href: `${env.appUrl}/portal/payments`,
+    },
+    notes: [
+      succeeded
+        ? "The payment activity page shows this automatic wallet top-up as an approved transaction."
+        : "Update your saved card or monthly wallet auto-top-up settings before the next scheduled date.",
+    ],
+  });
+}

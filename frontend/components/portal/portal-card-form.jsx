@@ -56,7 +56,7 @@ const verificationModes = [
 ];
 
 export function CardVerificationModeSelector({
-  value = CARD_VERIFICATION_MODE_3DS,
+  value = CARD_VERIFICATION_MODE_STANDARD,
   onChange,
   disabled = false,
 }) {

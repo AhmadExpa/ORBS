@@ -14,6 +14,7 @@ import { createStripePaymentError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_3DS,
+  CARD_VERIFICATION_MODE_STANDARD,
   CardVerificationModeSelector,
   PortalCardForm,
 } from "@/components/portal/portal-card-form";
@@ -74,7 +75,7 @@ export function CheckoutPaymentView({ orderId }) {
     error: "",
   });
   const [reasonAction, setReasonAction] = useState("");
-  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_3DS);
+  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],

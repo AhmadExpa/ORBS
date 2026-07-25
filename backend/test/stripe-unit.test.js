@@ -77,6 +77,20 @@ test("customers can choose standard processing or request 3D Secure", () => {
   );
 });
 
+test("standard customer-present payments do not request future card setup", () => {
+  const params = buildUserInitiatedCardPaymentIntentParams({
+    customerId: "cus_test",
+    amount: 100,
+    description: "Order payment",
+    metadata: { type: "order_payment", cardVerificationMode: CARD_VERIFICATION_MODE_STANDARD },
+    saveForFutureUse: false,
+    requestThreeDSecure: STANDARD_THREE_D_SECURE_MODE,
+  });
+
+  assert.equal(params.setup_future_usage, undefined);
+  assert.equal(params.payment_method_options.card.request_three_d_secure, "automatic");
+});
+
 test("provided billing details are validated and mapped to Stripe fields", () => {
   const details = normalizePaymentBillingDetails({
     name: " Card Holder ",

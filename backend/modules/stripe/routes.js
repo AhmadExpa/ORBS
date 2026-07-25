@@ -4,6 +4,7 @@ import { Invoice, Order, PaymentSubmission, Subscription, User } from "../../db/
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import {
+  CARD_VERIFICATION_MODE_3DS,
   constructWebhookEvent,
   createCheckoutLineItem,
   createPaymentCheckoutSession,
@@ -29,7 +30,11 @@ import { handleStripeDisputeEvent } from "../../services/stripe-dispute-service.
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { recordActivity } from "../../services/activity-log-service.js";
-import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
+import {
+  getWalletAutoTopupSettings,
+  processSubscriptionRenewals,
+  updateWalletAutoTopupSettings,
+} from "../../services/billing-cycle-service.js";
 import { generateInvoicePdf } from "../../services/invoice-service.js";
 import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification, sendWalletTopupNotification } from "../../services/email-service.js";
@@ -57,6 +62,10 @@ function normalizePaymentMethodId(paymentMethod) {
 
 function normalizeChargeId(charge) {
   return typeof charge === "string" ? charge : charge?.id || "";
+}
+
+function shouldSavePaymentMethodForFutureUse(metadata) {
+  return metadata?.preserveSavedCard !== "true" && metadata?.saveCardForFutureUse === "true";
 }
 
 function assertStripePaymentAmount({ expectedAmount, amountReceived, currency }) {
@@ -167,7 +176,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       throw new HttpError(400, "This order has already been paid.");
     }
 
-    if (metadata?.preserveSavedCard !== "true" && paymentMethodId && customerId) {
+    if (shouldSavePaymentMethodForFutureUse(metadata) && paymentMethodId && customerId) {
       await updateUserDefaultPaymentMethod({
         user,
         customerId,
@@ -242,6 +251,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       metadata: {
         cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
         threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+        saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
       },
       submittedAt: new Date(),
       reviewedAt: new Date(),
@@ -295,7 +305,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       return { submission: existingSubmission, amount: existingSubmission.amount, shouldNotify: false };
     }
 
-    if (metadata?.preserveSavedCard !== "true" && paymentMethodId && customerId) {
+    if (shouldSavePaymentMethodForFutureUse(metadata) && paymentMethodId && customerId) {
       await updateUserDefaultPaymentMethod({
         user,
         customerId,
@@ -336,6 +346,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       metadata: {
         cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
         threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+        saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
       },
       submittedAt: new Date(),
       reviewedAt: new Date(),
@@ -849,6 +860,7 @@ stripeRouter.post(
           amount: amount.toFixed(2),
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
+          saveCardForFutureUse: "false",
         },
       });
 
@@ -870,12 +882,14 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
 
       const intent = await createPaymentIntent({
         user,
         amount: order.totalAmount,
         description: invoice?.invoiceNumber || order.productPlanId?.name || "Managed service payment",
         billingDetails: req.body.billingDetails,
+        saveForFutureUse: saveCardForFutureUse,
         requestThreeDSecure: verification.requestThreeDSecure,
         metadata: {
           type: "order_payment",
@@ -884,6 +898,7 @@ stripeRouter.post(
           subscriptionId: subscription?._id,
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
+          saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
         },
       });
 
@@ -943,6 +958,7 @@ stripeRouter.post(
           amount: amount.toFixed(2),
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
+          saveCardForFutureUse: "false",
         },
       });
 
@@ -964,11 +980,13 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
 
       const session = await createPaymentCheckoutSession({
         user,
         successUrl: successUrl(`/portal/checkout/${order._id}`, "order_payment"),
         cancelUrl: cancelUrl(`/portal/checkout/${order._id}`, "order_payment"),
+        saveForFutureUse: saveCardForFutureUse,
         requestThreeDSecure: verification.requestThreeDSecure,
         lineItems: [
           createCheckoutLineItem({
@@ -984,6 +1002,7 @@ stripeRouter.post(
           subscriptionId: subscription?._id,
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
+          saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
         },
       });
 
@@ -1063,6 +1082,7 @@ stripeRouter.get(
       paymentMethods: getUserSavedPaymentMethods(user),
       defaultPaymentMethodId: user.defaultPaymentMethodId || "",
       autoCardBillingEnabled: user.autoCardBillingEnabled !== false,
+      walletAutoTopup: getWalletAutoTopupSettings(user),
     });
   }),
 );
@@ -1098,6 +1118,7 @@ stripeRouter.post(
         preserveSavedCard: "true",
         cardVerificationMode: verification.cardVerificationMode,
         threeDSecurePolicy: verification.requestThreeDSecure,
+        saveCardForFutureUse: "false",
       },
     });
 
@@ -1105,6 +1126,46 @@ stripeRouter.post(
       type: "wallet_topup",
       clientSecret: paymentIntent.client_secret,
       intentId: paymentIntent.id,
+    });
+  }),
+);
+
+stripeRouter.patch(
+  "/wallet-auto-topup",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const enabled = Boolean(req.body.enabled);
+    if (enabled) {
+      await requireApprovedContract(req.auth.clerkId);
+    }
+
+    const settings = await updateWalletAutoTopupSettings({
+      user,
+      enabled,
+      amount: req.body.amount,
+      dayOfMonth: req.body.dayOfMonth,
+    });
+
+    await recordActivity({
+      actorId: user._id,
+      actorRole: "customer",
+      action: enabled ? "wallet.auto_topup_enabled" : "wallet.auto_topup_disabled",
+      targetType: "user",
+      targetId: String(user._id),
+      metadata: settings,
+    });
+
+    res.json({
+      success: true,
+      walletAutoTopup: settings,
+      message: enabled
+        ? "Monthly wallet auto top-up has been scheduled."
+        : "Monthly wallet auto top-up has been disabled.",
     });
   }),
 );

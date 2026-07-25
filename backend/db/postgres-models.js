@@ -45,6 +45,14 @@ export const User = createPostgresModel("User", {
     defaultPaymentMethodLast4: "",
     savedPaymentMethods: [],
     autoCardBillingEnabled: true,
+    walletAutoTopupEnabled: false,
+    walletAutoTopupAmount: 0,
+    walletAutoTopupDayOfMonth: 1,
+    walletAutoTopupNextRunAt: null,
+    walletAutoTopupLastRunAt: null,
+    walletAutoTopupLastStatus: "",
+    walletAutoTopupLastMessage: "",
+    walletAutoTopupLastPaymentIntentId: "",
     accountStatus: "active",
     accountStatusReason: "",
     accountStatusBy: "",
@@ -54,9 +62,9 @@ export const User = createPostgresModel("User", {
     accountStatusNotificationAt: null,
   },
   arrayFields: ["savedPaymentMethods"],
-  booleanFields: ["autoCardBillingEnabled"],
-  numericFields: ["accountBalance"],
-  dateFields: ["accountStatusAt", "accountStatusNotificationAt"],
+  booleanFields: ["autoCardBillingEnabled", "walletAutoTopupEnabled"],
+  numericFields: ["accountBalance", "walletAutoTopupAmount", "walletAutoTopupDayOfMonth"],
+  dateFields: ["walletAutoTopupNextRunAt", "walletAutoTopupLastRunAt", "accountStatusAt", "accountStatusNotificationAt"],
 });
 
 export const CustomerDelegate = createPostgresModel("CustomerDelegate", {

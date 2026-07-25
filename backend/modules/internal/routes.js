@@ -1,5 +1,6 @@
 import express from "express";
 import { env } from "../../config/env.js";
+import { processWalletAutoTopups } from "../../services/billing-cycle-service.js";
 import { syncPendingContracts } from "../../services/contract-service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -15,6 +16,20 @@ function requireInternalSecret(req, res, next) {
 
   next();
 }
+
+internalRouter.post(
+  "/wallet-auto-topups/run-due",
+  requireInternalSecret,
+  asyncHandler(async (req, res) => {
+    const result = await processWalletAutoTopups({
+      limit: Number(req.body?.limit || 100),
+    });
+    res.json({
+      success: true,
+      ...result,
+    });
+  }),
+);
 
 internalRouter.post(
   "/contracts/sync-pending",

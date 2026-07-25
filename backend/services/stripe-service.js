@@ -359,6 +359,10 @@ export async function removeUserPaymentMethod({ user, paymentMethodId }) {
   applyPrimaryPaymentMethodFields(user, nextPrimaryCard || null);
   if (!nextPrimaryCard) {
     user.autoCardBillingEnabled = false;
+    user.walletAutoTopupEnabled = false;
+    user.walletAutoTopupNextRunAt = null;
+    user.walletAutoTopupLastStatus = "disabled";
+    user.walletAutoTopupLastMessage = "Monthly wallet auto top-up was disabled because no saved card remains.";
   }
   await user.save();
 
@@ -528,10 +532,10 @@ export function createCheckoutLineItem({ name, description, amount }) {
   };
 }
 
-export async function createOffSessionCharge({ user, amount, description, metadata }) {
+export async function createOffSessionCharge({ user, amount, description, metadata, requireAutoCardBillingEnabled = true }) {
   assertStripeConfigured();
 
-  if (user.autoCardBillingEnabled === false) {
+  if (requireAutoCardBillingEnabled && user.autoCardBillingEnabled === false) {
     throw new HttpError(400, "Saved-card automatic billing is disabled for this customer.");
   }
 
@@ -546,6 +550,7 @@ export async function createOffSessionCharge({ user, amount, description, metada
     payment_method: user.defaultPaymentMethodId,
     payment_method_types: ["card"],
     confirm: true,
+    error_on_requires_action: true,
     off_session: true,
     payment_method_options: {
       card: {
