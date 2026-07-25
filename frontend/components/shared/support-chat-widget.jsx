@@ -111,6 +111,7 @@ export function SupportChatWidget() {
     pathname?.startsWith("/agent") ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup");
+  const isPortal = pathname?.startsWith("/portal");
   const isCustomer = Boolean(userId);
   const inputConfig = inputConfiguration(phase);
   const complete = phase === "visitor_complete" || phase === "customer_complete";
@@ -129,6 +130,47 @@ export function SupportChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, sending]);
+
+  useEffect(() => {
+    function openSupportChat() {
+      setOpen(true);
+    }
+
+    window.addEventListener("elevenorbits:open-support-chat", openSupportChat);
+    return () => window.removeEventListener("elevenorbits:open-support-chat", openSupportChat);
+  }, []);
+
+  useEffect(() => {
+    if (!open || hidden || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mobileViewport = window.matchMedia("(max-width: 767px)");
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    let scrollLocked = false;
+
+    function updateScrollLock(event) {
+      if (event.matches) {
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        scrollLocked = true;
+      } else if (scrollLocked) {
+        document.body.style.overflow = previousBodyOverflow;
+        document.documentElement.style.overflow = previousHtmlOverflow;
+        scrollLocked = false;
+      }
+    }
+
+    updateScrollLock(mobileViewport);
+    mobileViewport.addEventListener("change", updateScrollLock);
+
+    return () => {
+      mobileViewport.removeEventListener("change", updateScrollLock);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [hidden, open]);
 
   if (hidden) {
     return null;
@@ -338,14 +380,15 @@ export function SupportChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-20 right-3 z-[80] flex flex-col items-end md:bottom-6 md:right-6">
+    <div className="fixed bottom-20 right-3 z-[90] flex flex-col items-end md:bottom-6 md:right-6">
       {open ? (
         <section
           role="dialog"
+          aria-modal="true"
           aria-label="ElevenOrbits support chat"
-          className="mb-3 flex h-[min(680px,calc(100vh-7rem))] w-[calc(100vw-1.5rem)] max-w-[410px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.24)]"
+          className="fixed inset-0 flex h-dvh w-screen flex-col overflow-hidden bg-white md:static md:mb-3 md:h-[min(680px,calc(100dvh-6rem))] md:w-[calc(100vw-3rem)] md:max-w-[410px] md:rounded-2xl md:border md:border-slate-200 md:shadow-[0_28px_80px_rgba(15,23,42,0.24)]"
         >
-          <header className="bg-slate-950 px-5 py-4 text-white">
+          <header className="shrink-0 bg-slate-950 px-5 py-4 text-white">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
@@ -516,15 +559,20 @@ export function SupportChatWidget() {
         </section>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="group flex h-14 items-center gap-3 rounded-full border border-slate-800 bg-slate-950 px-4 text-white shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:bg-slate-900"
-        aria-label={open ? "Close support chat" : "Open support chat"}
-      >
-        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
-        <span className="pr-1 text-sm font-semibold">{open ? "Close" : "Support"}</span>
-      </button>
+      {!isPortal ? (
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className={cn(
+            "group h-14 items-center gap-3 rounded-full border border-slate-800 bg-slate-950 px-4 text-white shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:bg-slate-900",
+            open ? "hidden md:flex" : "flex",
+          )}
+          aria-label={open ? "Close support chat" : "Open support chat"}
+        >
+          {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
+          <span className="pr-1 text-sm font-semibold">{open ? "Close" : "Support"}</span>
+        </button>
+      ) : null}
     </div>
   );
 }

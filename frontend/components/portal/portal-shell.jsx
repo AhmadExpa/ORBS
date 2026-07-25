@@ -530,7 +530,7 @@ export function PortalShell({ children, groups = portalNavGroups, isAgentPortal 
           )}
         </main>
 
-        <PortalFooter />
+        <PortalFooter isAgent={isAgent} />
       </div>
     </ButtonThemeProvider>
   );

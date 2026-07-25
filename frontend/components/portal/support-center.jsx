@@ -4,13 +4,29 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { LifeBuoy } from "lucide-react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, FieldLabel, Select, StatusBadge, TextArea, TextInput } from "@/lib/ui";
+import {
+  ArrowUpRight,
+  ChevronRight,
+  Clock3,
+  Inbox,
+  LifeBuoy,
+  MessageSquareText,
+} from "lucide-react";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FieldLabel, Select, StatusBadge, TextArea, TextInput } from "@/lib/ui";
 import { Topbar } from "@/components/shared/topbar";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { apiFetch } from "@/lib/api/client";
 import { useActionToast } from "@/components/shared/feedback-layer";
 import { PageLoader } from "@/components/shared/page-loader";
+
+function formatTicketDate(value) {
+  if (!value) return "Recently updated";
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export function SupportCenter() {
   const { getToken, userId } = useAuth();
@@ -133,46 +149,107 @@ export function SupportCenter() {
         </Card>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your tickets</CardTitle>
-              <CardDescription>Open a ticket to view the full conversation and replies.</CardDescription>
+          <Card className="overflow-hidden rounded-2xl shadow-[0_18px_55px_-38px_rgba(15,23,42,0.35)]">
+            <CardHeader className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-700">
+                    <MessageSquareText className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <CardTitle>Your support conversations</CardTitle>
+                    <CardDescription className="mt-1">Select any ticket to open its full history and reply to the team.</CardDescription>
+                  </div>
+                </div>
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                  {visibleTickets.length} {visibleTickets.length === 1 ? "ticket" : "tickets"}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={[
-                  {
-                    key: "subject",
-                    label: "Subject",
-                    render: (row) => (
-                      <Link className="font-semibold text-brand-700 hover:text-brand-600" href={isAgent ? `/agent/support/${row._id}` : `/portal/support/${row._id}`}>
-                        {row.subject}
-                      </Link>
-                    ),
-                  },
-                  { key: "ticketNumber", label: "Ticket", render: (row) => row.ticketNumber || row._id },
-                  { key: "category", label: "Category", render: (row) => <span className="capitalize">{row.category || "general"}</span> },
-                  { key: "priority", label: "Priority", render: (row) => <span className="capitalize">{row.priority || "medium"}</span> },
-                  { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
-                ]}
-                rows={visibleTickets}
-                emptyMessage={
-                  isLoading
-                    ? "Loading tickets…"
-                    : statusFilter
-                      ? "No tickets match this filter."
-                      : "No tickets yet — open one on the right whenever you need a hand."
-                }
-              />
+            <CardContent className="p-0">
+              {visibleTickets.length ? (
+                <div className="divide-y divide-slate-100">
+                  {visibleTickets.map((ticket) => (
+                    <Link
+                      key={ticket._id}
+                      href={isAgent ? `/agent/support/${ticket._id}` : `/portal/support/${ticket._id}`}
+                      className="group grid gap-4 px-5 py-5 transition hover:bg-sky-50/40 focus:outline-none focus-visible:bg-sky-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 sm:grid-cols-[minmax(0,1.7fr)_minmax(150px,0.7fr)_auto] sm:items-center sm:px-6"
+                    >
+                      <div className="flex min-w-0 items-start gap-3.5">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition group-hover:border-sky-200 group-hover:bg-white group-hover:text-sky-700 group-hover:shadow-sm">
+                          <Inbox className="h-5 w-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-slate-950 transition group-hover:text-sky-800">{ticket.subject}</p>
+                            <StatusBadge status={ticket.status} className="sm:hidden" />
+                          </div>
+                          <p className="mt-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                            {ticket.ticketNumber || ticket._id}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pl-[58px] text-xs sm:block sm:pl-0">
+                        <div>
+                          <p className="font-semibold capitalize text-slate-700">{ticket.category || "General"}</p>
+                          <p className="mt-1 capitalize text-slate-400">{ticket.priority || "Medium"} priority</p>
+                        </div>
+                        <div className="sm:mt-2">
+                          <p className="flex items-center gap-1.5 text-slate-500">
+                            <Clock3 className="h-3.5 w-3.5" />
+                            {formatTicketDate(ticket.updatedAt || ticket.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 pl-[58px] sm:justify-end sm:pl-0">
+                        <StatusBadge status={ticket.status} className="hidden sm:inline-flex" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-800">
+                          Open conversation
+                          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
+                    <Inbox className="h-6 w-6" />
+                  </span>
+                  <h3 className="mt-4 text-base font-semibold text-slate-950">
+                    {isLoading ? "Loading tickets…" : statusFilter ? "No tickets match this filter" : "No support conversations yet"}
+                  </h3>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                    {statusFilter
+                      ? "Choose a different status from the sidebar to see more conversations."
+                      : "When you need help, create a ticket and the full conversation will stay organized here."}
+                  </p>
+                  {!statusFilter && !isLoading ? (
+                    <Link href="#open-ticket" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">
+                      Create a support ticket
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  ) : null}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Open a ticket</CardTitle>
-              <CardDescription>Describe the issue and our team will reply on this thread.</CardDescription>
+          <Card id="open-ticket" className="h-fit scroll-mt-24 overflow-hidden rounded-2xl shadow-[0_18px_55px_-38px_rgba(15,23,42,0.35)] xl:sticky xl:top-[8.25rem]">
+            <CardHeader className="border-slate-800 bg-[linear-gradient(135deg,#07111f_0%,#0f172a_100%)] p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-sky-200">
+                  <LifeBuoy className="h-5 w-5" />
+                </span>
+                <div>
+                  <CardTitle className="text-white">Open a new ticket</CardTitle>
+                  <CardDescription className="mt-1 text-white/55">Give us the key details and we’ll keep every reply in one secure thread.</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
                   <FieldLabel>Subject</FieldLabel>
@@ -238,8 +315,9 @@ export function SupportCenter() {
                 </div>
                 {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
                 {state.error ? <p className="text-sm font-medium text-rose-600">{state.error}</p> : null}
-                <Button className="w-full" type="submit" disabled={state.saving}>
+                <Button className="w-full rounded-xl" type="submit" disabled={state.saving}>
                   {state.saving ? "Creating…" : "Submit ticket"}
+                  {!state.saving ? <ArrowUpRight className="h-4 w-4" /> : null}
                 </Button>
               </form>
             </CardContent>
