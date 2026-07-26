@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, ShieldCheck, XCircle } from "lucide-react";
-import { Button, TextInput, cn } from "@/lib/ui";
+import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, Pencil, ShieldCheck, UserCircle2, XCircle } from "lucide-react";
+import { Button, SearchableCombobox, TextInput, cn } from "@/lib/ui";
 import {
   createEmptyPaymentBillingDetails,
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
 } from "@/lib/payments/billing-details";
 import { normalizePaymentActionError } from "@/lib/payments/stripe-errors";
+import { getCountryOptions, getDialCodeOptions, getStatesForCountry } from "@/lib/geo/country-data";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -113,6 +114,64 @@ export function CardVerificationModeSelector({
   );
 }
 
+export function CardIdentityToggle({
+  usingOwnCard,
+  onToggle,
+  name = "",
+  email = "",
+  disabled = false,
+}) {
+  if (usingOwnCard) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex items-start gap-2.5">
+          <UserCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+          <p className="text-xs leading-5 text-slate-600">
+            Using your account billing details
+            {name || email ? (
+              <>
+                {" "}
+                <span className="font-semibold text-slate-900">
+                  {name}
+                  {name && email ? " · " : ""}
+                  {email}
+                </span>
+              </>
+            ) : null}
+            .
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onToggle(false)}
+          className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-60"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Use a different card
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <div className="flex items-start gap-2.5">
+        <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+        <p className="text-xs leading-5 text-slate-600">Entering billing details for a different card.</p>
+      </div>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onToggle(true)}
+        className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-60"
+      >
+        Use my account details instead
+      </button>
+    </div>
+  );
+}
+
 export function PaymentReadinessReport({ report }) {
   if (!report) return null;
 
@@ -190,12 +249,36 @@ export function PaymentReadinessReport({ report }) {
 
 export function PaymentBillingDetailsFields({ value, onChange, disabled = false }) {
   const id = useId().replace(/:/gu, "");
+  const countryOptions = useMemo(() => getCountryOptions(), []);
+  const dialCodeOptions = useMemo(() => getDialCodeOptions(), []);
+  const stateOptions = useMemo(() => getStatesForCountry(value.country), [value.country]);
+  const dialCodeValue = useMemo(() => {
+    const match = String(value.phone || "").match(/^\+\d+/u);
+    if (!match) return "";
+    const option = dialCodeOptions.find((candidate) => match[0].startsWith(candidate.dialCode));
+    return option?.value || "";
+  }, [dialCodeOptions, value.phone]);
 
   function updateField(field, fieldValue) {
     onChange({
       ...value,
       [field]: field === "country" ? fieldValue.toUpperCase() : fieldValue,
     });
+  }
+
+  function updateCountry(isoCode) {
+    onChange({
+      ...value,
+      country: isoCode.toUpperCase(),
+      state: "",
+    });
+  }
+
+  function updateDialCode(isoCode) {
+    const option = dialCodeOptions.find((candidate) => candidate.value === isoCode);
+    if (!option) return;
+    const rest = String(value.phone || "").replace(/^\+\d+/u, "");
+    onChange({ ...value, phone: `${option.dialCode}${rest}` });
   }
 
   return (
@@ -211,15 +294,24 @@ export function PaymentBillingDetailsFields({ value, onChange, disabled = false 
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
+      <div className="grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
+        <div>
+          <label htmlFor={`${id}-dial-code`} className="mb-2 block text-sm font-medium text-slate-700">Country code</label>
+          <SearchableCombobox
+            id={`${id}-dial-code`}
+            value={dialCodeValue}
+            onChange={updateDialCode}
+            options={dialCodeOptions}
+            disabled={disabled}
+            placeholder="Select"
+            searchPlaceholder="Search countries..."
+            emptyMessage="No matching country codes."
+          />
+        </div>
         <div>
           <label htmlFor={`${id}-phone`} className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
           <TextInput id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+14155552671" />
           <p className="mt-1.5 text-xs text-slate-500">Include + and the country calling code.</p>
-        </div>
-        <div>
-          <label htmlFor={`${id}-country`} className="mb-2 block text-sm font-medium text-slate-700">Country code</label>
-          <TextInput id={`${id}-country`} autoComplete="country" maxLength={2} value={value.country} disabled={disabled} onChange={(event) => updateField("country", event.target.value)} placeholder="US" />
         </div>
       </div>
 
@@ -233,14 +325,43 @@ export function PaymentBillingDetailsFields({ value, onChange, disabled = false 
         <TextInput id={`${id}-line2`} autoComplete="address-line2" value={value.line2} disabled={disabled} onChange={(event) => updateField("line2", event.target.value)} placeholder="Apartment, suite, or unit" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor={`${id}-city`} className="mb-2 block text-sm font-medium text-slate-700">City</label>
-          <TextInput id={`${id}-city`} autoComplete="address-level2" value={value.city} disabled={disabled} onChange={(event) => updateField("city", event.target.value)} placeholder="City" />
+          <label htmlFor={`${id}-country`} className="mb-2 block text-sm font-medium text-slate-700">Country</label>
+          <SearchableCombobox
+            id={`${id}-country`}
+            value={value.country}
+            onChange={updateCountry}
+            options={countryOptions}
+            disabled={disabled}
+            placeholder="Select a country"
+            searchPlaceholder="Search countries..."
+            emptyMessage="No matching countries."
+          />
         </div>
         <div>
           <label htmlFor={`${id}-state`} className="mb-2 block text-sm font-medium text-slate-700">State / region</label>
-          <TextInput id={`${id}-state`} autoComplete="address-level1" value={value.state} disabled={disabled} onChange={(event) => updateField("state", event.target.value)} placeholder="State or region" />
+          {stateOptions.length ? (
+            <SearchableCombobox
+              id={`${id}-state`}
+              value={value.state}
+              onChange={(stateValue) => updateField("state", stateValue)}
+              options={stateOptions}
+              disabled={disabled || !value.country}
+              placeholder="Select a state or region"
+              searchPlaceholder="Search states..."
+              emptyMessage="No matching states."
+            />
+          ) : (
+            <TextInput id={`${id}-state`} autoComplete="address-level1" value={value.state} disabled={disabled} onChange={(event) => updateField("state", event.target.value)} placeholder="State or region" />
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor={`${id}-city`} className="mb-2 block text-sm font-medium text-slate-700">City</label>
+          <TextInput id={`${id}-city`} autoComplete="address-level2" value={value.city} disabled={disabled} onChange={(event) => updateField("city", event.target.value)} placeholder="City" />
         </div>
         <div>
           <label htmlFor={`${id}-postal`} className="mb-2 block text-sm font-medium text-slate-700">Postal code</label>

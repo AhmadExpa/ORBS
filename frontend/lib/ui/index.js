@@ -3,6 +3,7 @@ export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./car
 export { StatusBadge } from "./status-badge.jsx";
 export { DataTable } from "./data-table.jsx";
 export { TextInput, TextArea, Select, FieldLabel } from "./inputs.jsx";
+export { SearchableCombobox } from "./combobox.jsx";
 export { SectionHeading } from "./section-heading.jsx";
 export { ViewToggle } from "./view-toggle.jsx";
 export { Board, BoardColumn, BoardCard } from "./board.jsx";

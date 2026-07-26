@@ -125,7 +125,7 @@ function formatCardBrand(brand) {
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
 }
 
-function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt } = {}) {
+function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt, is3DS = true } = {}) {
   const card = paymentMethod?.card || {};
 
   return {
@@ -138,6 +138,7 @@ function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt }
     funding: card.funding || "",
     country: card.country || "",
     isPrimary,
+    is3DS: Boolean(is3DS),
     savedAt: savedAt || new Date().toISOString(),
   };
 }
@@ -153,6 +154,7 @@ export function getUserSavedPaymentMethods(user) {
           ...card,
           brandLabel: card.brandLabel || formatCardBrand(card.brand),
           isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
+          is3DS: card.is3DS ?? true,
         },
       ]),
   );
@@ -168,6 +170,7 @@ export function getUserSavedPaymentMethods(user) {
       funding: "",
       country: "",
       isPrimary: true,
+      is3DS: true,
       savedAt: user.updatedAt?.toISOString?.() || new Date().toISOString(),
     });
   }
@@ -213,7 +216,7 @@ export async function ensureStripeCustomer(user, { billingDetails } = {}) {
   return customer.id;
 }
 
-export async function updateUserDefaultPaymentMethod({ user, customerId, paymentMethodId }) {
+export async function updateUserDefaultPaymentMethod({ user, customerId, paymentMethodId, is3DS }) {
   assertStripeConfigured();
 
   if (!paymentMethodId) {
@@ -226,6 +229,7 @@ export async function updateUserDefaultPaymentMethod({ user, customerId, payment
   const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
     isPrimary: true,
     savedAt: existingCard?.savedAt,
+    is3DS: is3DS ?? existingCard?.is3DS ?? true,
   });
 
   const customerBillingDetails = paymentMethod.billing_details?.email
@@ -283,6 +287,7 @@ export async function setUserPrimaryPaymentMethod({ user, paymentMethodId }) {
   const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
     isPrimary: true,
     savedAt: selectedCard.savedAt,
+    is3DS: selectedCard.is3DS ?? true,
   });
 
   await stripe.customers.update(user.stripeCustomerId, {
@@ -402,7 +407,12 @@ export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }
   });
 }
 
-export async function createSetupIntent({ user, metadata, billingDetails }) {
+export async function createSetupIntent({
+  user,
+  metadata,
+  billingDetails,
+  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+}) {
   assertStripeConfigured();
 
   const normalizedBillingDetails = normalizePaymentBillingDetails(billingDetails);
@@ -417,7 +427,7 @@ export async function createSetupIntent({ user, metadata, billingDetails }) {
     usage: "off_session",
     payment_method_options: {
       card: {
-        request_three_d_secure: CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+        request_three_d_secure: requestThreeDSecure,
       },
     },
     metadata: normalizeMetadata(metadata),

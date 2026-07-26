@@ -70,6 +70,7 @@ function getSavedCards(user) {
       brand: user.defaultPaymentMethodBrand || "",
       last4: user.defaultPaymentMethodLast4 || "",
       isPrimary: true,
+      is3DS: true,
     });
   }
 
@@ -77,6 +78,7 @@ function getSavedCards(user) {
     ...card,
     brandLabel: card.brandLabel || formatCardBrand(card.brand),
     isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
+    is3DS: card.is3DS ?? true,
   }));
 }
 
@@ -149,6 +151,7 @@ export function WalletPaymentsPage() {
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
   const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
+  const [cardSetupVerificationMode, setCardSetupVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [savedTopupPreflight, setSavedTopupPreflight] = useState(null);
@@ -311,7 +314,7 @@ export function WalletPaymentsPage() {
       response = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
-        body: { type: "card_setup", billingDetails },
+        body: { type: "card_setup", billingDetails, cardVerificationMode: cardSetupVerificationMode },
       });
     } catch (error) {
       if (error.redirectUrl) {
@@ -1168,6 +1171,7 @@ export function WalletPaymentsPage() {
                                 <div className="flex flex-wrap justify-end gap-2">
                                   {card.isPrimary ? <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold">Primary</span> : null}
                                   {card.isPrimary && autoCardBillingEnabled ? <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">Fallback on</span> : null}
+                                  {card.is3DS ? <span className="rounded-full bg-sky-400/15 px-2.5 py-1 text-[11px] font-semibold text-sky-300">3D Secure</span> : null}
                                 </div>
                               </div>
 
@@ -1216,17 +1220,25 @@ export function WalletPaymentsPage() {
                   <CardTitle>{hasSavedCard ? "Add another card" : "Save a card"}</CardTitle>
                   <CardDescription>Optional. Saved cards make future top-ups and renewal fallback faster.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-5">
                   {contractApproved ? (
-                    <PortalCardForm
-                      submitLabel={hasSavedCard ? "Add card" : "Save card"}
-                      pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
-                      note="Enter the cardholder's billing details. Saving the card requests 3D Secure verification."
-                      onSubmit={handleSaveCard}
-                      successTitle="Saved card added"
-                      errorTitle="Saved card action failed"
-                      actionLabel="Saved Card"
-                    />
+                    <>
+                      <CardVerificationModeSelector
+                        value={cardSetupVerificationMode}
+                        onChange={setCardSetupVerificationMode}
+                      />
+                      <PortalCardForm
+                        submitLabel={hasSavedCard ? "Add card" : "Save card"}
+                        pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
+                        note={cardSetupVerificationMode === CARD_VERIFICATION_MODE_3DS
+                          ? "3D Secure is requested for this card. Enter the cardholder's billing details."
+                          : "Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details."}
+                        onSubmit={handleSaveCard}
+                        successTitle="Saved card added"
+                        errorTitle="Saved card action failed"
+                        actionLabel="Saved Card"
+                      />
+                    </>
                   ) : (
                     <ContractApprovalLock description="Saved-card setup is available after an ElevenOrbits administrator approves your signed agreement." />
                   )}

@@ -5,6 +5,7 @@ import { requireCustomer } from "../../middleware/require-customer.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import {
   CARD_VERIFICATION_MODE_3DS,
+  CARD_VERIFICATION_MODE_STANDARD,
   constructWebhookEvent,
   createCheckoutLineItem,
   createPaymentCheckoutSession,
@@ -384,15 +385,18 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
   return result.submission;
 }
 
-async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, customerId }) {
+async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, customerId, cardVerificationMode }) {
   if (!paymentMethodId || !customerId) {
     return null;
   }
+
+  const is3DS = cardVerificationMode !== CARD_VERIFICATION_MODE_STANDARD;
 
   await updateUserDefaultPaymentMethod({
     user,
     customerId,
     paymentMethodId,
+    is3DS,
   });
 
   await recordActivity({
@@ -471,6 +475,7 @@ async function finalizeCheckoutSession({ session, user }) {
       paymentMethodId: setupPaymentMethodId,
       setupIntentId,
       customerId,
+      cardVerificationMode: session.metadata?.cardVerificationMode,
     });
 
     return { type: metadataType, card };
@@ -541,6 +546,7 @@ async function finalizeSetupIntent({ setupIntent, user }) {
     paymentMethodId: normalizePaymentMethodId(setupIntent.payment_method),
     setupIntentId: setupIntent.id,
     customerId: normalizeCustomerId(setupIntent.customer),
+    cardVerificationMode: setupIntent.metadata?.cardVerificationMode,
   });
 
   return { type: metadataType, card };
@@ -827,12 +833,17 @@ stripeRouter.post(
     await requireApprovedContract(req.auth.clerkId);
 
     if (req.body.type === "card_setup") {
+      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+
       const intent = await createSetupIntent({
         user,
         billingDetails: req.body.billingDetails,
+        requestThreeDSecure: verification.requestThreeDSecure,
         metadata: {
           type: "card_setup",
           userId: user._id,
+          cardVerificationMode: verification.cardVerificationMode,
+          threeDSecurePolicy: verification.requestThreeDSecure,
         },
       });
 
@@ -1124,6 +1135,59 @@ stripeRouter.post(
 
     res.json({
       type: "wallet_topup",
+      clientSecret: paymentIntent.client_secret,
+      intentId: paymentIntent.id,
+    });
+  }),
+);
+
+stripeRouter.post(
+  "/payment-methods/:id/pay-order",
+  requireCustomer,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    await requireApprovedContract(req.auth.clerkId);
+
+    const { order, subscription, invoice } = await findOrderPaymentContext({
+      orderId: req.body.orderId,
+      userId: user._id,
+    });
+
+    if (["cancelled", "rejected"].includes(order.status)) {
+      throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
+    }
+
+    if (order.status === "approved" || invoice?.status === "paid") {
+      throw new HttpError(400, "This order has already been paid.");
+    }
+
+    const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+
+    const paymentIntent = await createSavedCardPaymentIntent({
+      user,
+      paymentMethodId: req.params.id,
+      amount: order.totalAmount,
+      description: invoice?.invoiceNumber || order.productPlanId?.name || "Managed service payment",
+      billingDetails: req.body.billingDetails,
+      requestThreeDSecure: verification.requestThreeDSecure,
+      metadata: {
+        type: "order_payment",
+        userId: user._id,
+        orderId: order._id,
+        subscriptionId: subscription?._id,
+        preserveSavedCard: "true",
+        cardVerificationMode: verification.cardVerificationMode,
+        threeDSecurePolicy: verification.requestThreeDSecure,
+        saveCardForFutureUse: "false",
+      },
+    });
+
+    res.json({
+      type: "order_payment",
       clientSecret: paymentIntent.client_secret,
       intentId: paymentIntent.id,
     });
