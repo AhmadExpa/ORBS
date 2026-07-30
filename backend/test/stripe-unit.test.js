@@ -112,7 +112,7 @@ test("provided billing details are validated and mapped to Stripe fields", () =>
   assert.equal(details.phone, "+18135550199");
   assert.equal(details.address.postal_code, "33601");
   assert.deepEqual(details.address, { postal_code: "33601" });
-  assert.throws(() => normalizePaymentBillingDetails({}), /full name/);
+  assert.deepEqual(normalizePaymentBillingDetails({}), {});
 });
 
 test("payment phone numbers use E.164 before Stripe receives them", () => {

@@ -666,7 +666,7 @@ stripeRouter.post(
         id: "billing",
         label: "Billing identity",
         status: "passed",
-        detail: "The cardholder name and postcode are complete. Email and phone are optional.",
+        detail: "The secure Stripe card field collects the card number, expiry, CVC, and postcode.",
       });
     } catch (error) {
       checks.push({

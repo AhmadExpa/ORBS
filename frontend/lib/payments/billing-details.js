@@ -40,19 +40,12 @@ export function getPaymentBillingDetailsValidationError(value) {
   const details = normalizePaymentBillingDetails(value);
   const rawPhone = String(value?.phone || "").trim();
 
-  if (details.name.length < 2) {
-    return "Enter the cardholder's full name.";
-  }
   if (details.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
     return "Enter a valid payment email address.";
   }
   if (rawPhone && !details.phone) {
     return "Enter the phone number in international format, such as +14155552671.";
   }
-  if (!details.postalCode) {
-    return "Enter the billing postal code.";
-  }
-
   return "";
 }
 
@@ -60,11 +53,9 @@ export function toStripeBillingDetails(value) {
   const details = normalizePaymentBillingDetails(value);
 
   return {
-    name: details.name,
+    ...(details.name ? { name: details.name } : {}),
     ...(details.email ? { email: details.email } : {}),
     ...(details.phone ? { phone: details.phone } : {}),
-    address: {
-      postal_code: details.postalCode,
-    },
+    ...(details.postalCode ? { address: { postal_code: details.postalCode } } : {}),
   };
 }

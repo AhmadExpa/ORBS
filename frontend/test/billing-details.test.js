@@ -45,8 +45,8 @@ test("payment billing details are normalized without account-profile defaults", 
   });
 });
 
-test("payment billing details require identity, contact, and address fields", () => {
-  assert.match(getPaymentBillingDetailsValidationError(createEmptyPaymentBillingDetails()), /full name/);
+test("payment billing details are optional because Stripe CardElement collects card data", () => {
+  assert.equal(getPaymentBillingDetailsValidationError(createEmptyPaymentBillingDetails()), "");
   assert.equal(getPaymentBillingDetailsValidationError(validDetails), "");
 });
 
@@ -62,13 +62,10 @@ test("payment phone numbers are normalized to E.164", () => {
 
 test("payment email and phone are optional", () => {
   assert.equal(
-    getPaymentBillingDetailsValidationError({ name: "Card Holder", postalCode: "33601" }),
+    getPaymentBillingDetailsValidationError({}),
     "",
   );
-  assert.deepEqual(toStripeBillingDetails({ name: "Card Holder", postalCode: "33601" }), {
-    name: "Card Holder",
-    address: { postal_code: "33601" },
-  });
+  assert.deepEqual(toStripeBillingDetails({}), {});
 });
 
 test("Stripe billing details use Stripe address field names", () => {

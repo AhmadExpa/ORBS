@@ -19,7 +19,7 @@ export const CARD_VERIFICATION_MODE_STANDARD = "standard";
 export const CARD_VERIFICATION_MODE_3DS = "three_d_secure";
 
 const cardElementOptions = {
-  hidePostalCode: true,
+  hidePostalCode: false,
   style: {
     base: {
       color: "#0f172a",
@@ -284,7 +284,7 @@ function PortalCardFormInner({
   actionLabel = "Payments",
   billingDetails,
   onBillingDetailsChange,
-  showBillingDetails = true,
+  showBillingDetails = false,
   onPreflight,
   preflightKey = "",
 }) {
@@ -516,7 +516,7 @@ export function PortalCardForm({
   actionLabel,
   billingDetails,
   onBillingDetailsChange,
-  showBillingDetails = true,
+  showBillingDetails = false,
   onPreflight,
   preflightKey,
 }) {

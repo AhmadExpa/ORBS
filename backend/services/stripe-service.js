@@ -88,35 +88,26 @@ export function normalizePaymentBillingDetails(value) {
     country: String(value?.country || "").trim().toUpperCase(),
   };
 
-  if (details.name.length < 2) {
-    throw new HttpError(400, "Enter the cardholder's full name.");
-  }
   if (rawEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
     throw new HttpError(400, "Enter a valid payment email address.");
   }
   if (rawPhone && !details.phone) {
     throw new HttpError(400, "Enter the phone number in international format, such as +14155552671.");
   }
-  if (!details.postalCode) {
-    throw new HttpError(400, "Enter the billing postcode.");
-  }
-
   return {
-    name: details.name,
+    ...(details.name ? { name: details.name } : {}),
     ...(details.email ? { email: details.email } : {}),
     ...(details.phone ? { phone: details.phone } : {}),
-    address: {
-      postal_code: details.postalCode,
-    },
+    ...(details.postalCode ? { address: { postal_code: details.postalCode } } : {}),
   };
 }
 
 async function updateStripeCustomerContact(customerId, billingDetails, fallbackEmail = "") {
   await stripe.customers.update(customerId, {
-    name: billingDetails.name,
+    ...(billingDetails.name ? { name: billingDetails.name } : {}),
     ...(billingDetails.email || fallbackEmail ? { email: billingDetails.email || fallbackEmail } : {}),
     ...(billingDetails.phone ? { phone: billingDetails.phone } : {}),
-    address: billingDetails.address,
+    ...(billingDetails.address ? { address: billingDetails.address } : {}),
   });
 }
 
@@ -206,10 +197,10 @@ export async function ensureStripeCustomer(user, { billingDetails } = {}) {
   const customer = await stripe.customers.create({
     ...(billingDetails
       ? {
-          name: billingDetails.name,
+          ...(billingDetails.name || user.name ? { name: billingDetails.name || user.name } : {}),
           ...(billingDetails.email || user.email ? { email: billingDetails.email || user.email } : {}),
           ...(billingDetails.phone ? { phone: billingDetails.phone } : {}),
-          address: billingDetails.address,
+          ...(billingDetails.address ? { address: billingDetails.address } : {}),
         }
       : {}),
     metadata: normalizeMetadata({
@@ -609,10 +600,13 @@ export async function createSavedCardPaymentIntent({
   }
 
   const normalizedBillingDetails = normalizePaymentBillingDetails(billingDetails);
+  const hasBillingDetails = Object.keys(normalizedBillingDetails).length > 0;
   await Promise.all([
-    stripe.paymentMethods.update(paymentMethodId, {
-      billing_details: normalizedBillingDetails,
-    }),
+    hasBillingDetails
+      ? stripe.paymentMethods.update(paymentMethodId, {
+          billing_details: normalizedBillingDetails,
+        })
+      : Promise.resolve(),
     updateStripeCustomerContact(user.stripeCustomerId, normalizedBillingDetails, user.email),
   ]);
 

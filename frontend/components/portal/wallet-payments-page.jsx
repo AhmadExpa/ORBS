@@ -19,7 +19,6 @@ import { createStripePaymentError, normalizePaymentActionError } from "@/lib/pay
 import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
-  PaymentBillingDetailsFields,
   PaymentReadinessReport,
   PortalCardForm,
   portalStripePromise,
@@ -321,10 +320,11 @@ export function WalletPaymentsPage() {
       throw error;
     }
 
+    const stripeBillingDetails = toStripeBillingDetails(billingDetails);
     const result = await stripe.confirmCardSetup(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: toStripeBillingDetails(billingDetails),
+        ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
       },
     });
 
@@ -376,10 +376,11 @@ export function WalletPaymentsPage() {
       throw error;
     }
 
+    const stripeBillingDetails = toStripeBillingDetails(billingDetails);
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: toStripeBillingDetails(billingDetails),
+        ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
       },
     });
 
@@ -1228,8 +1229,9 @@ export function WalletPaymentsPage() {
                       <PortalCardForm
                         submitLabel={hasSavedCard ? "Add card" : "Save card"}
                         pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
-                        note="Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details."
+                        note="Enter your card number, expiry, CVC, and postcode."
                         onSubmit={handleSaveCard}
+                        showBillingDetails={false}
                         successTitle="Saved card added"
                         errorTitle="Saved card action failed"
                         actionLabel="Saved Card"
@@ -1324,23 +1326,9 @@ export function WalletPaymentsPage() {
             </Card>
 
             <div className="space-y-5">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Billing details for this payment</CardTitle>
-                  <CardDescription>Enter the cardholder details for this card. Email and phone are optional; if email is blank, Stripe uses your portal account email.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PaymentBillingDetailsFields
-                    value={topupBillingDetails}
-                    onChange={setTopupBillingDetails}
-                    disabled={Boolean(savedTopupState.savingId)}
-                  />
-                </CardContent>
-              </Card>
-
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
                 <p className="font-semibold">Standard card processing</p>
-                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details to fund the wallet. Your bank may request additional verification when required.</p>
+                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card number, expiry, CVC, and postcode in the secure Stripe card field. Your bank may request additional verification when required.</p>
               </div>
 
               {primaryCard ? (

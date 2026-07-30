@@ -202,10 +202,11 @@ export function CheckoutPaymentView({ orderId }) {
       throw error;
     }
 
+    const stripeBillingDetails = toStripeBillingDetails(billingDetails);
     const result = await stripe.confirmCardPayment(response.clientSecret, {
       payment_method: {
         card: cardElement,
-        billing_details: toStripeBillingDetails(billingDetails),
+        ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
       },
     });
 
@@ -698,8 +699,8 @@ export function CheckoutPaymentView({ orderId }) {
                           onSubmit={handleCardPayment}
                           billingDetails={billingDetails}
                           onBillingDetailsChange={setBillingDetails}
-                          showBillingDetails
-                          note="Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details for this card."
+                          showBillingDetails={false}
+                          note="Enter your card number, expiry, CVC, and postcode in the secure Stripe card field."
                           successTitle="Advance payment completed"
                           errorTitle="Card payment failed"
                           actionLabel="Order Advance Payment"
