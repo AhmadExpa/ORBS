@@ -60,10 +60,21 @@ test("payment phone numbers are normalized to E.164", () => {
   );
 });
 
+test("payment email and phone are optional", () => {
+  assert.equal(
+    getPaymentBillingDetailsValidationError({ name: "Card Holder", postalCode: "33601" }),
+    "",
+  );
+  assert.deepEqual(toStripeBillingDetails({ name: "Card Holder", postalCode: "33601" }), {
+    name: "Card Holder",
+    address: { postal_code: "33601" },
+  });
+});
+
 test("Stripe billing details use Stripe address field names", () => {
   const details = toStripeBillingDetails(validDetails);
 
   assert.equal(details.email, "card@example.com");
   assert.equal(details.address.postal_code, "33601");
-  assert.equal(details.address.country, "US");
+  assert.deepEqual(details.address, { postal_code: "33601" });
 });

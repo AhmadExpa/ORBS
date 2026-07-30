@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, Pencil, ShieldCheck, UserCircle2, XCircle } from "lucide-react";
-import { Button, SearchableCombobox, TextInput, cn } from "@/lib/ui";
+import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, Pencil, UserCircle2, XCircle } from "lucide-react";
+import { Button, TextInput, cn } from "@/lib/ui";
 import {
   createEmptyPaymentBillingDetails,
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
 } from "@/lib/payments/billing-details";
 import { normalizePaymentActionError } from "@/lib/payments/stripe-errors";
-import { getCountryOptions, getDialCodeOptions, getStatesForCountry } from "@/lib/geo/country-data";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -43,16 +42,9 @@ const verificationModes = [
   {
     value: CARD_VERIFICATION_MODE_STANDARD,
     title: "Standard processing",
-    badge: "Faster",
-    description: "Stripe requests 3D Secure only when the bank, regulation, or risk checks require it.",
+    badge: "Card payment",
+    description: "Use the card details provided below. Stripe requests authentication only when the bank, regulation, or risk checks require it.",
     icon: CreditCard,
-  },
-  {
-    value: CARD_VERIFICATION_MODE_3DS,
-    title: "Request 3D Secure",
-    badge: "Extra verification",
-    description: "Request an authentication challenge from the cardholder's bank whenever supported.",
-    icon: ShieldCheck,
   },
 ];
 
@@ -249,36 +241,9 @@ export function PaymentReadinessReport({ report }) {
 
 export function PaymentBillingDetailsFields({ value, onChange, disabled = false }) {
   const id = useId().replace(/:/gu, "");
-  const countryOptions = useMemo(() => getCountryOptions(), []);
-  const dialCodeOptions = useMemo(() => getDialCodeOptions(), []);
-  const stateOptions = useMemo(() => getStatesForCountry(value.country), [value.country]);
-  const dialCodeValue = useMemo(() => {
-    const match = String(value.phone || "").match(/^\+\d+/u);
-    if (!match) return "";
-    const option = dialCodeOptions.find((candidate) => match[0].startsWith(candidate.dialCode));
-    return option?.value || "";
-  }, [dialCodeOptions, value.phone]);
 
   function updateField(field, fieldValue) {
-    onChange({
-      ...value,
-      [field]: field === "country" ? fieldValue.toUpperCase() : fieldValue,
-    });
-  }
-
-  function updateCountry(isoCode) {
-    onChange({
-      ...value,
-      country: isoCode.toUpperCase(),
-      state: "",
-    });
-  }
-
-  function updateDialCode(isoCode) {
-    const option = dialCodeOptions.find((candidate) => candidate.value === isoCode);
-    if (!option) return;
-    const rest = String(value.phone || "").replace(/^\+\d+/u, "");
-    onChange({ ...value, phone: `${option.dialCode}${rest}` });
+    onChange({ ...value, [field]: fieldValue });
   }
 
   return (
@@ -289,84 +254,20 @@ export function PaymentBillingDetailsFields({ value, onChange, disabled = false 
           <TextInput id={`${id}-name`} autoComplete="cc-name" value={value.name} disabled={disabled} onChange={(event) => updateField("name", event.target.value)} placeholder="Full name on card" />
         </div>
         <div>
-          <label htmlFor={`${id}-email`} className="mb-2 block text-sm font-medium text-slate-700">Payment email</label>
+          <label htmlFor={`${id}-email`} className="mb-2 block text-sm font-medium text-slate-700">Payment email <span className="font-normal text-slate-400">(optional)</span></label>
           <TextInput id={`${id}-email`} type="email" autoComplete="email" value={value.email} disabled={disabled} onChange={(event) => updateField("email", event.target.value)} placeholder="cardholder@example.com" />
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
-        <div>
-          <label htmlFor={`${id}-dial-code`} className="mb-2 block text-sm font-medium text-slate-700">Country code</label>
-          <SearchableCombobox
-            id={`${id}-dial-code`}
-            value={dialCodeValue}
-            onChange={updateDialCode}
-            options={dialCodeOptions}
-            disabled={disabled}
-            placeholder="Select"
-            searchPlaceholder="Search countries..."
-            emptyMessage="No matching country codes."
-          />
-        </div>
-        <div>
-          <label htmlFor={`${id}-phone`} className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
-          <TextInput id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+14155552671" />
-          <p className="mt-1.5 text-xs text-slate-500">Include + and the country calling code.</p>
-        </div>
+      <div>
+        <label htmlFor={`${id}-phone`} className="mb-2 block text-sm font-medium text-slate-700">Phone number <span className="font-normal text-slate-400">(optional)</span></label>
+        <TextInput id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel" value={value.phone} disabled={disabled} onChange={(event) => updateField("phone", event.target.value)} placeholder="+14155552671" />
+        <p className="mt-1.5 text-xs text-slate-500">Include + and the country calling code.</p>
       </div>
 
       <div>
-        <label htmlFor={`${id}-line1`} className="mb-2 block text-sm font-medium text-slate-700">Billing address</label>
-        <TextInput id={`${id}-line1`} autoComplete="address-line1" value={value.line1} disabled={disabled} onChange={(event) => updateField("line1", event.target.value)} placeholder="Street address" />
-      </div>
-
-      <div>
-        <label htmlFor={`${id}-line2`} className="mb-2 block text-sm font-medium text-slate-700">Apartment, suite, or unit <span className="font-normal text-slate-400">(optional)</span></label>
-        <TextInput id={`${id}-line2`} autoComplete="address-line2" value={value.line2} disabled={disabled} onChange={(event) => updateField("line2", event.target.value)} placeholder="Apartment, suite, or unit" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor={`${id}-country`} className="mb-2 block text-sm font-medium text-slate-700">Country</label>
-          <SearchableCombobox
-            id={`${id}-country`}
-            value={value.country}
-            onChange={updateCountry}
-            options={countryOptions}
-            disabled={disabled}
-            placeholder="Select a country"
-            searchPlaceholder="Search countries..."
-            emptyMessage="No matching countries."
-          />
-        </div>
-        <div>
-          <label htmlFor={`${id}-state`} className="mb-2 block text-sm font-medium text-slate-700">State / region</label>
-          {stateOptions.length ? (
-            <SearchableCombobox
-              id={`${id}-state`}
-              value={value.state}
-              onChange={(stateValue) => updateField("state", stateValue)}
-              options={stateOptions}
-              disabled={disabled || !value.country}
-              placeholder="Select a state or region"
-              searchPlaceholder="Search states..."
-              emptyMessage="No matching states."
-            />
-          ) : (
-            <TextInput id={`${id}-state`} autoComplete="address-level1" value={value.state} disabled={disabled} onChange={(event) => updateField("state", event.target.value)} placeholder="State or region" />
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor={`${id}-city`} className="mb-2 block text-sm font-medium text-slate-700">City</label>
-          <TextInput id={`${id}-city`} autoComplete="address-level2" value={value.city} disabled={disabled} onChange={(event) => updateField("city", event.target.value)} placeholder="City" />
-        </div>
-        <div>
-          <label htmlFor={`${id}-postal`} className="mb-2 block text-sm font-medium text-slate-700">Postal code</label>
-          <TextInput id={`${id}-postal`} autoComplete="postal-code" value={value.postalCode} disabled={disabled} onChange={(event) => updateField("postalCode", event.target.value)} placeholder="Postal code" />
-        </div>
+        <label htmlFor={`${id}-postal`} className="mb-2 block text-sm font-medium text-slate-700">Postcode</label>
+        <TextInput id={`${id}-postal`} autoComplete="postal-code" value={value.postalCode} disabled={disabled} onChange={(event) => updateField("postalCode", event.target.value)} placeholder="Postcode" />
       </div>
     </div>
   );

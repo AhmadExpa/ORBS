@@ -19,7 +19,7 @@ import {
   normalizePaymentBillingDetails,
   removeUserPaymentMethod,
   removeUserDefaultPaymentMethod,
-  resolveCustomerCardVerificationMode,
+  resolvePortalCardVerificationMode,
   setUserPrimaryPaymentMethod,
   retrieveCheckoutSession,
   retrievePaymentIntent,
@@ -198,7 +198,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       advancePaymentStatus: "pending_review",
       paymentReceivedAt: paymentReceivedAt.toISOString(),
       paymentMethodType: "stripe_card",
-      cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+      cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
     };
     await order.save();
 
@@ -210,7 +210,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
         advancePayment: true,
         advancePaymentStatus: "pending_review",
         paymentReceivedAt: paymentReceivedAt.toISOString(),
-        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
         lastStripePaymentIntentId: paymentIntentId,
         ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
       };
@@ -250,8 +250,8 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
       metadata: {
-        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
-        threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+        threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
         saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
       },
       submittedAt: new Date(),
@@ -267,7 +267,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       metadata: {
         orderId: String(order._id),
         amount: order.totalAmount,
-        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+      cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
       },
     });
 
@@ -345,8 +345,8 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
       metadata: {
-        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
-        threeDSecurePolicy: metadata?.threeDSecurePolicy || "challenge",
+        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+        threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
         saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
       },
       submittedAt: new Date(),
@@ -361,7 +361,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       targetId: String(submission._id),
       metadata: {
         amount,
-        cardVerificationMode: metadata?.cardVerificationMode || "three_d_secure",
+        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
       },
     });
 
@@ -666,7 +666,7 @@ stripeRouter.post(
         id: "billing",
         label: "Billing identity",
         status: "passed",
-        detail: "The cardholder contact and billing-address fields are complete.",
+        detail: "The cardholder name and postcode are complete. Email and phone are optional.",
       });
     } catch (error) {
       checks.push({
@@ -678,7 +678,7 @@ stripeRouter.post(
     }
 
     try {
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
       checks.push({
         id: "verification-mode",
         label: "Card verification mode",
@@ -833,7 +833,7 @@ stripeRouter.post(
     await requireApprovedContract(req.auth.clerkId);
 
     if (req.body.type === "card_setup") {
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
 
       const intent = await createSetupIntent({
         user,
@@ -856,7 +856,7 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
 
       const intent = await createPaymentIntent({
         user,
@@ -892,7 +892,7 @@ stripeRouter.post(
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");
       }
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
       const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
 
       const intent = await createPaymentIntent({
@@ -948,7 +948,7 @@ stripeRouter.post(
       if (!amount || amount <= 0) {
         throw new HttpError(400, "A valid top-up amount is required.");
       }
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
 
       const session = await createPaymentCheckoutSession({
         user,
@@ -990,7 +990,7 @@ stripeRouter.post(
       if (order.status === "approved" || invoice?.status === "paid") {
         throw new HttpError(400, "This order has already been paid.");
       }
-      const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+      const verification = resolvePortalCardVerificationMode();
       const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
 
       const session = await createPaymentCheckoutSession({
@@ -1113,7 +1113,7 @@ stripeRouter.post(
     if (!amount || amount <= 0) {
       throw new HttpError(400, "A valid top-up amount is required.");
     }
-    const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+    const verification = resolvePortalCardVerificationMode();
 
     const paymentIntent = await createSavedCardPaymentIntent({
       user,
@@ -1165,7 +1165,7 @@ stripeRouter.post(
       throw new HttpError(400, "This order has already been paid.");
     }
 
-    const verification = resolveCustomerCardVerificationMode(req.body.cardVerificationMode);
+    const verification = resolvePortalCardVerificationMode();
 
     const paymentIntent = await createSavedCardPaymentIntent({
       user,

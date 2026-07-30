@@ -18,9 +18,7 @@ import {
 import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { Topbar } from "@/components/shared/topbar";
 import {
-  CARD_VERIFICATION_MODE_3DS,
   CARD_VERIFICATION_MODE_STANDARD,
-  CardVerificationModeSelector,
   PaymentBillingDetailsFields,
   PaymentReadinessReport,
   PortalCardForm,
@@ -150,8 +148,8 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
-  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
-  const [cardSetupVerificationMode, setCardSetupVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
+  const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
+  const cardSetupVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
   const [savedTopupPreflight, setSavedTopupPreflight] = useState(null);
@@ -1223,16 +1221,14 @@ export function WalletPaymentsPage() {
                 <CardContent className="space-y-5">
                   {contractApproved ? (
                     <>
-                      <CardVerificationModeSelector
-                        value={cardSetupVerificationMode}
-                        onChange={setCardSetupVerificationMode}
-                      />
+                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                        <p className="font-semibold">Standard card processing</p>
+                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details. Your bank may request additional verification when required.</p>
+                      </div>
                       <PortalCardForm
                         submitLabel={hasSavedCard ? "Add card" : "Save card"}
                         pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
-                        note={cardSetupVerificationMode === CARD_VERIFICATION_MODE_3DS
-                          ? "3D Secure is requested for this card. Enter the cardholder's billing details."
-                          : "Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details."}
+                        note="Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details."
                         onSubmit={handleSaveCard}
                         successTitle="Saved card added"
                         errorTitle="Saved card action failed"
@@ -1323,7 +1319,7 @@ export function WalletPaymentsPage() {
                   </div>
                 </div>
 
-                <p className="text-xs leading-5 text-slate-500">Enter any positive amount. Your bank may ask you to verify the payment with 3D Secure before the charge is submitted.</p>
+                <p className="text-xs leading-5 text-slate-500">Enter any positive amount and pay with your card details. Your bank may request additional verification when required.</p>
               </CardContent>
             </Card>
 
@@ -1331,7 +1327,7 @@ export function WalletPaymentsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Billing details for this payment</CardTitle>
-                  <CardDescription>Enter the cardholder details for this card. We send these to Stripe instead of using the portal account email.</CardDescription>
+                  <CardDescription>Enter the cardholder details for this card. Email and phone are optional; if email is blank, Stripe uses your portal account email.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <PaymentBillingDetailsFields
@@ -1342,15 +1338,10 @@ export function WalletPaymentsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-5 sm:p-6">
-                  <CardVerificationModeSelector
-                    value={cardVerificationMode}
-                    onChange={setCardVerificationMode}
-                    disabled={!contractApproved || Boolean(savedTopupState.savingId)}
-                  />
-                </CardContent>
-              </Card>
+              <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                <p className="font-semibold">Standard card processing</p>
+                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details to fund the wallet. Your bank may request additional verification when required.</p>
+              </div>
 
               {primaryCard ? (
                 <Card>
@@ -1365,7 +1356,7 @@ export function WalletPaymentsPage() {
                             <p className="text-sm font-semibold text-slate-950">Top up with {savedCardLabel(primaryCard)}</p>
                             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">Fastest</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Your bank may request 3D Secure verification</p>
+                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Standard card processing</p>
                         </div>
                       </div>
                       <Button
@@ -1419,10 +1410,8 @@ export function WalletPaymentsPage() {
                     <PortalCardForm
                       disabled={!instantAmount || Number(instantAmount) <= 0}
                       submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel={cardVerificationMode === CARD_VERIFICATION_MODE_3DS ? "Waiting for 3D Secure verification..." : "Processing card payment..."}
-                      note={cardVerificationMode === CARD_VERIFICATION_MODE_3DS
-                        ? "3D Secure is requested for this wallet top-up. Your bank may open a verification prompt."
-                        : "Stripe will use standard processing and request authentication only when the bank, regulation, or risk checks require it."}
+                      pendingLabel="Processing card payment..."
+                      note="This wallet top-up uses standard card processing. Your bank may request additional verification when required."
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"

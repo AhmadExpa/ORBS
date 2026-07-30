@@ -19,10 +19,8 @@ import { createStripePaymentError, normalizePaymentActionError } from "@/lib/pay
 import { buildBillingDetailsFromProfile, getProfileBillingDetailsIssues } from "@/lib/payments/profile-billing-details";
 import { Topbar } from "@/components/shared/topbar";
 import {
-  CARD_VERIFICATION_MODE_3DS,
   CARD_VERIFICATION_MODE_STANDARD,
   CardIdentityToggle,
-  CardVerificationModeSelector,
   PaymentReadinessReport,
   PortalCardForm,
   portalStripePromise,
@@ -84,7 +82,7 @@ export function CheckoutPaymentView({ orderId }) {
     error: "",
   });
   const [reasonAction, setReasonAction] = useState("");
-  const [cardVerificationMode, setCardVerificationMode] = useState(CARD_VERIFICATION_MODE_STANDARD);
+  const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [usingOwnCard, setUsingOwnCard] = useState(true);
   const [billingDetails, setBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [billingDetailsSeeded, setBillingDetailsSeeded] = useState(false);
@@ -652,11 +650,10 @@ export function CheckoutPaymentView({ orderId }) {
                         <span className="h-px flex-1 bg-slate-200" />
                       </div>
 
-                      <CardVerificationModeSelector
-                        value={cardVerificationMode}
-                        onChange={setCardVerificationMode}
-                        disabled={!canTriggerPayments || state.isSubmitting}
-                      />
+                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                        <p className="font-semibold">Standard card processing</p>
+                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details. Your bank may request additional verification when required.</p>
+                      </div>
 
                       {!profileReady ? (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
@@ -697,14 +694,12 @@ export function CheckoutPaymentView({ orderId }) {
                         <PortalCardForm
                           disabled={!canTriggerPayments || state.isSubmitting}
                           submitLabel="Pay advance by Card"
-                          pendingLabel={cardVerificationMode === CARD_VERIFICATION_MODE_3DS ? "Waiting for 3D Secure verification..." : "Processing card payment..."}
+                          pendingLabel="Processing card payment..."
                           onSubmit={handleCardPayment}
                           billingDetails={billingDetails}
                           onBillingDetailsChange={setBillingDetails}
                           showBillingDetails
-                          note={cardVerificationMode === CARD_VERIFICATION_MODE_3DS
-                            ? "3D Secure is requested for this charge. Enter the cardholder's billing details for this card."
-                            : "Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details for this card."}
+                          note="Stripe will use standard processing and request authentication only when required. Enter the cardholder's billing details for this card."
                           successTitle="Advance payment completed"
                           errorTitle="Card payment failed"
                           actionLabel="Order Advance Payment"

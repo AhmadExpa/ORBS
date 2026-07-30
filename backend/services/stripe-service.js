@@ -10,10 +10,10 @@ const stripe = env.stripeSecretKey
   : null;
 
 export const CUSTOMER_PRESENT_THREE_D_SECURE_MODE = "challenge";
-export const WALLET_TOPUP_THREE_D_SECURE_MODE = CUSTOMER_PRESENT_THREE_D_SECURE_MODE;
 export const CARD_VERIFICATION_MODE_STANDARD = "standard";
 export const CARD_VERIFICATION_MODE_3DS = "three_d_secure";
 export const STANDARD_THREE_D_SECURE_MODE = "automatic";
+export const WALLET_TOPUP_THREE_D_SECURE_MODE = STANDARD_THREE_D_SECURE_MODE;
 const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/u;
 
 function assertStripeConfigured() {
@@ -42,6 +42,20 @@ export function resolveCustomerCardVerificationMode(value) {
   throw new HttpError(400, "Choose either standard card processing or 3D Secure verification.");
 }
 
+// Portal card payments use the standard Stripe card flow. Stripe can still
+// request authentication when the issuer or regulation requires it, but the
+// portal does not force a 3DS challenge.
+export function resolveWalletTopupVerificationMode() {
+  return {
+    cardVerificationMode: CARD_VERIFICATION_MODE_STANDARD,
+    requestThreeDSecure: STANDARD_THREE_D_SECURE_MODE,
+  };
+}
+
+export function resolvePortalCardVerificationMode() {
+  return resolveWalletTopupVerificationMode();
+}
+
 function normalizeMetadata(metadata = {}) {
   return Object.fromEntries(
     Object.entries(metadata)
@@ -59,10 +73,12 @@ export function normalizePaymentPhoneNumber(value) {
 }
 
 export function normalizePaymentBillingDetails(value) {
+  const rawEmail = String(value?.email || "").trim().toLowerCase();
+  const rawPhone = String(value?.phone || "").trim();
   const normalizedPhone = normalizePaymentPhoneNumber(value?.phone);
   const details = {
     name: String(value?.name || "").trim(),
-    email: String(value?.email || "").trim().toLowerCase(),
+    email: rawEmail,
     phone: normalizedPhone,
     line1: String(value?.line1 || "").trim(),
     line2: String(value?.line2 || "").trim(),
@@ -75,39 +91,31 @@ export function normalizePaymentBillingDetails(value) {
   if (details.name.length < 2) {
     throw new HttpError(400, "Enter the cardholder's full name.");
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
+  if (rawEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(details.email)) {
     throw new HttpError(400, "Enter a valid payment email address.");
   }
-  if (!details.phone) {
+  if (rawPhone && !details.phone) {
     throw new HttpError(400, "Enter the phone number in international format, such as +14155552671.");
   }
-  if (!details.line1 || !details.city || !details.postalCode) {
-    throw new HttpError(400, "Enter the complete billing street address, city, and postal code.");
-  }
-  if (!/^[A-Z]{2}$/u.test(details.country)) {
-    throw new HttpError(400, "Enter a two-letter billing country code, such as US, GB, or PK.");
+  if (!details.postalCode) {
+    throw new HttpError(400, "Enter the billing postcode.");
   }
 
   return {
     name: details.name,
-    email: details.email,
-    phone: details.phone,
+    ...(details.email ? { email: details.email } : {}),
+    ...(details.phone ? { phone: details.phone } : {}),
     address: {
-      line1: details.line1,
-      ...(details.line2 ? { line2: details.line2 } : {}),
-      city: details.city,
-      ...(details.state ? { state: details.state } : {}),
       postal_code: details.postalCode,
-      country: details.country,
     },
   };
 }
 
-async function updateStripeCustomerContact(customerId, billingDetails) {
+async function updateStripeCustomerContact(customerId, billingDetails, fallbackEmail = "") {
   await stripe.customers.update(customerId, {
     name: billingDetails.name,
-    email: billingDetails.email,
-    phone: billingDetails.phone,
+    ...(billingDetails.email || fallbackEmail ? { email: billingDetails.email || fallbackEmail } : {}),
+    ...(billingDetails.phone ? { phone: billingDetails.phone } : {}),
     address: billingDetails.address,
   });
 }
@@ -199,8 +207,8 @@ export async function ensureStripeCustomer(user, { billingDetails } = {}) {
     ...(billingDetails
       ? {
           name: billingDetails.name,
-          email: billingDetails.email,
-          phone: billingDetails.phone,
+          ...(billingDetails.email || user.email ? { email: billingDetails.email || user.email } : {}),
+          ...(billingDetails.phone ? { phone: billingDetails.phone } : {}),
           address: billingDetails.address,
         }
       : {}),
@@ -396,7 +404,7 @@ export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }
     phone_number_collection: { enabled: true },
     payment_method_options: {
       card: {
-        request_three_d_secure: CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+        request_three_d_secure: STANDARD_THREE_D_SECURE_MODE,
       },
     },
     client_reference_id: String(user._id),
@@ -419,7 +427,7 @@ export async function createSetupIntent({
   const customerId = await ensureStripeCustomer(user, {
     billingDetails: normalizedBillingDetails,
   });
-  await updateStripeCustomerContact(customerId, normalizedBillingDetails);
+  await updateStripeCustomerContact(customerId, normalizedBillingDetails, user.email);
 
   return stripe.setupIntents.create({
     customer: customerId,
@@ -513,7 +521,7 @@ export async function createPaymentIntent({
   const customerId = await ensureStripeCustomer(user, {
     billingDetails: normalizedBillingDetails,
   });
-  await updateStripeCustomerContact(customerId, normalizedBillingDetails);
+  await updateStripeCustomerContact(customerId, normalizedBillingDetails, user.email);
 
   return stripe.paymentIntents.create(
     buildUserInitiatedCardPaymentIntentParams({
@@ -521,7 +529,7 @@ export async function createPaymentIntent({
       amount,
       description,
       metadata,
-      receiptEmail: normalizedBillingDetails.email,
+      receiptEmail: normalizedBillingDetails.email || user.email,
       saveForFutureUse,
       requestThreeDSecure,
     }),
@@ -605,7 +613,7 @@ export async function createSavedCardPaymentIntent({
     stripe.paymentMethods.update(paymentMethodId, {
       billing_details: normalizedBillingDetails,
     }),
-    updateStripeCustomerContact(user.stripeCustomerId, normalizedBillingDetails),
+    updateStripeCustomerContact(user.stripeCustomerId, normalizedBillingDetails, user.email),
   ]);
 
   return stripe.paymentIntents.create(
@@ -615,7 +623,7 @@ export async function createSavedCardPaymentIntent({
       amount,
       description,
       metadata,
-      receiptEmail: normalizedBillingDetails.email,
+      receiptEmail: normalizedBillingDetails.email || user.email,
       requestThreeDSecure,
     }),
   );
