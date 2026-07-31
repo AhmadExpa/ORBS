@@ -147,6 +147,7 @@ export function WalletPaymentsPage() {
 
   const [activeSection, setActiveSection] = useState("overview");
   const [instantAmount, setInstantAmount] = useState("");
+  const [stripeAction, setStripeAction] = useState("");
   const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const cardSetupVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
@@ -198,6 +199,46 @@ export function WalletPaymentsPage() {
       setActiveSection(requestedSection);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const stripeStatus = searchParams.get("stripe");
+    const stripeType = searchParams.get("type");
+
+    if (!stripeStatus || !stripeType) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("stripe");
+    nextParams.delete("type");
+    setStripeAction("");
+
+    if (stripeStatus === "success") {
+      setActiveSection(stripeType === "card_setup" ? "saved-card" : "overview");
+      showToast({
+        type: "success",
+        action: stripeType === "card_setup" ? "Saved Card" : "Wallet Top-up",
+        title: stripeType === "card_setup" ? "Card saved" : "Wallet funded",
+        description: stripeType === "card_setup"
+          ? "Your card is now available for renewal fallback billing."
+          : "Your Stripe wallet top-up was completed successfully.",
+      });
+      void Promise.all([refetchPayments(), refetchProfile()]);
+    } else {
+      showToast({
+        type: "error",
+        action: "Stripe",
+        title: "Checkout cancelled",
+        description: stripeType === "card_setup"
+          ? "The card was not saved."
+          : "The wallet top-up was cancelled before payment completed.",
+      });
+    }
+
+    router.replace(nextParams.toString() ? `/portal/payments?${nextParams.toString()}` : "/portal/payments", {
+      scroll: false,
+    });
+  }, [refetchPayments, refetchProfile, router, searchParams, showToast]);
 
   useEffect(() => {
     if (checkoutPrefillAppliedRef.current || !Number.isFinite(requestedAmount) || requestedAmount <= 0) {
@@ -301,6 +342,45 @@ export function WalletPaymentsPage() {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async function handleStripeCheckout(type) {
+    if (stripeAction) {
+      return;
+    }
+
+    if (type === "wallet_topup" && (!instantAmount || Number(instantAmount) <= 0)) {
+      showToast({
+        type: "warning",
+        action: "Wallet Top-up",
+        title: "Enter a top-up amount",
+        description: "Choose a positive amount before opening Stripe Checkout.",
+      });
+      return;
+    }
+
+    setStripeAction(type);
+    try {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/checkout-sessions", {
+        method: "POST",
+        token,
+        body: type === "wallet_topup" ? { type, amount: instantAmount } : { type },
+      });
+
+      window.location.assign(response.url);
+    } catch (error) {
+      if (error.redirectUrl) {
+        router.push(error.redirectUrl);
+      }
+      setStripeAction("");
+      showToast({
+        type: "error",
+        action: "Stripe",
+        title: "Checkout could not be opened",
+        description: error.message || "Please try again.",
+      });
     }
   }
 
@@ -1217,26 +1297,27 @@ export function WalletPaymentsPage() {
               <Card className="h-fit">
                 <CardHeader>
                   <CardTitle>{hasSavedCard ? "Add another card" : "Save a card"}</CardTitle>
-                  <CardDescription>Optional. Saved cards make future top-ups and renewal fallback faster.</CardDescription>
+                  <CardDescription>Optional. Stripe securely stores the card for renewal fallback billing.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   {contractApproved ? (
-                    <>
-                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                        <p className="font-semibold">Standard card processing</p>
-                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details. Your bank may request additional verification when required.</p>
-                      </div>
-                      <PortalCardForm
-                        submitLabel={hasSavedCard ? "Add card" : "Save card"}
-                        pendingLabel={hasSavedCard ? "Adding card..." : "Saving card..."}
-                        note="Enter your card number, expiry, CVC, and postcode."
-                        onSubmit={handleSaveCard}
-                        showBillingDetails={false}
-                        successTitle="Saved card added"
-                        errorTitle="Saved card action failed"
-                        actionLabel="Saved Card"
-                      />
-                    </>
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                      <p className="text-sm leading-6 text-sky-900">
+                        Stripe Checkout handles the card details and any required bank verification. Your card is attached to this customer for future renewal fallback billing.
+                      </p>
+                      <Button
+                        className="mt-4 w-full"
+                        type="button"
+                        disabled={Boolean(stripeAction)}
+                        onClick={() => handleStripeCheckout("card_setup")}
+                      >
+                        {stripeAction === "card_setup"
+                          ? "Opening Stripe..."
+                          : hasSavedCard
+                            ? "Update saved card"
+                            : "Save card for auto renewals"}
+                      </Button>
+                    </div>
                   ) : (
                     <ContractApprovalLock description="Saved-card setup is available after an ElevenOrbits administrator approves your signed agreement." />
                   )}
@@ -1326,90 +1407,31 @@ export function WalletPaymentsPage() {
             </Card>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                <p className="font-semibold">Standard card processing</p>
-                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card number, expiry, CVC, and postcode in the secure Stripe card field. Your bank may request additional verification when required.</p>
-              </div>
-
-              {primaryCard ? (
-                <Card>
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                          <CreditCard className="h-5 w-5" />
-                        </span>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-950">Top up with {savedCardLabel(primaryCard)}</p>
-                            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">Fastest</span>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Standard card processing</p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        disabled={
-                          !instantAmount ||
-                          Number(instantAmount) <= 0 ||
-                          savedTopupState.savingId === primaryCard.id ||
-                          blockedSavedTopupCardId === primaryCard.id ||
-                          !contractApproved
-                        }
-                        onClick={() => handleSavedCardTopup(primaryCard.id)}
-                        className="min-w-[190px]"
-                      >
-                        {savedTopupState.savingId === primaryCard.id
-                          ? savedTopupPreflight?.canProceed
-                            ? "Charging card..."
-                            : "Running checks..."
-                          : blockedSavedTopupCardId === primaryCard.id
-                            ? "Choose another card"
-                            : savedTopupPreflight?.canProceed
-                              ? `Confirm · Add ${formatCurrency(Number(instantAmount || 0))}`
-                              : savedTopupPreflight
-                                ? "Run checks again"
-                                : "Check before charging"}
-                      </Button>
-                    </div>
-                    {savedTopupPreflight ? (
-                      <div className="mt-5">
-                        <PaymentReadinessReport report={savedTopupPreflight} />
-                      </div>
-                    ) : null}
-                    {savedTopupState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{savedTopupState.error}</p> : null}
-                    {savedTopupState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{savedTopupState.message}</p> : null}
-                  </CardContent>
-                </Card>
-              ) : null}
-
               <Card>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <CardTitle>{primaryCard ? "Use a different card" : "Pay with a card"}</CardTitle>
-                      <CardDescription className="mt-1">One-time payment. This card will not be saved automatically.</CardDescription>
+                      <CardTitle>Pay with Stripe</CardTitle>
+                      <CardDescription className="mt-1">Secure hosted checkout for your wallet top-up.</CardDescription>
                     </div>
                     <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Instant credit</span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {contractApproved ? (
-                    <PortalCardForm
-                      disabled={!instantAmount || Number(instantAmount) <= 0}
-                      submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel="Processing card payment..."
-                      note="This wallet top-up uses standard card processing. Your bank may request additional verification when required."
-                      onSubmit={handleCardTopup}
-                      successTitle="Wallet funded"
-                      errorTitle="Wallet top-up failed"
-                      actionLabel="Wallet Top-up"
-                      billingDetails={topupBillingDetails}
-                      onBillingDetailsChange={setTopupBillingDetails}
-                      showBillingDetails={false}
-                      onPreflight={({ billingDetails }) => runWalletTopupPreflight({ billingDetails })}
-                      preflightKey={`${instantAmount}:${cardVerificationMode}:${JSON.stringify(topupBillingDetails)}`}
-                    />
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                      <p className="text-sm leading-6 text-sky-900">
+                        Stripe Checkout collects the card details and handles any bank authentication. The wallet is credited after Stripe confirms the payment.
+                      </p>
+                      <Button
+                        className="mt-4 w-full"
+                        type="button"
+                        disabled={!instantAmount || Number(instantAmount) <= 0 || Boolean(stripeAction)}
+                        onClick={() => handleStripeCheckout("wallet_topup")}
+                      >
+                        {stripeAction === "wallet_topup" ? "Opening Stripe..." : `Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
+                      </Button>
+                    </div>
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />
                   )}
