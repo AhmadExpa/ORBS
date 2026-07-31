@@ -391,6 +391,13 @@ export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }
     customer: customerId,
     success_url: successUrl,
     cancel_url: cancelUrl,
+    billing_address_collection: "required",
+    phone_number_collection: { enabled: true },
+    payment_method_options: {
+      card: {
+        request_three_d_secure: STANDARD_THREE_D_SECURE_MODE,
+      },
+    },
     client_reference_id: String(user._id),
     metadata: normalizeMetadata({
       type: "card_setup",
@@ -433,7 +440,7 @@ export async function createPaymentCheckoutSession({
   lineItems,
   metadata,
   saveForFutureUse = true,
-  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
+  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
 }) {
   assertStripeConfigured();
 
@@ -443,11 +450,17 @@ export async function createPaymentCheckoutSession({
   return stripe.checkout.sessions.create({
     mode: "payment",
     customer: customerId,
-    billing_address_collection: "auto",
+    billing_address_collection: "required",
+    phone_number_collection: { enabled: true },
     client_reference_id: String(user._id),
     success_url: successUrl,
     cancel_url: cancelUrl,
     line_items: lineItems,
+    payment_method_options: {
+      card: {
+        request_three_d_secure: requestThreeDSecure,
+      },
+    },
     payment_intent_data: {
       ...(saveForFutureUse ? { setup_future_usage: "off_session" } : {}),
       metadata: normalizedMetadata,
@@ -546,7 +559,13 @@ export async function createOffSessionCharge({ user, amount, description, metada
     payment_method: user.defaultPaymentMethodId,
     payment_method_types: ["card"],
     confirm: true,
+    error_on_requires_action: true,
     off_session: true,
+    payment_method_options: {
+      card: {
+        request_three_d_secure: "automatic",
+      },
+    },
     description,
     metadata: normalizeMetadata(metadata),
     expand: ["latest_charge"],

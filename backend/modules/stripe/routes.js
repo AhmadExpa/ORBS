@@ -954,6 +954,8 @@ stripeRouter.post(
         user,
         successUrl: successUrl("/portal/payments", "wallet_topup"),
         cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
+        saveForFutureUse: false,
+        requestThreeDSecure: verification.requestThreeDSecure,
         lineItems: [
           createCheckoutLineItem({
             name: "ElevenOrbits Wallet Top-up",
@@ -967,7 +969,7 @@ stripeRouter.post(
           amount: amount.toFixed(2),
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "true",
+          saveCardForFutureUse: "false",
         },
       });
 
@@ -989,11 +991,14 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolvePortalCardVerificationMode();
+      const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
 
       const session = await createPaymentCheckoutSession({
         user,
         successUrl: successUrl(`/portal/checkout/${order._id}`, "order_payment"),
         cancelUrl: cancelUrl(`/portal/checkout/${order._id}`, "order_payment"),
+        saveForFutureUse: saveCardForFutureUse,
+        requestThreeDSecure: verification.requestThreeDSecure,
         lineItems: [
           createCheckoutLineItem({
             name: invoice?.invoiceNumber || order.productPlanId?.name || "Managed Service",
@@ -1008,7 +1013,7 @@ stripeRouter.post(
           subscriptionId: subscription?._id,
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "true",
+          saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
         },
       });
 
