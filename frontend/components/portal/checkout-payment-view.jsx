@@ -21,7 +21,6 @@ import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
   CardIdentityToggle,
-  PaymentReadinessReport,
   PortalCardForm,
   portalStripePromise,
 } from "@/components/portal/portal-card-form";
@@ -35,6 +34,10 @@ import { ArrowRight, Wallet } from "lucide-react";
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
+}
+
+function getStripePaymentMethodId(paymentMethod) {
+  return typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id || "";
 }
 
 function getPrimarySavedCard(user) {
@@ -87,7 +90,6 @@ export function CheckoutPaymentView({ orderId }) {
   const [billingDetails, setBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [billingDetailsSeeded, setBillingDetailsSeeded] = useState(false);
   const [savedCardPayState, setSavedCardPayState] = useState({ isSubmitting: false, error: "", message: "" });
-  const [savedCardPreflight, setSavedCardPreflight] = useState(null);
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
@@ -137,10 +139,6 @@ export function CheckoutPaymentView({ orderId }) {
     }
   }, [profile, billingDetailsSeeded]);
 
-  useEffect(() => {
-    setSavedCardPreflight(null);
-  }, [cardVerificationMode]);
-
   async function syncOrderState() {
     await Promise.all([refetchOrder(), refetchProfile()]);
     await wait(1200);
@@ -182,15 +180,14 @@ export function CheckoutPaymentView({ orderId }) {
   }
 
   async function handleCardPayment({ stripe, cardElement, billingDetails }) {
-    let response;
+    let setupResponse;
     try {
       const token = await getToken();
-      response = await apiFetch("/stripe/intents", {
+      setupResponse = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
         body: {
-          type: "order_payment",
-          orderId,
+          type: "card_setup",
           billingDetails,
           cardVerificationMode,
         },
@@ -203,11 +200,56 @@ export function CheckoutPaymentView({ orderId }) {
     }
 
     const stripeBillingDetails = toStripeBillingDetails(billingDetails);
-    const result = await stripe.confirmCardPayment(response.clientSecret, {
+    const setupResult = await stripe.confirmCardSetup(setupResponse.clientSecret, {
       payment_method: {
         card: cardElement,
         ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
       },
+    });
+
+    if (setupResult.error) {
+      throw createStripePaymentError(setupResult.error, "The card could not be saved before charging.");
+    }
+
+    const setupIntentId = setupResult.setupIntent?.id;
+    const paymentMethodId = getStripePaymentMethodId(setupResult.setupIntent?.payment_method);
+    if (!setupIntentId || !paymentMethodId) {
+      throw new Error("Stripe verified the card but did not return a saved payment method. No charge was made.");
+    }
+
+    let setupFinalized = false;
+    for (let attempt = 0; attempt < 2 && !setupFinalized; attempt += 1) {
+      try {
+        const finalizeToken = await getToken({ skipCache: true });
+        await apiFetch("/stripe/finalize", {
+          method: "POST",
+          token: finalizeToken,
+          body: { setupIntentId },
+        });
+        setupFinalized = true;
+      } catch {
+        if (attempt === 0) {
+          await wait(500);
+        }
+      }
+    }
+
+    if (!setupFinalized) {
+      throw new Error("The card was verified but could not be saved. No charge was made.");
+    }
+
+    const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/pay-order`, {
+      method: "POST",
+      token: await getToken(),
+      body: {
+        orderId,
+        billingDetails,
+        cardVerificationMode,
+      },
+    });
+
+    const result = await stripe.confirmCardPayment(response.clientSecret, {
+      payment_method: paymentMethodId,
     });
 
     if (result.error) {
@@ -250,58 +292,11 @@ export function CheckoutPaymentView({ orderId }) {
     return "Your advance payment was received. The request is now pending review.";
   }
 
-  async function handleCardPreflight({ billingDetails: fieldBillingDetails }) {
-    const token = await getToken();
-    return apiFetch("/stripe/preflight", {
-      method: "POST",
-      token,
-      body: {
-        type: "order_payment",
-        orderId,
-        billingDetails: fieldBillingDetails,
-        cardVerificationMode,
-      },
-    });
-  }
-
   async function handleSavedCardQuickPay(paymentMethodId) {
     const normalizedBillingDetails = normalizePaymentBillingDetails(buildBillingDetailsFromProfile(profile));
     const billingError = getPaymentBillingDetailsValidationError(normalizedBillingDetails);
     if (billingError) {
       setSavedCardPayState({ isSubmitting: false, error: billingError, message: "" });
-      return;
-    }
-
-    const hasCurrentPreflight = savedCardPreflight?.canProceed && savedCardPreflight?.paymentMethodId === paymentMethodId;
-
-    if (!hasCurrentPreflight) {
-      setSavedCardPayState({ isSubmitting: true, error: "", message: "" });
-      try {
-        const token = await getToken();
-        const report = await apiFetch("/stripe/preflight", {
-          method: "POST",
-          token,
-          body: {
-            type: "order_payment",
-            orderId,
-            billingDetails: normalizedBillingDetails,
-            paymentMethodId,
-            cardVerificationMode,
-          },
-        });
-        setSavedCardPreflight({ ...report, paymentMethodId });
-        setSavedCardPayState({
-          isSubmitting: false,
-          error: report.canProceed ? "" : report.headline || "Resolve the failed checks before charging the card.",
-          message: report.canProceed ? "Readiness checks completed. Review the results, then confirm the charge." : "",
-        });
-      } catch (error) {
-        setSavedCardPayState({
-          isSubmitting: false,
-          error: error.message || "The pre-charge checks could not be completed.",
-          message: "",
-        });
-      }
       return;
     }
 
@@ -354,8 +349,6 @@ export function CheckoutPaymentView({ orderId }) {
       }
 
       await syncOrderState();
-      setSavedCardPreflight(null);
-
       if (!finalized) {
         setSavedCardPayState({
           isSubmitting: false,
@@ -682,30 +675,25 @@ export function CheckoutPaymentView({ orderId }) {
                             onClick={() => handleSavedCardQuickPay(primaryCard.id)}
                           >
                             {savedCardPayState.isSubmitting
-                              ? "Processing..."
-                              : savedCardPreflight?.canProceed && savedCardPreflight?.paymentMethodId === primaryCard.id
-                              ? `Confirm · Pay ${formatCurrency(totalDue)} with ${formatCardBrand(primaryCard.brand)} ending in ${primaryCard.last4}`
-                              : `Check before charging ${formatCardBrand(primaryCard.brand)} ending in ${primaryCard.last4}`}
+                              ? "Charging card..."
+                              : `Pay ${formatCurrency(totalDue)} with ${formatCardBrand(primaryCard.brand)} ending in ${primaryCard.last4}`}
                           </Button>
-                          <PaymentReadinessReport report={savedCardPreflight?.paymentMethodId === primaryCard.id ? savedCardPreflight : null} />
                           {savedCardPayState.message ? <p className="text-sm font-medium text-emerald-700">{savedCardPayState.message}</p> : null}
                           {savedCardPayState.error ? <p className="text-sm font-medium text-rose-600">{savedCardPayState.error}</p> : null}
                         </div>
                       ) : (
                         <PortalCardForm
                           disabled={!canTriggerPayments || state.isSubmitting}
-                          submitLabel="Pay advance by Card"
-                          pendingLabel="Processing card payment..."
+                          submitLabel="Save card and pay advance"
+                          pendingLabel="Saving card and charging..."
                           onSubmit={handleCardPayment}
                           billingDetails={billingDetails}
                           onBillingDetailsChange={setBillingDetails}
                           showBillingDetails={false}
-                          note="Enter your card number, expiry, CVC, and postcode in the secure Stripe card field."
+                          note="Stripe saves and verifies this card before charging the order. Your bank may request additional verification when required."
                           successTitle="Advance payment completed"
                           errorTitle="Card payment failed"
                           actionLabel="Order Advance Payment"
-                          onPreflight={handleCardPreflight}
-                          preflightKey={`${orderId}:${cardVerificationMode}`}
                         />
                       )}
                     </div>

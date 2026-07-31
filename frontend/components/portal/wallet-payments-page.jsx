@@ -19,7 +19,6 @@ import { createStripePaymentError, normalizePaymentActionError } from "@/lib/pay
 import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
-  PaymentReadinessReport,
   PortalCardForm,
   portalStripePromise,
 } from "@/components/portal/portal-card-form";
@@ -55,6 +54,10 @@ function submissionTypeLabel(type) {
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
+}
+
+function getStripePaymentMethodId(paymentMethod) {
+  return typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id || "";
 }
 
 function getSavedCards(user) {
@@ -151,7 +154,6 @@ export function WalletPaymentsPage() {
   const cardSetupVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
-  const [savedTopupPreflight, setSavedTopupPreflight] = useState(null);
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const reconciliationStartedRef = useRef(false);
   const checkoutPrefillAppliedRef = useRef(false);
@@ -218,10 +220,6 @@ export function WalletPaymentsPage() {
       dayOfMonth: String(Number(user.walletAutoTopupDayOfMonth || 1)),
     });
   }, [user?._id, user?.walletAutoTopupAmount, user?.walletAutoTopupDayOfMonth]);
-
-  useEffect(() => {
-    setSavedTopupPreflight(null);
-  }, [cardVerificationMode, instantAmount, topupBillingDetails]);
 
   useEffect(() => {
     if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
@@ -357,16 +355,15 @@ export function WalletPaymentsPage() {
     }
 
     const token = await getToken();
-    let response;
+    let setupResponse;
     try {
-      response = await apiFetch("/stripe/intents", {
+      setupResponse = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
         body: {
-          type: "wallet_topup",
-          amount: numericAmount,
+          type: "card_setup",
           billingDetails,
-          cardVerificationMode,
+          cardVerificationMode: cardSetupVerificationMode,
         },
       });
     } catch (error) {
@@ -377,11 +374,40 @@ export function WalletPaymentsPage() {
     }
 
     const stripeBillingDetails = toStripeBillingDetails(billingDetails);
-    const result = await stripe.confirmCardPayment(response.clientSecret, {
+    const setupResult = await stripe.confirmCardSetup(setupResponse.clientSecret, {
       payment_method: {
         card: cardElement,
         ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
       },
+    });
+
+    if (setupResult.error) {
+      throw createStripePaymentError(setupResult.error, "The card could not be saved before charging.");
+    }
+
+    const setupIntentId = setupResult.setupIntent?.id;
+    const paymentMethodId = getStripePaymentMethodId(setupResult.setupIntent?.payment_method);
+    if (!setupIntentId || !paymentMethodId) {
+      throw new Error("Stripe verified the card but did not return a saved payment method. No charge was made.");
+    }
+
+    const setupFinalization = await finalizeConfirmedStripeResource({ setupIntentId });
+    if (!setupFinalization.completed) {
+      throw new Error("The card was verified but could not be saved. No charge was made.");
+    }
+
+    const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
+      method: "POST",
+      token: await getToken(),
+      body: {
+        amount: numericAmount,
+        billingDetails,
+        cardVerificationMode,
+      },
+    });
+
+    const result = await stripe.confirmCardPayment(response.clientSecret, {
+      payment_method: paymentMethodId,
     });
 
     if (result.error) {
@@ -392,9 +418,7 @@ export function WalletPaymentsPage() {
       throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
     }
 
-    const finalization = await finalizeConfirmedStripeResource({
-      paymentIntentId: result.paymentIntent.id,
-    });
+    const finalization = await finalizeConfirmedStripeResource({ paymentIntentId: result.paymentIntent.id });
     await syncPortalPaymentsSafely();
     setInstantAmount("");
     setTopupBillingDetails(createEmptyPaymentBillingDetails());
@@ -408,22 +432,7 @@ export function WalletPaymentsPage() {
       router.push(returnUrl);
     }
 
-    return "Your wallet payment was received. The balance has been refreshed.";
-  }
-
-  async function runWalletTopupPreflight({ billingDetails, paymentMethodId = "" }) {
-    const token = await getToken();
-    return apiFetch("/stripe/preflight", {
-      method: "POST",
-      token,
-      body: {
-        type: "wallet_topup",
-        amount: Number(instantAmount || 0),
-        billingDetails,
-        paymentMethodId,
-        cardVerificationMode,
-      },
-    });
+    return "Your card was saved, charged, and the wallet balance has been refreshed.";
   }
 
   async function handleSavedCardTopup(paymentMethodId) {
@@ -436,33 +445,6 @@ export function WalletPaymentsPage() {
     const billingError = getPaymentBillingDetailsValidationError(topupBillingDetails);
     if (billingError) {
       setSavedTopupState({ savingId: "", error: billingError, message: "" });
-      return;
-    }
-
-    const hasCurrentPreflight =
-      savedTopupPreflight?.canProceed &&
-      savedTopupPreflight?.paymentMethodId === paymentMethodId;
-
-    if (!hasCurrentPreflight) {
-      setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
-      try {
-        const report = await runWalletTopupPreflight({
-          billingDetails: normalizePaymentBillingDetails(topupBillingDetails),
-          paymentMethodId,
-        });
-        setSavedTopupPreflight({ ...report, paymentMethodId });
-        setSavedTopupState({
-          savingId: "",
-          error: report.canProceed ? "" : report.headline || "Resolve the failed checks before charging the saved card.",
-          message: report.canProceed ? "Readiness checks completed. Review the results, then confirm the saved-card charge." : "",
-        });
-      } catch (error) {
-        setSavedTopupState({
-          savingId: "",
-          error: error.message || "The pre-charge checks could not be completed.",
-          message: "",
-        });
-      }
       return;
     }
 
@@ -504,7 +486,6 @@ export function WalletPaymentsPage() {
       setInstantAmount("");
       setTopupBillingDetails(createEmptyPaymentBillingDetails());
       setBlockedSavedTopupCardId("");
-      setSavedTopupPreflight(null);
       setActiveSection("overview");
       setSavedTopupState({
         savingId: "",
@@ -1360,23 +1341,12 @@ export function WalletPaymentsPage() {
                         className="min-w-[190px]"
                       >
                         {savedTopupState.savingId === primaryCard.id
-                          ? savedTopupPreflight?.canProceed
-                            ? "Charging card..."
-                            : "Running checks..."
+                          ? "Charging card..."
                           : blockedSavedTopupCardId === primaryCard.id
                             ? "Choose another card"
-                            : savedTopupPreflight?.canProceed
-                              ? `Confirm · Add ${formatCurrency(Number(instantAmount || 0))}`
-                              : savedTopupPreflight
-                                ? "Run checks again"
-                                : "Check before charging"}
+                            : `Add ${formatCurrency(Number(instantAmount || 0))}`}
                       </Button>
                     </div>
-                    {savedTopupPreflight ? (
-                      <div className="mt-5">
-                        <PaymentReadinessReport report={savedTopupPreflight} />
-                      </div>
-                    ) : null}
                     {savedTopupState.error ? <p className="mt-4 text-sm font-medium text-rose-600">{savedTopupState.error}</p> : null}
                     {savedTopupState.message ? <p className="mt-4 text-sm font-medium text-emerald-700">{savedTopupState.message}</p> : null}
                   </CardContent>
@@ -1388,7 +1358,7 @@ export function WalletPaymentsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <CardTitle>{primaryCard ? "Use a different card" : "Pay with a card"}</CardTitle>
-                      <CardDescription className="mt-1">One-time payment. This card will not be saved automatically.</CardDescription>
+                      <CardDescription className="mt-1">This card must be saved successfully before it can be charged.</CardDescription>
                     </div>
                     <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Instant credit</span>
                   </div>
@@ -1397,9 +1367,9 @@ export function WalletPaymentsPage() {
                   {contractApproved ? (
                     <PortalCardForm
                       disabled={!instantAmount || Number(instantAmount) <= 0}
-                      submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to Wallet`}
-                      pendingLabel="Processing card payment..."
-                      note="This wallet top-up uses standard card processing. Your bank may request additional verification when required."
+                      submitLabel={`Save card and add ${formatCurrency(Number(instantAmount || 0))}`}
+                      pendingLabel="Saving card and charging..."
+                      note="Stripe saves and verifies this card before charging the wallet top-up. Your bank may request additional verification when required."
                       onSubmit={handleCardTopup}
                       successTitle="Wallet funded"
                       errorTitle="Wallet top-up failed"
@@ -1407,8 +1377,6 @@ export function WalletPaymentsPage() {
                       billingDetails={topupBillingDetails}
                       onBillingDetailsChange={setTopupBillingDetails}
                       showBillingDetails={false}
-                      onPreflight={({ billingDetails }) => runWalletTopupPreflight({ billingDetails })}
-                      preflightKey={`${instantAmount}:${cardVerificationMode}:${JSON.stringify(topupBillingDetails)}`}
                     />
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />
