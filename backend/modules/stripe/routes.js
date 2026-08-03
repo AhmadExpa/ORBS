@@ -4,7 +4,7 @@ import { Invoice, Order, PaymentSubmission, Subscription, User } from "../../db/
 import { requireCustomer } from "../../middleware/require-customer.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import {
-  CARD_VERIFICATION_MODE_3DS,
+  assertPaymentIntentCaptured,
   CARD_VERIFICATION_MODE_STANDARD,
   constructWebhookEvent,
   createCheckoutLineItem,
@@ -13,6 +13,8 @@ import {
   createSavedCardPaymentIntent,
   createSetupCheckoutSession,
   createSetupIntent,
+  getPaymentIntentCardAuthentication,
+  getSetupIntentCardAuthentication,
   getUserSavedPaymentMethods,
   isStripeConfigured,
   listRecentCustomerPaymentIntents,
@@ -45,12 +47,39 @@ import { buildCountryConsistencyChecks, getPaymentNetworkSignal } from "../../se
 export const stripeRouter = express.Router();
 export const stripeWebhookRouter = express.Router();
 
+const paymentAttemptRateLimit = rateLimit({
+  name: "stripe-payment-attempt",
+  windowMs: 10 * 60 * 1000,
+  max: 12,
+  keyFn: (req) => req.auth?.clerkId || req.ip,
+});
+
+const paymentFinalizationRateLimit = rateLimit({
+  name: "stripe-payment-finalization",
+  windowMs: 10 * 60 * 1000,
+  max: 40,
+  keyFn: (req) => req.auth?.clerkId || req.ip,
+});
+
 function successUrl(path, type) {
-  return `${env.appUrl}${path}?stripe=success&type=${type}`;
+  return `${env.appUrl}${path}?stripe=success&type=${type}&session_id={CHECKOUT_SESSION_ID}`;
 }
 
 function cancelUrl(path, type) {
   return `${env.appUrl}${path}?stripe=cancel&type=${type}`;
+}
+
+function normalizePortalReturnPath(value) {
+  const path = String(value || "").trim();
+  return path.startsWith("/") && !path.startsWith("//") ? path : "";
+}
+
+function normalizeCheckoutRequestId(value) {
+  const requestId = String(value || "").trim();
+  if (!/^[A-Za-z0-9_-]{16,80}$/u.test(requestId)) {
+    throw new HttpError(400, "A valid checkout request ID is required.");
+  }
+  return requestId;
 }
 
 function normalizeCustomerId(customer) {
@@ -110,6 +139,27 @@ function assertGatewayResourceBelongsToUser({ metadata, user }) {
   }
 }
 
+function assertGatewayCustomerBelongsToUser({ customerId, user }) {
+  if (
+    !customerId ||
+    !user.stripeCustomerId ||
+    String(customerId) !== String(user.stripeCustomerId)
+  ) {
+    throw new HttpError(403, "This Stripe customer does not belong to the authenticated customer.");
+  }
+}
+
+function buildCardAuthenticationMetadata(authentication = {}) {
+  return {
+    threeDSecureAttempted: Boolean(authentication.attempted),
+    threeDSecureAuthenticated: Boolean(authentication.authenticated),
+    threeDSecureResult: authentication.result || "not_available",
+    threeDSecureAuthenticationFlow: authentication.authenticationFlow || "",
+    threeDSecureVersion: authentication.version || "",
+    threeDSecureLiabilityShift: authentication.liabilityShift || "",
+  };
+}
+
 async function rejectPendingOrderSubmissions(orderId, reason) {
   if (!orderId) {
     return;
@@ -145,9 +195,21 @@ async function findOrderPaymentContext({ orderId, userId }) {
   return { order, subscription, invoice };
 }
 
-async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId, amountReceived, currency }) {
+async function finalizeStripeOrderPayment({
+  paymentIntentId,
+  checkoutSessionId = "",
+  chargeId = "",
+  metadata,
+  user,
+  paymentMethodId,
+  customerId,
+  amountReceived,
+  currency,
+  cardAuthentication,
+}) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
+    assertGatewayCustomerBelongsToUser({ customerId, user });
     await requireApprovedContract(user.clerkId);
 
     const { order, subscription, invoice } = await findOrderPaymentContext({
@@ -182,6 +244,9 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
         user,
         customerId,
         paymentMethodId,
+        is3DS: Boolean(cardAuthentication?.authenticated),
+        threeDSecureResult: cardAuthentication?.result,
+        threeDSecureAuthenticationFlow: cardAuthentication?.authenticationFlow,
       });
     }
 
@@ -199,6 +264,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       paymentReceivedAt: paymentReceivedAt.toISOString(),
       paymentMethodType: "stripe_card",
       cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+      ...buildCardAuthenticationMetadata(cardAuthentication),
     };
     await order.save();
 
@@ -212,6 +278,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
         paymentReceivedAt: paymentReceivedAt.toISOString(),
         cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
         lastStripePaymentIntentId: paymentIntentId,
+        ...buildCardAuthenticationMetadata(cardAuthentication),
         ...(checkoutSessionId ? { lastStripeCheckoutSessionId: checkoutSessionId } : {}),
       };
       await subscription.save();
@@ -253,6 +320,7 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
         cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
         threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
         saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
+        ...buildCardAuthenticationMetadata(cardAuthentication),
       },
       submittedAt: new Date(),
       reviewedAt: new Date(),
@@ -267,7 +335,8 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
       metadata: {
         orderId: String(order._id),
         amount: order.totalAmount,
-      cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+        ...buildCardAuthenticationMetadata(cardAuthentication),
       },
     });
 
@@ -292,9 +361,21 @@ async function finalizeStripeOrderPayment({ paymentIntentId, checkoutSessionId =
   return result.submission;
 }
 
-async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = "", chargeId = "", metadata, user, paymentMethodId, customerId, amountReceived, currency }) {
+async function finalizeStripeWalletTopup({
+  paymentIntentId,
+  checkoutSessionId = "",
+  chargeId = "",
+  metadata,
+  user,
+  paymentMethodId,
+  customerId,
+  amountReceived,
+  currency,
+  cardAuthentication,
+}) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
+    assertGatewayCustomerBelongsToUser({ customerId, user });
     await requireApprovedContract(user.clerkId);
 
     const existingSubmission = await findExistingGatewaySubmission({
@@ -311,6 +392,9 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
         user,
         customerId,
         paymentMethodId,
+        is3DS: Boolean(cardAuthentication?.authenticated),
+        threeDSecureResult: cardAuthentication?.result,
+        threeDSecureAuthenticationFlow: cardAuthentication?.authenticationFlow,
       });
     }
 
@@ -348,6 +432,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
         cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
         threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
         saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
+        ...buildCardAuthenticationMetadata(cardAuthentication),
       },
       submittedAt: new Date(),
       reviewedAt: new Date(),
@@ -362,6 +447,7 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
       metadata: {
         amount,
         cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+        ...buildCardAuthenticationMetadata(cardAuthentication),
       },
     });
 
@@ -385,18 +471,27 @@ async function finalizeStripeWalletTopup({ paymentIntentId, checkoutSessionId = 
   return result.submission;
 }
 
-async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, customerId, cardVerificationMode }) {
+async function finalizeStripeCardSetup({
+  user,
+  paymentMethodId,
+  setupIntentId,
+  customerId,
+  cardVerificationMode,
+  cardAuthentication,
+}) {
   if (!paymentMethodId || !customerId) {
     return null;
   }
 
-  const is3DS = cardVerificationMode !== CARD_VERIFICATION_MODE_STANDARD;
+  assertGatewayCustomerBelongsToUser({ customerId, user });
 
   await updateUserDefaultPaymentMethod({
     user,
     customerId,
     paymentMethodId,
-    is3DS,
+    is3DS: Boolean(cardAuthentication?.authenticated),
+    threeDSecureResult: cardAuthentication?.result,
+    threeDSecureAuthenticationFlow: cardAuthentication?.authenticationFlow,
   });
 
   await recordActivity({
@@ -407,6 +502,8 @@ async function finalizeStripeCardSetup({ user, paymentMethodId, setupIntentId, c
     targetId: String(user._id),
     metadata: {
       setupIntentId,
+      cardVerificationMode: cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+      ...buildCardAuthenticationMetadata(cardAuthentication),
     },
   });
 
@@ -428,22 +525,32 @@ async function finalizeCheckoutSession({ session, user }) {
   const setupIntentId = typeof session.setup_intent === "string" ? session.setup_intent : session.setup_intent?.id;
   const setupPaymentMethodId = normalizePaymentMethodId(session.setup_intent?.payment_method);
   const customerId = normalizeCustomerId(session.customer);
+  const paymentCustomerId = normalizeCustomerId(session.payment_intent?.customer);
+  const setupCustomerId = normalizeCustomerId(session.setup_intent?.customer);
+  const paymentIntentMetadata = session.payment_intent?.metadata || {};
+  assertGatewayCustomerBelongsToUser({ customerId, user });
 
   if (metadataType === "wallet_topup") {
     if (session.payment_status !== "paid") {
       throw new HttpError(400, "The Stripe wallet top-up is not paid yet.");
     }
+    assertPaymentIntentCaptured(session.payment_intent);
+    if (paymentIntentMetadata.type !== metadataType) {
+      throw new HttpError(400, "The Stripe checkout payment type could not be verified.");
+    }
+    assertGatewayResourceBelongsToUser({ metadata: paymentIntentMetadata, user });
 
     const submission = await finalizeStripeWalletTopup({
       paymentIntentId,
       checkoutSessionId: session.id,
       chargeId,
-      metadata: session.metadata,
+      metadata: paymentIntentMetadata,
       user,
       paymentMethodId,
-      customerId,
-      amountReceived: session.amount_total,
-      currency: session.currency,
+      customerId: paymentCustomerId,
+      amountReceived: session.payment_intent.amount_received,
+      currency: session.payment_intent.currency,
+      cardAuthentication: getPaymentIntentCardAuthentication(session.payment_intent),
     });
 
     return { type: metadataType, submission };
@@ -453,29 +560,40 @@ async function finalizeCheckoutSession({ session, user }) {
     if (session.payment_status !== "paid") {
       throw new HttpError(400, "The Stripe order payment is not paid yet.");
     }
+    assertPaymentIntentCaptured(session.payment_intent);
+    if (paymentIntentMetadata.type !== metadataType) {
+      throw new HttpError(400, "The Stripe checkout payment type could not be verified.");
+    }
+    assertGatewayResourceBelongsToUser({ metadata: paymentIntentMetadata, user });
 
     const submission = await finalizeStripeOrderPayment({
       paymentIntentId,
       checkoutSessionId: session.id,
       chargeId,
-      metadata: session.metadata,
+      metadata: paymentIntentMetadata,
       user,
       paymentMethodId,
-      customerId,
-      amountReceived: session.amount_total,
-      currency: session.currency,
+      customerId: paymentCustomerId,
+      amountReceived: session.payment_intent.amount_received,
+      currency: session.payment_intent.currency,
+      cardAuthentication: getPaymentIntentCardAuthentication(session.payment_intent),
     });
 
     return { type: metadataType, submission };
   }
 
   if (metadataType === "card_setup") {
+    if (session.status !== "complete" || session.setup_intent?.status !== "succeeded") {
+      throw new HttpError(400, "The Stripe card setup is not completed yet.");
+    }
+
     const card = await finalizeStripeCardSetup({
       user,
       paymentMethodId: setupPaymentMethodId,
       setupIntentId,
-      customerId,
+      customerId: setupCustomerId,
       cardVerificationMode: session.metadata?.cardVerificationMode,
+      cardAuthentication: getSetupIntentCardAuthentication(session.setup_intent),
     });
 
     return { type: metadataType, card };
@@ -487,10 +605,7 @@ async function finalizeCheckoutSession({ session, user }) {
 async function finalizePaymentIntent({ paymentIntent, user }) {
   const metadataType = paymentIntent.metadata?.type;
   assertGatewayResourceBelongsToUser({ metadata: paymentIntent.metadata, user });
-
-  if (paymentIntent.status !== "succeeded") {
-    throw new HttpError(400, "The Stripe payment is not completed yet.");
-  }
+  assertPaymentIntentCaptured(paymentIntent);
 
   const paymentMethodId = normalizePaymentMethodId(paymentIntent.payment_method);
   const customerId = normalizeCustomerId(paymentIntent.customer);
@@ -506,6 +621,7 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       customerId,
       amountReceived: paymentIntent.amount_received,
       currency: paymentIntent.currency,
+      cardAuthentication: getPaymentIntentCardAuthentication(paymentIntent),
     });
 
     return { type: metadataType, submission };
@@ -521,6 +637,7 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       customerId,
       amountReceived: paymentIntent.amount_received,
       currency: paymentIntent.currency,
+      cardAuthentication: getPaymentIntentCardAuthentication(paymentIntent),
     });
 
     return { type: metadataType, submission };
@@ -547,6 +664,7 @@ async function finalizeSetupIntent({ setupIntent, user }) {
     setupIntentId: setupIntent.id,
     customerId: normalizeCustomerId(setupIntent.customer),
     cardVerificationMode: setupIntent.metadata?.cardVerificationMode,
+    cardAuthentication: getSetupIntentCardAuthentication(setupIntent),
   });
 
   return { type: metadataType, card };
@@ -578,11 +696,15 @@ async function reconcileRecentStripePayments({ user }) {
     });
 
     try {
-      await finalizePaymentIntent({ paymentIntent, user });
-      settledPaymentIntentIds.push(paymentIntent.id);
-      if (!existingSubmission) {
-        reconciled += 1;
+      if (existingSubmission) {
+        settledPaymentIntentIds.push(paymentIntent.id);
+        continue;
       }
+
+      const verifiedPaymentIntent = await retrievePaymentIntent(paymentIntent.id);
+      await finalizePaymentIntent({ paymentIntent: verifiedPaymentIntent, user });
+      settledPaymentIntentIds.push(paymentIntent.id);
+      reconciled += 1;
     } catch (error) {
       failures.push({
         paymentIntentId: paymentIntent.id,
@@ -824,6 +946,7 @@ stripeRouter.post(
 stripeRouter.post(
   "/intents",
   requireCustomer,
+  paymentAttemptRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -863,7 +986,7 @@ stripeRouter.post(
         amount,
         description: "ElevenOrbits wallet top-up",
         billingDetails: req.body.billingDetails,
-        saveForFutureUse: false,
+        saveForFutureUse: true,
         requestThreeDSecure: verification.requestThreeDSecure,
         metadata: {
           type: "wallet_topup",
@@ -871,7 +994,7 @@ stripeRouter.post(
           amount: amount.toFixed(2),
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "false",
+          saveCardForFutureUse: "true",
         },
       });
 
@@ -893,7 +1016,7 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolvePortalCardVerificationMode();
-      const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
+      const saveCardForFutureUse = true;
 
       const intent = await createPaymentIntent({
         user,
@@ -924,6 +1047,7 @@ stripeRouter.post(
 stripeRouter.post(
   "/checkout-sessions",
   requireCustomer,
+  paymentAttemptRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -949,13 +1073,19 @@ stripeRouter.post(
         throw new HttpError(400, "A valid top-up amount is required.");
       }
       const verification = resolvePortalCardVerificationMode();
+      const checkoutRequestId = normalizeCheckoutRequestId(req.body.requestId);
+      const portalReturnPath = normalizePortalReturnPath(req.body.returnUrl);
+      const walletSuccessUrl = `${successUrl("/portal/payments", "wallet_topup")}${
+        portalReturnPath ? `&return_url=${encodeURIComponent(portalReturnPath)}` : ""
+      }`;
 
       const session = await createPaymentCheckoutSession({
         user,
-        successUrl: successUrl("/portal/payments", "wallet_topup"),
+        successUrl: walletSuccessUrl,
         cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
-        saveForFutureUse: false,
+        saveForFutureUse: true,
         requestThreeDSecure: verification.requestThreeDSecure,
+        idempotencyKey: `eo-wallet-checkout-${user._id}-${checkoutRequestId}`,
         lineItems: [
           createCheckoutLineItem({
             name: "ElevenOrbits Wallet Top-up",
@@ -969,7 +1099,7 @@ stripeRouter.post(
           amount: amount.toFixed(2),
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "false",
+          saveCardForFutureUse: "true",
         },
       });
 
@@ -991,7 +1121,7 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolvePortalCardVerificationMode();
-      const saveCardForFutureUse = verification.cardVerificationMode === CARD_VERIFICATION_MODE_3DS;
+      const saveCardForFutureUse = true;
 
       const session = await createPaymentCheckoutSession({
         user,
@@ -999,6 +1129,7 @@ stripeRouter.post(
         cancelUrl: cancelUrl(`/portal/checkout/${order._id}`, "order_payment"),
         saveForFutureUse: saveCardForFutureUse,
         requestThreeDSecure: verification.requestThreeDSecure,
+        idempotencyKey: `eo-order-checkout-${order._id}`,
         lineItems: [
           createCheckoutLineItem({
             name: invoice?.invoiceNumber || order.productPlanId?.name || "Managed Service",
@@ -1028,6 +1159,7 @@ stripeRouter.post(
 stripeRouter.post(
   "/finalize",
   requireCustomer,
+  paymentFinalizationRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -1068,6 +1200,7 @@ stripeRouter.post(
 stripeRouter.post(
   "/reconcile",
   requireCustomer,
+  paymentFinalizationRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -1101,6 +1234,7 @@ stripeRouter.get(
 stripeRouter.post(
   "/payment-methods/:id/topup",
   requireCustomer,
+  paymentAttemptRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -1144,6 +1278,7 @@ stripeRouter.post(
 stripeRouter.post(
   "/payment-methods/:id/pay-order",
   requireCustomer,
+  paymentAttemptRateLimit,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth.user._id);
     if (!user) {
@@ -1397,7 +1532,7 @@ stripeWebhookRouter.post(
     }
 
     if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object;
+      const paymentIntent = await retrievePaymentIntent(event.data.object.id);
       const metadataType = paymentIntent.metadata?.type;
       const user = await User.findById(paymentIntent.metadata?.userId);
 
@@ -1407,7 +1542,7 @@ stripeWebhookRouter.post(
     }
 
     if (event.type === "setup_intent.succeeded") {
-      const setupIntent = event.data.object;
+      const setupIntent = await retrieveSetupIntent(event.data.object.id);
       const user = await User.findById(setupIntent.metadata?.userId);
 
       if (user && setupIntent.metadata?.type === "card_setup") {

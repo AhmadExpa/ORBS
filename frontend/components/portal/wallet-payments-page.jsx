@@ -56,10 +56,6 @@ function formatCardBrand(brand) {
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
 }
 
-function getStripePaymentMethodId(paymentMethod) {
-  return typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id || "";
-}
-
 function getSavedCards(user) {
   const storedCards = Array.isArray(user?.savedPaymentMethods) ? user.savedPaymentMethods : [];
   const cardsById = new Map(storedCards.filter((card) => card?.id).map((card) => [String(card.id), card]));
@@ -70,7 +66,7 @@ function getSavedCards(user) {
       brand: user.defaultPaymentMethodBrand || "",
       last4: user.defaultPaymentMethodLast4 || "",
       isPrimary: true,
-      is3DS: true,
+      is3DS: false,
     });
   }
 
@@ -78,7 +74,7 @@ function getSavedCards(user) {
     ...card,
     brandLabel: card.brandLabel || formatCardBrand(card.brand),
     isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
-    is3DS: card.is3DS ?? true,
+    is3DS: card.is3DS === true,
   }));
 }
 
@@ -154,8 +150,12 @@ export function WalletPaymentsPage() {
   const cardSetupVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
+  const [hostedTopupState, setHostedTopupState] = useState({ isSubmitting: false, error: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
   const reconciliationStartedRef = useRef(false);
+  const checkoutFinalizationStartedRef = useRef(false);
+  const hostedTopupStartedRef = useRef(false);
+  const hostedTopupRequestRef = useRef({ amount: 0, requestId: "" });
   const checkoutPrefillAppliedRef = useRef(false);
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
@@ -190,9 +190,16 @@ export function WalletPaymentsPage() {
   const recentSubmissions = submissions.slice(0, 4);
   const requestedAmount = Number(searchParams.get("amount") || 0);
   const requestedReturnUrl = searchParams.get("return_url") || "";
+  const returnedStripeStatus = searchParams.get("stripe") || "";
+  const returnedPaymentType = searchParams.get("type") || "";
+  const returnedCheckoutSessionId = searchParams.get("session_id") || "";
   const returnUrl = requestedReturnUrl.startsWith("/") && !requestedReturnUrl.startsWith("//")
     ? requestedReturnUrl
     : "";
+  const isReturningFromHostedTopup =
+    returnedStripeStatus === "success" &&
+    returnedPaymentType === "wallet_topup" &&
+    Boolean(returnedCheckoutSessionId);
 
   useEffect(() => {
     const requestedSection = searchParams.get("section");
@@ -222,7 +229,7 @@ export function WalletPaymentsPage() {
   }, [user?._id, user?.walletAutoTopupAmount, user?.walletAutoTopupDayOfMonth]);
 
   useEffect(() => {
-    if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
+    if (!user?._id || !contractApproved || reconciliationStartedRef.current || isReturningFromHostedTopup) {
       return;
     }
 
@@ -262,7 +269,53 @@ export function WalletPaymentsPage() {
     return () => {
       isActive = false;
     };
-  }, [contractApproved, getToken, refetchPayments, refetchProfile, showToast, user?._id]);
+  }, [contractApproved, getToken, isReturningFromHostedTopup, refetchPayments, refetchProfile, showToast, user?._id]);
+
+  useEffect(() => {
+    if (!user?._id || !contractApproved || !isReturningFromHostedTopup || checkoutFinalizationStartedRef.current) {
+      return;
+    }
+
+    checkoutFinalizationStartedRef.current = true;
+    let isActive = true;
+
+    async function finalizeHostedTopup() {
+      setHostedTopupState({ isSubmitting: true, error: "" });
+      try {
+        const token = await getToken({ skipCache: true });
+        await apiFetch("/stripe/finalize", {
+          method: "POST",
+          token,
+          body: { checkoutSessionId: returnedCheckoutSessionId },
+        });
+        await Promise.all([refetchPayments(), refetchProfile()]);
+        await wait(500);
+        await Promise.all([refetchPayments(), refetchProfile()]);
+
+        if (!isActive) return;
+        setHostedTopupState({ isSubmitting: false, error: "" });
+        setActiveSection("overview");
+        showToast({
+          type: "success",
+          action: "Wallet Top-up",
+          title: "Wallet funded",
+          description: "Stripe captured the payment and the wallet balance has been refreshed.",
+        });
+        router.replace(returnUrl || "/portal/payments?section=overview");
+      } catch (error) {
+        if (!isActive) return;
+        setHostedTopupState({
+          isSubmitting: false,
+          error: error.message || "Stripe approved the checkout, but the wallet credit is still synchronizing. Do not pay again; refresh shortly.",
+        });
+      }
+    }
+
+    finalizeHostedTopup();
+    return () => {
+      isActive = false;
+    };
+  }, [contractApproved, getToken, isReturningFromHostedTopup, refetchPayments, refetchProfile, returnUrl, returnedCheckoutSessionId, router, showToast, user?._id]);
 
   async function syncPortalPayments() {
     await Promise.all([refetchPayments(), refetchProfile()]);
@@ -348,91 +401,56 @@ export function WalletPaymentsPage() {
       : "Your card has been saved and set as the primary card. You can switch to wallet-only mode any time.";
   }
 
-  async function handleCardTopup({ stripe, cardElement, billingDetails }) {
+  async function handleHostedCardTopup() {
+    if (hostedTopupStartedRef.current) return;
+
     const numericAmount = Number(instantAmount || 0);
     if (!numericAmount || numericAmount <= 0) {
-      throw new Error("Enter a valid top-up amount before submitting the card payment.");
+      setHostedTopupState({ isSubmitting: false, error: "Enter a valid top-up amount before opening Stripe Checkout." });
+      return;
     }
 
-    const token = await getToken();
-    let setupResponse;
+    if (
+      hostedTopupRequestRef.current.amount !== numericAmount ||
+      !hostedTopupRequestRef.current.requestId
+    ) {
+      hostedTopupRequestRef.current = {
+        amount: numericAmount,
+        requestId: globalThis.crypto.randomUUID(),
+      };
+    }
+
+    hostedTopupStartedRef.current = true;
+    setHostedTopupState({ isSubmitting: true, error: "" });
     try {
-      setupResponse = await apiFetch("/stripe/intents", {
+      const token = await getToken();
+      const response = await apiFetch("/stripe/checkout-sessions", {
         method: "POST",
         token,
         body: {
-          type: "card_setup",
-          billingDetails,
-          cardVerificationMode: cardSetupVerificationMode,
+          type: "wallet_topup",
+          amount: numericAmount,
+          returnUrl,
+          requestId: hostedTopupRequestRef.current.requestId,
         },
       });
+
+      const checkoutUrl = new URL(response.url);
+      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
+        throw new Error("Stripe returned an invalid checkout address. No charge was made.");
+      }
+
+      window.location.assign(checkoutUrl.toString());
     } catch (error) {
+      hostedTopupStartedRef.current = false;
       if (error.redirectUrl) {
         router.push(error.redirectUrl);
       }
-      throw error;
+      setHostedTopupState({
+        isSubmitting: false,
+        error: error.message || "Secure Stripe Checkout could not be opened. No charge was made.",
+      });
     }
-
-    const stripeBillingDetails = toStripeBillingDetails(billingDetails);
-    const setupResult = await stripe.confirmCardSetup(setupResponse.clientSecret, {
-      payment_method: {
-        card: cardElement,
-        ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
-      },
-    });
-
-    if (setupResult.error) {
-      throw createStripePaymentError(setupResult.error, "The card could not be saved before charging.");
-    }
-
-    const setupIntentId = setupResult.setupIntent?.id;
-    const paymentMethodId = getStripePaymentMethodId(setupResult.setupIntent?.payment_method);
-    if (!setupIntentId || !paymentMethodId) {
-      throw new Error("Stripe verified the card but did not return a saved payment method. No charge was made.");
-    }
-
-    const setupFinalization = await finalizeConfirmedStripeResource({ setupIntentId });
-    if (!setupFinalization.completed) {
-      throw new Error("The card was verified but could not be saved. No charge was made.");
-    }
-
-    const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
-      method: "POST",
-      token: await getToken(),
-      body: {
-        amount: numericAmount,
-        billingDetails,
-        cardVerificationMode,
-      },
-    });
-
-    const result = await stripe.confirmCardPayment(response.clientSecret, {
-      payment_method: paymentMethodId,
-    });
-
-    if (result.error) {
-      throw createStripePaymentError(result.error, "The wallet top-up could not be completed.");
-    }
-
-    if (!result.paymentIntent?.id) {
-      throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
-    }
-
-    const finalization = await finalizeConfirmedStripeResource({ paymentIntentId: result.paymentIntent.id });
-    await syncPortalPaymentsSafely();
-    setInstantAmount("");
-    setTopupBillingDetails(createEmptyPaymentBillingDetails());
-    setActiveSection("overview");
-
-    if (!finalization.completed) {
-      return "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.";
-    }
-
-    if (returnUrl) {
-      router.push(returnUrl);
-    }
-
-    return "Your card was saved, charged, and the wallet balance has been refreshed.";
   }
 
   async function handleSavedCardTopup(paymentMethodId) {
@@ -1204,8 +1222,8 @@ export function WalletPaymentsPage() {
                   {contractApproved ? (
                     <>
                       <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                        <p className="font-semibold">Standard card processing</p>
-                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details. Your bank may request additional verification when required.</p>
+                        <p className="font-semibold">Adaptive bank authentication</p>
+                        <p className="mt-1 text-xs leading-5 text-sky-800">Stripe requests 3D Secure only when the bank, regulation, or risk checks require it. Cards without 3D Secure support remain eligible.</p>
                       </div>
                       <PortalCardForm
                         submitLabel={hasSavedCard ? "Add card" : "Save card"}
@@ -1302,14 +1320,14 @@ export function WalletPaymentsPage() {
                   </div>
                 </div>
 
-                <p className="text-xs leading-5 text-slate-500">Enter any positive amount and pay with your card details. Your bank may request additional verification when required.</p>
+                <p className="text-xs leading-5 text-slate-500">Enter any positive amount and pay securely. Your bank decides whether the 3D Secure check uses an OTP, banking-app approval, or a frictionless flow.</p>
               </CardContent>
             </Card>
 
             <div className="space-y-5">
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                <p className="font-semibold">Standard card processing</p>
-                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card number, expiry, CVC, and postcode in the secure Stripe card field. Your bank may request additional verification when required.</p>
+                <p className="font-semibold">Secure Stripe-hosted checkout</p>
+                <p className="mt-1 text-xs leading-5 text-sky-800">New-card purchases continue to Stripe. Stripe invokes 3D Secure only when needed, so a bank without 3D Secure support is not automatically rejected.</p>
               </div>
 
               {primaryCard ? (
@@ -1325,7 +1343,7 @@ export function WalletPaymentsPage() {
                             <p className="text-sm font-semibold text-slate-950">Top up with {savedCardLabel(primaryCard)}</p>
                             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">Fastest</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Standard card processing</p>
+                          <p className="mt-1 text-xs text-slate-500">{cardExpiryLabel(primaryCard)} · Stripe adaptive authentication</p>
                         </div>
                       </div>
                       <Button
@@ -1358,26 +1376,29 @@ export function WalletPaymentsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <CardTitle>{primaryCard ? "Use a different card" : "Pay with a card"}</CardTitle>
-                      <CardDescription className="mt-1">This card must be saved successfully before it can be charged.</CardDescription>
+                      <CardDescription className="mt-1">Continue to Stripe to enter and authenticate the card securely.</CardDescription>
                     </div>
                     <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Instant credit</span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {contractApproved ? (
-                    <PortalCardForm
-                      disabled={!instantAmount || Number(instantAmount) <= 0}
-                      submitLabel={`Save card and add ${formatCurrency(Number(instantAmount || 0))}`}
-                      pendingLabel="Saving card and charging..."
-                      note="Stripe saves and verifies this card before charging the wallet top-up. Your bank may request additional verification when required."
-                      onSubmit={handleCardTopup}
-                      successTitle="Wallet funded"
-                      errorTitle="Wallet top-up failed"
-                      actionLabel="Wallet Top-up"
-                      billingDetails={topupBillingDetails}
-                      onBillingDetailsChange={setTopupBillingDetails}
-                      showBillingDetails={false}
-                    />
+                    <div className="space-y-3">
+                      <Button
+                        className="w-full"
+                        type="button"
+                        disabled={!instantAmount || Number(instantAmount) <= 0 || hostedTopupState.isSubmitting}
+                        onClick={handleHostedCardTopup}
+                      >
+                        {hostedTopupState.isSubmitting
+                          ? "Opening Stripe Checkout..."
+                          : `Continue to Stripe · ${formatCurrency(Number(instantAmount || 0))}`}
+                      </Button>
+                      <p className="text-xs leading-5 text-slate-500">
+                        Stripe handles the card number and any bank challenge. ElevenOrbits never receives your full card number or OTP.
+                      </p>
+                      {hostedTopupState.error ? <p className="text-sm font-medium text-rose-600">{hostedTopupState.error}</p> : null}
+                    </div>
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />
                   )}

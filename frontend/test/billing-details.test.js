@@ -73,5 +73,12 @@ test("Stripe billing details use Stripe address field names", () => {
 
   assert.equal(details.email, "card@example.com");
   assert.equal(details.address.postal_code, "33601");
-  assert.deepEqual(details.address, { postal_code: "33601" });
+  assert.deepEqual(details.address, {
+    line1: "123 Billing Street",
+    line2: "Suite 5",
+    city: "Tampa",
+    state: "FL",
+    postal_code: "33601",
+    country: "US",
+  });
 });

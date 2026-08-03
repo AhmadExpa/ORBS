@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { CardElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, Pencil, UserCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleHelp, CreditCard, Pencil, ShieldCheck, UserCircle2, XCircle } from "lucide-react";
 import { Button, TextInput, cn } from "@/lib/ui";
 import {
   createEmptyPaymentBillingDetails,
@@ -41,10 +41,10 @@ const cardElementOptions = {
 const verificationModes = [
   {
     value: CARD_VERIFICATION_MODE_STANDARD,
-    title: "Standard processing",
-    badge: "Card payment",
-    description: "Use the card details provided below. Stripe requests authentication only when the bank, regulation, or risk checks require it.",
-    icon: CreditCard,
+    title: "Adaptive bank authentication",
+    badge: "Stripe protected",
+    description: "Stripe requests 3D Secure only when the issuer, regulation, or risk checks require it, so cards without 3D Secure support can still be processed.",
+    icon: ShieldCheck,
   },
 ];
 
@@ -57,7 +57,7 @@ export function CardVerificationModeSelector({
     <fieldset disabled={disabled}>
       <legend className="text-sm font-semibold text-slate-950">Card verification</legend>
       <p className="mt-1 text-xs leading-5 text-slate-500">
-        Choose how Stripe should process this charge. Standard processing never bypasses authentication required by the bank or applicable regulation.
+        If your bank asks for authentication, complete it only in Stripe's bank challenge. ElevenOrbits never asks you to send an OTP by email, chat, or phone.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Card verification mode">
         {verificationModes.map((mode) => {

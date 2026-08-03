@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { apiFetch } from "@/lib/api/client";
@@ -10,10 +10,8 @@ import { resolvePublicFileUrl } from "@/lib/api/file-url";
 import { useCustomerQuery } from "@/lib/api/hooks";
 import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import {
-  createEmptyPaymentBillingDetails,
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
-  toStripeBillingDetails,
 } from "@/lib/payments/billing-details";
 import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { buildBillingDetailsFromProfile, getProfileBillingDetailsIssues } from "@/lib/payments/profile-billing-details";
@@ -21,7 +19,6 @@ import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
   CardIdentityToggle,
-  PortalCardForm,
   portalStripePromise,
 } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -34,10 +31,6 @@ import { ArrowRight, Wallet } from "lucide-react";
 function formatCardBrand(brand) {
   const value = String(brand || "").trim();
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
-}
-
-function getStripePaymentMethodId(paymentMethod) {
-  return typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id || "";
 }
 
 function getPrimarySavedCard(user) {
@@ -76,6 +69,7 @@ function wait(ms) {
 
 export function CheckoutPaymentView({ orderId }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
   const [state, setState] = useState({
@@ -87,9 +81,12 @@ export function CheckoutPaymentView({ orderId }) {
   const [reasonAction, setReasonAction] = useState("");
   const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [usingOwnCard, setUsingOwnCard] = useState(true);
-  const [billingDetails, setBillingDetails] = useState(createEmptyPaymentBillingDetails);
-  const [billingDetailsSeeded, setBillingDetailsSeeded] = useState(false);
   const [savedCardPayState, setSavedCardPayState] = useState({ isSubmitting: false, error: "", message: "" });
+  const checkoutCompletionStartedRef = useRef(false);
+  const checkoutRedirectStartedRef = useRef(false);
+  const returnedStripeStatus = searchParams.get("stripe") || "";
+  const returnedPaymentType = searchParams.get("type") || "";
+  const returnedCheckoutSessionId = searchParams.get("session_id") || "";
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
@@ -132,18 +129,55 @@ export function CheckoutPaymentView({ orderId }) {
   const profileReady = profileIssues.length === 0;
   const canUseSavedCardQuickPay = Boolean(primaryCard) && profileReady;
 
-  useEffect(() => {
-    if (profile && !billingDetailsSeeded) {
-      setBillingDetails(buildBillingDetailsFromProfile(profile));
-      setBillingDetailsSeeded(true);
-    }
-  }, [profile, billingDetailsSeeded]);
-
   async function syncOrderState() {
     await Promise.all([refetchOrder(), refetchProfile()]);
     await wait(1200);
     await Promise.all([refetchOrder(), refetchProfile()]);
   }
+
+  useEffect(() => {
+    if (
+      returnedStripeStatus !== "success" ||
+      returnedPaymentType !== "order_payment" ||
+      !returnedCheckoutSessionId ||
+      checkoutCompletionStartedRef.current
+    ) {
+      return;
+    }
+
+    checkoutCompletionStartedRef.current = true;
+    let isActive = true;
+
+    async function finalizeHostedCheckout() {
+      setState({ isSubmitting: true, action: "stripe_finalize", message: "Confirming your Stripe payment...", error: "" });
+      try {
+        const token = await getToken({ skipCache: true });
+        await apiFetch("/stripe/finalize", {
+          method: "POST",
+          token,
+          body: { checkoutSessionId: returnedCheckoutSessionId },
+        });
+        await syncOrderState();
+        if (isActive) {
+          router.replace(`/portal/checkout/${orderId}/thank-you`);
+        }
+      } catch (error) {
+        if (isActive) {
+          setState({
+            isSubmitting: false,
+            action: "",
+            message: "",
+            error: error.message || "Stripe approved the checkout, but the order is still synchronizing. Do not pay again; refresh this page shortly.",
+          });
+        }
+      }
+    }
+
+    finalizeHostedCheckout();
+    return () => {
+      isActive = false;
+    };
+  }, [getToken, orderId, refetchOrder, refetchProfile, returnedCheckoutSessionId, returnedPaymentType, returnedStripeStatus, router]);
 
   async function handleWalletPayment() {
     if (!canPayWithWallet || state.isSubmitting) return;
@@ -179,117 +213,40 @@ export function CheckoutPaymentView({ orderId }) {
     }
   }
 
-  async function handleCardPayment({ stripe, cardElement, billingDetails }) {
-    let setupResponse;
+  async function handleHostedStripeCheckout() {
+    if (!canTriggerPayments || state.isSubmitting || checkoutRedirectStartedRef.current) return;
+
+    checkoutRedirectStartedRef.current = true;
+    setState({ isSubmitting: true, action: "stripe_checkout", message: "Opening secure Stripe Checkout...", error: "" });
     try {
       const token = await getToken();
-      setupResponse = await apiFetch("/stripe/intents", {
+      const response = await apiFetch("/stripe/checkout-sessions", {
         method: "POST",
         token,
         body: {
-          type: "card_setup",
-          billingDetails,
-          cardVerificationMode,
+          type: "order_payment",
+          orderId,
         },
       });
+
+      const checkoutUrl = new URL(response.url);
+      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
+        throw new Error("Stripe returned an invalid checkout address. No charge was made.");
+      }
+
+      window.location.assign(checkoutUrl.toString());
     } catch (error) {
+      checkoutRedirectStartedRef.current = false;
       if (error.redirectUrl) {
         router.push(error.redirectUrl);
       }
-      throw error;
+      setState({
+        isSubmitting: false,
+        action: "",
+        message: "",
+        error: error.message || "Secure Stripe Checkout could not be opened. No charge was made.",
+      });
     }
-
-    const stripeBillingDetails = toStripeBillingDetails(billingDetails);
-    const setupResult = await stripe.confirmCardSetup(setupResponse.clientSecret, {
-      payment_method: {
-        card: cardElement,
-        ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
-      },
-    });
-
-    if (setupResult.error) {
-      throw createStripePaymentError(setupResult.error, "The card could not be saved before charging.");
-    }
-
-    const setupIntentId = setupResult.setupIntent?.id;
-    const paymentMethodId = getStripePaymentMethodId(setupResult.setupIntent?.payment_method);
-    if (!setupIntentId || !paymentMethodId) {
-      throw new Error("Stripe verified the card but did not return a saved payment method. No charge was made.");
-    }
-
-    let setupFinalized = false;
-    for (let attempt = 0; attempt < 2 && !setupFinalized; attempt += 1) {
-      try {
-        const finalizeToken = await getToken({ skipCache: true });
-        await apiFetch("/stripe/finalize", {
-          method: "POST",
-          token: finalizeToken,
-          body: { setupIntentId },
-        });
-        setupFinalized = true;
-      } catch {
-        if (attempt === 0) {
-          await wait(500);
-        }
-      }
-    }
-
-    if (!setupFinalized) {
-      throw new Error("The card was verified but could not be saved. No charge was made.");
-    }
-
-    const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/pay-order`, {
-      method: "POST",
-      token: await getToken(),
-      body: {
-        orderId,
-        billingDetails,
-        cardVerificationMode,
-      },
-    });
-
-    const result = await stripe.confirmCardPayment(response.clientSecret, {
-      payment_method: paymentMethodId,
-    });
-
-    if (result.error) {
-      throw createStripePaymentError(result.error);
-    }
-
-    if (!result.paymentIntent?.id) {
-      throw new Error("Stripe confirmed the payment but did not return a payment intent ID.");
-    }
-
-    let finalized = false;
-    for (let attempt = 0; attempt < 2 && !finalized; attempt += 1) {
-      try {
-        const token = await getToken({ skipCache: true });
-        await apiFetch("/stripe/finalize", {
-          method: "POST",
-          token,
-          body: {
-            paymentIntentId: result.paymentIntent.id,
-          },
-        });
-        finalized = true;
-      } catch {
-        if (attempt === 0) {
-          await wait(500);
-        }
-      }
-    }
-
-    if (!finalized) {
-      const pendingError = new Error(
-        "Your card was charged successfully, but the order update is still synchronizing. Do not submit this payment again; open Payment Activity after signing in again.",
-      );
-      pendingError.preventSameCardRetry = true;
-      throw pendingError;
-    }
-
-    await syncOrderState();
-    router.replace(`/portal/checkout/${orderId}/thank-you`);
-    return "Your advance payment was received. The request is now pending review.";
   }
 
   async function handleSavedCardQuickPay(paymentMethodId) {
@@ -645,8 +602,8 @@ export function CheckoutPaymentView({ orderId }) {
                       </div>
 
                       <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                        <p className="font-semibold">Standard card processing</p>
-                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card details. Your bank may request additional verification when required.</p>
+                        <p className="font-semibold">Secure Stripe-hosted checkout</p>
+                        <p className="mt-1 text-xs leading-5 text-sky-800">You will continue to Stripe to enter the card. Stripe requests 3D Secure only when required, so banks and cards without 3D Secure support are not automatically blocked.</p>
                       </div>
 
                       {!profileReady ? (
@@ -682,19 +639,21 @@ export function CheckoutPaymentView({ orderId }) {
                           {savedCardPayState.error ? <p className="text-sm font-medium text-rose-600">{savedCardPayState.error}</p> : null}
                         </div>
                       ) : (
-                        <PortalCardForm
-                          disabled={!canTriggerPayments || state.isSubmitting}
-                          submitLabel="Save card and pay advance"
-                          pendingLabel="Saving card and charging..."
-                          onSubmit={handleCardPayment}
-                          billingDetails={billingDetails}
-                          onBillingDetailsChange={setBillingDetails}
-                          showBillingDetails={false}
-                          note="Stripe saves and verifies this card before charging the order. Your bank may request additional verification when required."
-                          successTitle="Advance payment completed"
-                          errorTitle="Card payment failed"
-                          actionLabel="Order Advance Payment"
-                        />
+                        <div className="space-y-3">
+                          <Button
+                            className="w-full"
+                            type="button"
+                            disabled={!canTriggerPayments || state.isSubmitting}
+                            onClick={handleHostedStripeCheckout}
+                          >
+                            {state.isSubmitting && state.action === "stripe_checkout"
+                              ? "Opening Stripe Checkout..."
+                              : `Continue to Stripe · ${formatCurrency(totalDue)}`}
+                          </Button>
+                          <p className="text-xs leading-5 text-slate-500">
+                            Card details and any OTP or banking-app approval are handled on Stripe's secure page. ElevenOrbits never receives your card number or OTP.
+                          </p>
+                        </div>
                       )}
                     </div>
                   )}

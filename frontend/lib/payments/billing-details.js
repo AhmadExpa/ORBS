@@ -51,11 +51,19 @@ export function getPaymentBillingDetailsValidationError(value) {
 
 export function toStripeBillingDetails(value) {
   const details = normalizePaymentBillingDetails(value);
+  const address = {
+    ...(details.line1 ? { line1: details.line1 } : {}),
+    ...(details.line2 ? { line2: details.line2 } : {}),
+    ...(details.city ? { city: details.city } : {}),
+    ...(details.state ? { state: details.state } : {}),
+    ...(details.postalCode ? { postal_code: details.postalCode } : {}),
+    ...(details.country ? { country: details.country } : {}),
+  };
 
   return {
     ...(details.name ? { name: details.name } : {}),
     ...(details.email ? { email: details.email } : {}),
     ...(details.phone ? { phone: details.phone } : {}),
-    ...(details.postalCode ? { address: { postal_code: details.postalCode } } : {}),
+    ...(Object.keys(address).length ? { address } : {}),
   };
 }

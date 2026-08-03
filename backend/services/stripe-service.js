@@ -14,6 +14,7 @@ export const CARD_VERIFICATION_MODE_STANDARD = "standard";
 export const CARD_VERIFICATION_MODE_3DS = "three_d_secure";
 export const STANDARD_THREE_D_SECURE_MODE = "automatic";
 export const WALLET_TOPUP_THREE_D_SECURE_MODE = STANDARD_THREE_D_SECURE_MODE;
+export const CUSTOMER_PRESENT_CAPTURE_METHOD = "automatic";
 const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/u;
 
 function assertStripeConfigured() {
@@ -23,7 +24,7 @@ function assertStripeConfigured() {
 }
 
 export function resolveCustomerCardVerificationMode(value) {
-  const cardVerificationMode = String(value || CARD_VERIFICATION_MODE_3DS).trim().toLowerCase();
+  const cardVerificationMode = String(value || CARD_VERIFICATION_MODE_STANDARD).trim().toLowerCase();
 
   if (cardVerificationMode === CARD_VERIFICATION_MODE_STANDARD) {
     return {
@@ -42,9 +43,9 @@ export function resolveCustomerCardVerificationMode(value) {
   throw new HttpError(400, "Choose either standard card processing or 3D Secure verification.");
 }
 
-// Portal card payments use the standard Stripe card flow. Stripe can still
-// request authentication when the issuer or regulation requires it, but the
-// portal does not force a 3DS challenge.
+// Portal payments use Stripe's adaptive SCA/Radar policy. This keeps cards
+// without 3DS support eligible while still invoking authentication whenever
+// the issuer, regulation, or Stripe's risk engine requires it.
 export function resolveWalletTopupVerificationMode() {
   return {
     cardVerificationMode: CARD_VERIFICATION_MODE_STANDARD,
@@ -94,11 +95,20 @@ export function normalizePaymentBillingDetails(value) {
   if (rawPhone && !details.phone) {
     throw new HttpError(400, "Enter the phone number in international format, such as +14155552671.");
   }
+  const address = {
+    ...(details.line1 ? { line1: details.line1 } : {}),
+    ...(details.line2 ? { line2: details.line2 } : {}),
+    ...(details.city ? { city: details.city } : {}),
+    ...(details.state ? { state: details.state } : {}),
+    ...(details.postalCode ? { postal_code: details.postalCode } : {}),
+    ...(details.country ? { country: details.country } : {}),
+  };
+
   return {
     ...(details.name ? { name: details.name } : {}),
     ...(details.email ? { email: details.email } : {}),
     ...(details.phone ? { phone: details.phone } : {}),
-    ...(details.postalCode ? { address: { postal_code: details.postalCode } } : {}),
+    ...(Object.keys(address).length ? { address } : {}),
   };
 }
 
@@ -124,7 +134,65 @@ function formatCardBrand(brand) {
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Card";
 }
 
-function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt, is3DS = true } = {}) {
+function normalizeThreeDSecureDetails(details) {
+  const result = String(details?.result || "").trim().toLowerCase();
+  const authenticationFlow = String(details?.authentication_flow || details?.authenticationFlow || "")
+    .trim()
+    .toLowerCase();
+
+  return {
+    attempted: Boolean(details),
+    authenticated: result === "authenticated" || details?.authenticated === true,
+    result: result || "not_available",
+    authenticationFlow,
+    version: String(details?.version || "").trim(),
+    liabilityShift: String(details?.liability_shift || details?.liabilityShift || "").trim(),
+  };
+}
+
+export function getPaymentIntentCardAuthentication(paymentIntent) {
+  const charge = paymentIntent?.latest_charge;
+  const details = typeof charge === "object"
+    ? charge?.payment_method_details?.card?.three_d_secure
+    : null;
+
+  return normalizeThreeDSecureDetails(details);
+}
+
+export function getSetupIntentCardAuthentication(setupIntent) {
+  const setupAttempt = setupIntent?.latest_attempt;
+  const details = typeof setupAttempt === "object"
+    ? setupAttempt?.payment_method_details?.card?.three_d_secure
+    : null;
+
+  return normalizeThreeDSecureDetails(details);
+}
+
+export function assertPaymentIntentCaptured(paymentIntent) {
+  if (paymentIntent?.status !== "succeeded") {
+    throw new HttpError(400, "The Stripe payment is not completed yet.");
+  }
+
+  const charge = paymentIntent.latest_charge;
+  if (!charge || typeof charge !== "object") {
+    throw new HttpError(400, "The completed Stripe payment charge could not be verified.");
+  }
+
+  if (charge.paid !== true || charge.captured !== true) {
+    throw new HttpError(400, "The Stripe payment has not been captured successfully.");
+  }
+}
+
+function buildPaymentMethodSummary(
+  paymentMethod,
+  {
+    isPrimary = false,
+    savedAt,
+    is3DS = false,
+    threeDSecureResult = "not_available",
+    threeDSecureAuthenticationFlow = "",
+  } = {},
+) {
   const card = paymentMethod?.card || {};
 
   return {
@@ -138,6 +206,8 @@ function buildPaymentMethodSummary(paymentMethod, { isPrimary = false, savedAt, 
     country: card.country || "",
     isPrimary,
     is3DS: Boolean(is3DS),
+    threeDSecureResult,
+    threeDSecureAuthenticationFlow,
     savedAt: savedAt || new Date().toISOString(),
   };
 }
@@ -153,7 +223,9 @@ export function getUserSavedPaymentMethods(user) {
           ...card,
           brandLabel: card.brandLabel || formatCardBrand(card.brand),
           isPrimary: String(card.id) === String(user?.defaultPaymentMethodId || "") || Boolean(card.isPrimary),
-          is3DS: card.is3DS ?? true,
+          is3DS: card.is3DS === true,
+          threeDSecureResult: card.threeDSecureResult || "not_available",
+          threeDSecureAuthenticationFlow: card.threeDSecureAuthenticationFlow || "",
         },
       ]),
   );
@@ -169,7 +241,9 @@ export function getUserSavedPaymentMethods(user) {
       funding: "",
       country: "",
       isPrimary: true,
-      is3DS: true,
+      is3DS: false,
+      threeDSecureResult: "not_available",
+      threeDSecureAuthenticationFlow: "",
       savedAt: user.updatedAt?.toISOString?.() || new Date().toISOString(),
     });
   }
@@ -215,7 +289,14 @@ export async function ensureStripeCustomer(user, { billingDetails } = {}) {
   return customer.id;
 }
 
-export async function updateUserDefaultPaymentMethod({ user, customerId, paymentMethodId, is3DS }) {
+export async function updateUserDefaultPaymentMethod({
+  user,
+  customerId,
+  paymentMethodId,
+  is3DS,
+  threeDSecureResult,
+  threeDSecureAuthenticationFlow,
+}) {
   assertStripeConfigured();
 
   if (!paymentMethodId) {
@@ -228,7 +309,10 @@ export async function updateUserDefaultPaymentMethod({ user, customerId, payment
   const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
     isPrimary: true,
     savedAt: existingCard?.savedAt,
-    is3DS: is3DS ?? existingCard?.is3DS ?? true,
+    is3DS: is3DS ?? existingCard?.is3DS ?? false,
+    threeDSecureResult: threeDSecureResult || existingCard?.threeDSecureResult || "not_available",
+    threeDSecureAuthenticationFlow:
+      threeDSecureAuthenticationFlow || existingCard?.threeDSecureAuthenticationFlow || "",
   });
 
   const customerBillingDetails = paymentMethod.billing_details?.email
@@ -286,7 +370,9 @@ export async function setUserPrimaryPaymentMethod({ user, paymentMethodId }) {
   const paymentMethodSummary = buildPaymentMethodSummary(paymentMethod, {
     isPrimary: true,
     savedAt: selectedCard.savedAt,
-    is3DS: selectedCard.is3DS ?? true,
+    is3DS: selectedCard.is3DS === true,
+    threeDSecureResult: selectedCard.threeDSecureResult || "not_available",
+    threeDSecureAuthenticationFlow: selectedCard.threeDSecureAuthenticationFlow || "",
   });
 
   await stripe.customers.update(user.stripeCustomerId, {
@@ -380,7 +466,12 @@ export async function removeUserDefaultPaymentMethod({ user }) {
   });
 }
 
-export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }) {
+export async function createSetupCheckoutSession({
+  user,
+  successUrl,
+  cancelUrl,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
+}) {
   assertStripeConfigured();
 
   const customerId = await ensureStripeCustomer(user);
@@ -389,19 +480,24 @@ export async function createSetupCheckoutSession({ user, successUrl, cancelUrl }
     mode: "setup",
     currency: env.stripeCurrency,
     customer: customerId,
+    payment_method_types: ["card"],
     success_url: successUrl,
     cancel_url: cancelUrl,
     billing_address_collection: "required",
     phone_number_collection: { enabled: true },
     payment_method_options: {
       card: {
-        request_three_d_secure: STANDARD_THREE_D_SECURE_MODE,
+        request_three_d_secure: requestThreeDSecure,
       },
     },
     client_reference_id: String(user._id),
     metadata: normalizeMetadata({
       type: "card_setup",
       userId: user._id,
+      cardVerificationMode: requestThreeDSecure === CUSTOMER_PRESENT_THREE_D_SECURE_MODE
+        ? CARD_VERIFICATION_MODE_3DS
+        : CARD_VERIFICATION_MODE_STANDARD,
+      threeDSecurePolicy: requestThreeDSecure,
     }),
   });
 }
@@ -410,7 +506,7 @@ export async function createSetupIntent({
   user,
   metadata,
   billingDetails,
-  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
 }) {
   assertStripeConfigured();
 
@@ -440,33 +536,39 @@ export async function createPaymentCheckoutSession({
   lineItems,
   metadata,
   saveForFutureUse = true,
-  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
+  idempotencyKey = "",
 }) {
   assertStripeConfigured();
 
   const customerId = await ensureStripeCustomer(user);
   const normalizedMetadata = normalizeMetadata(metadata);
 
-  return stripe.checkout.sessions.create({
-    mode: "payment",
-    customer: customerId,
-    billing_address_collection: "required",
-    phone_number_collection: { enabled: true },
-    client_reference_id: String(user._id),
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    line_items: lineItems,
-    payment_method_options: {
-      card: {
-        request_three_d_secure: requestThreeDSecure,
+  return stripe.checkout.sessions.create(
+    {
+      mode: "payment",
+      customer: customerId,
+      payment_method_types: ["card"],
+      billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
+      client_reference_id: String(user._id),
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      line_items: lineItems,
+      payment_method_options: {
+        card: {
+          request_three_d_secure: requestThreeDSecure,
+        },
       },
-    },
-    payment_intent_data: {
-      ...(saveForFutureUse ? { setup_future_usage: "off_session" } : {}),
+      payment_intent_data: {
+        capture_method: CUSTOMER_PRESENT_CAPTURE_METHOD,
+        ...(saveForFutureUse ? { setup_future_usage: "off_session" } : {}),
+        metadata: normalizedMetadata,
+      },
       metadata: normalizedMetadata,
     },
-    metadata: normalizedMetadata,
-  });
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
 }
 
 export function buildUserInitiatedCardPaymentIntentParams({
@@ -477,11 +579,12 @@ export function buildUserInitiatedCardPaymentIntentParams({
   metadata,
   receiptEmail,
   saveForFutureUse = false,
-  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
 }) {
   return {
     amount: toStripeAmount(amount),
     currency: env.stripeCurrency,
+    capture_method: CUSTOMER_PRESENT_CAPTURE_METHOD,
     customer: customerId,
     ...(paymentMethodId ? { payment_method: paymentMethodId } : {}),
     payment_method_types: ["card"],
@@ -504,7 +607,7 @@ export async function createPaymentIntent({
   metadata,
   billingDetails,
   saveForFutureUse = true,
-  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
 }) {
   assertStripeConfigured();
 
@@ -555,6 +658,7 @@ export async function createOffSessionCharge({ user, amount, description, metada
   return stripe.paymentIntents.create({
     amount: toStripeAmount(amount),
     currency: env.stripeCurrency,
+    capture_method: CUSTOMER_PRESENT_CAPTURE_METHOD,
     customer: user.stripeCustomerId,
     payment_method: user.defaultPaymentMethodId,
     payment_method_types: ["card"],
@@ -579,7 +683,7 @@ export async function createSavedCardPaymentIntent({
   description,
   metadata,
   billingDetails,
-  requestThreeDSecure = CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
+  requestThreeDSecure = STANDARD_THREE_D_SECURE_MODE,
 }) {
   assertStripeConfigured();
 
@@ -637,7 +741,12 @@ export async function retrieveCheckoutSession(sessionId) {
   assertStripeConfigured();
 
   return stripe.checkout.sessions.retrieve(sessionId, {
-    expand: ["payment_intent.payment_method", "payment_intent.latest_charge", "setup_intent.payment_method"],
+    expand: [
+      "payment_intent.payment_method",
+      "payment_intent.latest_charge",
+      "setup_intent.payment_method",
+      "setup_intent.latest_attempt",
+    ],
   });
 }
 
@@ -695,6 +804,6 @@ export async function retrieveSetupIntent(setupIntentId) {
   assertStripeConfigured();
 
   return stripe.setupIntents.retrieve(setupIntentId, {
-    expand: ["payment_method"],
+    expand: ["payment_method", "latest_attempt"],
   });
 }
