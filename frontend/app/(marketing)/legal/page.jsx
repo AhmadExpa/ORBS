@@ -19,10 +19,10 @@ export default function LegalCenterPage() {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
-        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:py-16">
+        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:py-16">
           <div className="eo-reveal-up">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Legal Center</p>
-            <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
+            <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">
               Policies for ElevenOrbits customers, visitors, and managed service users.
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">
@@ -41,7 +41,7 @@ export default function LegalCenterPage() {
       </section>
 
       <section>
-        <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto grid max-w-[1280px] gap-5 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-2 xl:grid-cols-3">
           {legalPages.map((page, index) => (
             <Link
               key={page.slug}
@@ -62,7 +62,7 @@ export default function LegalCenterPage() {
       </section>
 
       <section className="border-t border-slate-200/80 bg-slate-50">
-        <div className="mx-auto max-w-[1280px] px-6 py-10">
+        <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6">
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
             Legal and policy questions can be sent to{" "}
             <a className="font-semibold text-sky-700" href={`mailto:${siteConfig.generalEmail}`}>

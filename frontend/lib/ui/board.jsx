@@ -7,7 +7,7 @@ import { cn } from "./utils.js";
  */
 export function Board({ className, children }) {
   return (
-    <div className={cn("flex gap-4 overflow-x-auto pb-2", className)}>
+    <div className={cn("eo-scrollbar-none eo-touch-scroll flex max-w-full gap-4 overflow-x-auto pb-2", className)}>
       {children}
     </div>
   );
@@ -16,7 +16,7 @@ export function Board({ className, children }) {
 export function BoardColumn({ title, count, accentClassName = "bg-slate-300", emptyMessage = "Nothing here", children, className }) {
   const hasItems = React.Children.count(children) > 0;
   return (
-    <section className={cn("flex w-[300px] shrink-0 flex-col rounded-xl border border-line bg-slate-50/60", className)}>
+    <section className={cn("flex w-[min(300px,calc(100vw-2rem))] shrink-0 flex-col rounded-xl border border-line bg-slate-50/60", className)}>
       <header className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className={cn("h-2 w-2 rounded-full", accentClassName)} aria-hidden />

@@ -112,7 +112,7 @@ export function SupportCenter() {
   return (
     <div>
       <Topbar title="Support" subtitle="Open a ticket, track its status, and continue the conversation with our team." />
-      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
         <Card>
           <CardContent className="p-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AlertTriangle, CreditCard, Lock, LogOut, UserRound, Wallet } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { clearStaffSessionToken } from "@/lib/auth/staff-client-session";
@@ -14,6 +14,7 @@ import { isContractSubmittedForPortal } from "@/components/portal/contract-gate"
 import { useActionToast } from "./feedback-layer";
 import { BrandLogo } from "./brand-logo";
 import { SidebarNav } from "./sidebar-nav";
+import { AnimatedMenuButton, FullScreenMobileMenu } from "./mobile-menu";
 
 export function AppShell({
   items,
@@ -30,7 +31,9 @@ export function AppShell({
 }) {
   const { signOut } = useClerk();
   const router = useRouter();
+  const pathname = usePathname();
   const { showToast } = useActionToast();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutState, setLogoutState] = useState({ loading: false, error: "" });
   const [staffSessionState, setStaffSessionState] = useState({ checking: authMode === "staff", error: "" });
   const contractQuery = useCustomerQuery({
@@ -91,7 +94,12 @@ export function AppShell({
     };
   }, [authMode]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   async function handleLogout() {
+    setMobileOpen(false);
     setLogoutState({ loading: true, error: "" });
 
     try {
@@ -164,9 +172,105 @@ export function AppShell({
 
   return (
     <ButtonThemeProvider value="portal">
-      <div className="min-h-screen bg-canvas text-slate-900">
-        <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)]">
-          <aside className="z-40 flex h-full min-w-0 flex-col border-r border-white/10 bg-[#0f1115] px-3 py-4 text-slate-300 lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
+      <div className="min-h-screen bg-canvas text-slate-900 [--eo-topbar-top:3.5rem] lg:[--eo-topbar-top:0px]">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f1115]/95 text-white backdrop-blur lg:hidden">
+          <div className="flex h-14 items-center gap-3 px-4">
+            <Link href={sidebarHref} className="flex min-w-0 flex-1 items-center gap-3" aria-label={`${roleLabel} home`}>
+              <BrandLogo
+                className="h-7 w-[142px]"
+                imageClassName="brightness-0 invert"
+                src={logoSrc}
+                width={logoWidth}
+                height={logoHeight}
+                priority
+              />
+              <span className="hidden truncate rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60 min-[380px]:inline-flex">
+                {roleLabel}
+              </span>
+            </Link>
+            <AnimatedMenuButton
+              open={mobileOpen}
+              controls="app-shell-mobile-menu"
+              onClick={() => setMobileOpen((current) => !current)}
+              className="border border-white/15 bg-white/5 text-white hover:bg-white/10"
+            />
+          </div>
+        </header>
+
+        <FullScreenMobileMenu
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          id="app-shell-mobile-menu"
+          label={`${roleLabel} navigation`}
+          breakpointClassName="lg:hidden"
+          desktopMinWidth={1024}
+          className="bg-[#0f1115] text-white"
+        >
+          <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
+            <div className="eo-mobile-menu-item flex items-center justify-between gap-3" style={{ "--eo-menu-index": 0 }}>
+              <Link href={sidebarHref} onClick={() => setMobileOpen(false)} className="min-w-0" aria-label={`${roleLabel} home`}>
+                <BrandLogo
+                  className="h-8 w-[168px]"
+                  imageClassName="brightness-0 invert"
+                  src={logoSrc}
+                  width={logoWidth}
+                  height={logoHeight}
+                  priority
+                />
+              </Link>
+              <AnimatedMenuButton
+                open
+                controls="app-shell-mobile-menu"
+                label="Close navigation"
+                onClick={() => setMobileOpen(false)}
+                className="border border-white/15 bg-white/5 text-white hover:bg-white/10"
+              />
+            </div>
+
+            <div className="eo-mobile-menu-item mt-6 rounded-xl border border-white/10 bg-white/5 p-4" style={{ "--eo-menu-index": 1 }}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">{roleLabel}</p>
+              <p className="mt-2 text-sm font-semibold text-white">{authMode === "staff" ? "Operations workspace" : "Customer workspace"}</p>
+              {authMode === "clerk" && !portalLocked ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-white/10 bg-black/10 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">Wallet</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{formatCurrency(walletBalance)}</p>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-black/10 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">This month</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{formatCurrency(monthlyAmount)}</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {portalLocked ? (
+              <div className="eo-mobile-menu-item mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100" style={{ "--eo-menu-index": 2 }}>
+                Sign the Managed Service Agreement to unlock your workspace.
+              </div>
+            ) : null}
+
+            <div className="eo-mobile-menu-item eo-scrollbar-none mt-6 min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-5" style={{ "--eo-menu-index": 3 }}>
+              <SidebarNav groups={groups} items={items} />
+            </div>
+
+            <div className="eo-mobile-menu-item mt-6 border-t border-white/10 pt-5" style={{ "--eo-menu-index": 4 }}>
+              {logoutState.error ? <p className="mb-3 text-xs font-medium text-rose-300">{logoutState.error}</p> : null}
+              <button
+                type="button"
+                disabled={logoutState.loading}
+                onClick={handleLogout}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 text-sm font-semibold text-rose-100 disabled:opacity-60"
+              >
+                <LogOut className="h-4 w-4" />
+                {logoutState.loading ? "Logging out…" : "Log out"}
+              </button>
+            </div>
+          </div>
+        </FullScreenMobileMenu>
+
+        <div className="grid min-h-[calc(100vh-3.5rem)] w-full grid-cols-1 lg:min-h-screen lg:grid-cols-[264px_minmax(0,1fr)]">
+          <aside className="z-40 hidden h-full min-w-0 flex-col border-r border-white/10 bg-[#0f1115] px-3 py-4 text-slate-300 lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-hidden">
             <Link
               href={sidebarHref}
               className="block rounded-lg border border-white/10 bg-white/5 px-3 py-3 transition-colors hover:border-white/20"

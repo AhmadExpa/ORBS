@@ -607,7 +607,7 @@ export function AccountSettingsPage() {
   return (
     <div>
       <Topbar title="Account" subtitle="Manage your sign-in details, security, and business profile." />
-      <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1680px] p-4 sm:p-6 md:p-8">
         <div className="grid gap-6 lg:grid-cols-[256px_minmax(0,1fr)]">
           <aside className="flex min-h-[520px] flex-col rounded-lg border border-white/10 bg-[#0f1115] px-3 py-5 text-slate-300">
             <div className="px-2">

@@ -660,7 +660,7 @@ function MobileSection({ title, open, onToggle, children, index = 0 }) {
     >
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-4 rounded-md py-2 text-left text-2xl font-semibold leading-tight sm:text-3xl"
+        className="flex min-h-11 w-full items-center justify-between gap-4 rounded-md py-2 text-left text-xl font-semibold leading-tight sm:text-2xl"
         aria-expanded={open}
         onClick={onToggle}
       >
@@ -795,9 +795,9 @@ export function SiteHeader() {
         />
       ) : null}
 
-      <div className={cn("relative z-40 mx-auto flex w-full max-w-[1520px] items-center gap-3 px-3 transition-[padding] duration-300 sm:gap-5 sm:px-6 lg:px-8", elevated ? "py-3" : "py-4")}>
-        <Link href="/" className="flex shrink-0 items-center" aria-label="ElevenOrbits home">
-          <BrandLogo className="h-9 w-[158px] sm:h-11 sm:w-[196px] md:h-12 md:w-[230px]" imageClassName="w-full brightness-0 invert" priority />
+      <div className={cn("relative z-40 mx-auto flex w-full max-w-[1520px] items-center gap-2 px-4 transition-[padding] duration-300 sm:gap-5 sm:px-6 lg:px-8", elevated ? "py-3" : "py-3.5 sm:py-4")}>
+        <Link href="/" className="flex min-w-0 shrink items-center" aria-label="ElevenOrbits home">
+          <BrandLogo className="h-8 w-[148px] sm:h-10 sm:w-[184px] md:h-11 md:w-[210px]" imageClassName="w-full brightness-0 invert" priority />
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold xl:flex">
@@ -873,7 +873,7 @@ export function SiteHeader() {
         label="Website navigation"
         className="bg-slate-950 text-white"
       >
-        <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-4 sm:px-5 sm:py-5">
+        <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-5 sm:py-5">
                 <div className="eo-mobile-menu-item flex min-w-0 items-center justify-between gap-3" style={{ "--eo-menu-index": 0 }}>
                   <Link href="/" className="min-w-0 shrink" aria-label="ElevenOrbits home" onClick={closeMobileMenu}>
                     <BrandLogo className="h-9 w-[168px] sm:h-10 sm:w-[188px]" imageClassName="brightness-0 invert" priority />

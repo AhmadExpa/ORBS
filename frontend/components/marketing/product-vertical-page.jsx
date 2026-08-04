@@ -257,7 +257,7 @@ export function ProductVerticalPage({ slug }) {
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-55" />
         <div className="relative mx-auto max-w-[1520px] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <div className={cn("eo-premium-card eo-reveal-up overflow-hidden rounded-lg border p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.38)] md:p-9 lg:p-11", theme.shell)}>
+          <div className={cn("eo-premium-card eo-reveal-up overflow-hidden rounded-lg border p-5 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.38)] sm:p-6 md:p-9 lg:p-11", theme.shell)}>
             <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-end">
               <div className="max-w-5xl">
                 <div className="flex flex-wrap items-center gap-3">
@@ -267,21 +267,21 @@ export function ProductVerticalPage({ slug }) {
                   <p className={cn("text-xs font-semibold uppercase tracking-[0.22em]", theme.accent)}>{vertical.eyebrow}</p>
                 </div>
 
-                <h1 className="mt-7 text-[clamp(2.7rem,7vw,6.4rem)] font-semibold leading-[0.96] tracking-[-0.06em] text-slate-950">
+                <h1 className="mt-7 text-[clamp(2.25rem,7vw,6.4rem)] font-semibold leading-[1] tracking-[-0.05em] text-slate-950 sm:leading-[0.96] sm:tracking-[-0.06em]">
                   {vertical.title}
                 </h1>
                 <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">{vertical.description}</p>
                 <ServiceLogoCluster categorySlugs={vertical.categorySlugs} techItems={laneTechItems} max={7} showLabels className="mt-7" />
 
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href={getSignupPath()}>
-                    <Button className="min-w-[170px] justify-center">
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link href={getSignupPath()} className="w-full sm:w-auto">
+                    <Button className="w-full justify-center sm:w-auto sm:min-w-[170px]">
                       Start With {vertical.shortName}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <a href={`mailto:${departmentContact.email}`}>
-                    <Button variant="ghost" className="min-w-[170px] justify-center bg-white/90">
+                  <a href={`mailto:${departmentContact.email}`} className="w-full sm:w-auto">
+                    <Button variant="ghost" className="w-full justify-center bg-white/90 sm:w-auto sm:min-w-[170px]">
                       Email {departmentContact.title}
                     </Button>
                   </a>

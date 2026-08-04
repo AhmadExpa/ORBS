@@ -64,7 +64,7 @@ export function TicketThread({ ticketId }) {
         title={ticket?.subject || "Ticket Thread"}
         subtitle={`${ticket?.ticketNumber || ticketId} · ${ticket?.category || "Support"}`}
       />
-      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-4 sm:p-6 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
             <CardTitle>Conversation</CardTitle>

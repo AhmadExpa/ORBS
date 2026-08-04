@@ -166,7 +166,7 @@ export function AdminUsersPage() {
   return (
     <div>
       <Topbar title="Users" subtitle="Review customers, manage account access, and view internal staff." />
-      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

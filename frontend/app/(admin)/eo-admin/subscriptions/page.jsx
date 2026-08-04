@@ -285,7 +285,7 @@ export default function AdminSubscriptionsPage() {
         title="Subscriptions & Services"
         subtitle="Assign VPS/VDS credentials and publish app, CDN, storage, and managed service details to the customer's portal."
       />
-      <div className="p-6 md:p-8">
+      <div className="p-4 sm:p-6 md:p-8">
         {pendingCredentialCount > 0 ? (
           <button
             type="button"

@@ -48,9 +48,9 @@ export function IndustryIndex({ industries }) {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
-        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-4 py-12 sm:px-6 sm:py-14 lg:py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Industries</p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
+          <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">
             Managed operations for teams that depend on hosted systems.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">
@@ -60,7 +60,7 @@ export function IndustryIndex({ industries }) {
         </div>
       </section>
       <section>
-        <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto grid max-w-[1280px] gap-5 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-2 xl:grid-cols-3">
           {industries.map((industry, index) => (
             <Link
               key={industry.slug}
@@ -89,17 +89,17 @@ export function IndustryDetail({ industry }) {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-30" />
-        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-4 py-12 sm:px-6 sm:py-14 lg:py-16">
           <Link href="/industries" className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">
             Industries
           </Link>
-          <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{industry.title}</h1>
+          <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">{industry.title}</h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{industry.description}</p>
           <ServiceLogoCluster categorySlugs={slugsForRecommendations(industry.recommended)} max={6} className="mt-7" />
         </div>
       </section>
       <section>
-        <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-10">
             <section className="eo-reveal-up">
               <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Why It Fits</h2>
@@ -157,9 +157,9 @@ export function ResourceIndex({ resources }) {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
-        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-4 py-12 sm:px-6 sm:py-14 lg:py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">Resources</p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
+          <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">
             Practical guides for managed infrastructure, AI, automation, security, VoIP, and billing.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">
@@ -169,7 +169,7 @@ export function ResourceIndex({ resources }) {
         </div>
       </section>
       <section>
-        <div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-12 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto grid max-w-[1280px] gap-5 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-2 xl:grid-cols-3">
           {resources.map((resource, index) => (
             <Link
               key={resource.slug}
@@ -200,17 +200,17 @@ export function ResourceDetail({ resource, resources = [] }) {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-30" />
-        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-6 py-14 lg:py-16">
+        <div className="eo-reveal-up relative mx-auto max-w-[1280px] px-4 py-12 sm:px-6 sm:py-14 lg:py-16">
           <Link href="/resources" className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">
             Resources
           </Link>
-          <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{resource.title}</h1>
+          <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">{resource.title}</h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{resource.description}</p>
           <ServiceLogoCluster categorySlugs={resourceSlugs[resource.slug] || coreServiceSlugs} max={6} showLabels className="mt-7" />
         </div>
       </section>
       <section>
-        <div className="mx-auto grid max-w-[1280px] gap-8 px-6 py-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="eo-premium-card eo-reveal-soft h-fit rounded-lg border border-slate-200 bg-slate-50 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Guide Summary</p>
             <p className="mt-4 text-sm leading-7 text-slate-600">{resource.intro}</p>

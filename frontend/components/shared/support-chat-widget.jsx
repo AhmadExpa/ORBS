@@ -380,7 +380,7 @@ export function SupportChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-20 right-3 z-[90] flex flex-col items-end md:bottom-6 md:right-6">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[90] flex flex-col items-end md:bottom-6 md:right-6">
       {open ? (
         <section
           role="dialog"
@@ -388,7 +388,7 @@ export function SupportChatWidget() {
           aria-label="ElevenOrbits support chat"
           className="fixed inset-0 flex h-dvh w-screen flex-col overflow-hidden bg-white md:static md:mb-3 md:h-[min(680px,calc(100dvh-6rem))] md:w-[calc(100vw-3rem)] md:max-w-[410px] md:rounded-2xl md:border md:border-slate-200 md:shadow-[0_28px_80px_rgba(15,23,42,0.24)]"
         >
-          <header className="shrink-0 bg-slate-950 px-5 py-4 text-white">
+          <header className="shrink-0 bg-slate-950 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-white sm:px-5 md:py-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
@@ -471,7 +471,7 @@ export function SupportChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          <footer className="border-t border-slate-200 bg-white p-4">
+          <footer className="border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 md:p-4">
             {phase === "customer_pin" ? (
               <div className="mb-3 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-900">
                 Can’t find your PIN? Open{" "}
@@ -564,13 +564,13 @@ export function SupportChatWidget() {
           type="button"
           onClick={() => setOpen((current) => !current)}
           className={cn(
-            "group h-14 items-center gap-3 rounded-full border border-slate-800 bg-slate-950 px-4 text-white shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:bg-slate-900",
+            "group h-12 w-12 items-center justify-center gap-3 rounded-full border border-slate-800 bg-slate-950 p-0 text-white shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:bg-slate-900 sm:h-14 sm:w-auto sm:px-4",
             open ? "hidden md:flex" : "flex",
           )}
           aria-label={open ? "Close support chat" : "Open support chat"}
         >
           {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
-          <span className="pr-1 text-sm font-semibold">{open ? "Close" : "Support"}</span>
+          <span className="hidden pr-1 text-sm font-semibold sm:inline">{open ? "Close" : "Support"}</span>
         </button>
       ) : null}
     </div>

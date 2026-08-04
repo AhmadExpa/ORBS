@@ -158,8 +158,58 @@ export function PortalSectionNav({ section, isDelegate = false }) {
   }
 
   return (
-    <aside className="border-b border-white/10 bg-[#0f1115] px-3 py-5 text-slate-300 lg:flex lg:min-h-[calc(100vh-3.5rem)] lg:border-b-0 lg:border-r">
-      <div className="flex w-full flex-col gap-6">
+    <aside className="border-b border-white/10 bg-[#0f1115] px-3 py-3 text-slate-300 lg:flex lg:min-h-[calc(100vh-3.5rem)] lg:border-b-0 lg:border-r lg:py-5">
+      <div className="w-full min-w-0 lg:hidden">
+        <div className="px-1">
+          <p className="text-sm font-semibold text-white">{section.label}</p>
+          {section.description ? <p className="mt-0.5 truncate text-xs text-white/45">{section.description}</p> : null}
+        </div>
+
+        <nav className="eo-scrollbar-none eo-touch-scroll mt-3 flex max-w-full gap-2 overflow-x-auto pb-1" aria-label={`${section.label} views`}>
+          {sectionLinks.map((link) => {
+            const Icon = iconMap[link.icon] || LayoutDashboard;
+            const active = isLinkActive(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-sm font-semibold",
+                  active ? "border-accent-500/40 bg-accent-600 text-white" : "border-white/10 bg-white/5 text-white/65",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {filter ? (
+          <nav className="eo-scrollbar-none eo-touch-scroll mt-2 flex max-w-full gap-2 overflow-x-auto border-t border-white/10 pt-2" aria-label={filter.label}>
+            {filter.options.map((option) => {
+              const active = activeFilter === option.value;
+              const count = filterCount(option.value);
+              return (
+                <Link
+                  key={option.value || "all"}
+                  href={filterHref(option.value)}
+                  scroll={false}
+                  className={cn(
+                    "inline-flex min-h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 text-xs font-semibold",
+                    active ? "border-white/20 bg-white text-slate-950" : "border-white/10 bg-white/5 text-white/60",
+                  )}
+                >
+                  {option.label}
+                  {count != null ? <span className={cn("rounded-full px-1.5 py-0.5", active ? "bg-slate-100" : "bg-white/10")}>{count}</span> : null}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
+      </div>
+
+      <div className="hidden w-full flex-col gap-6 lg:flex">
         <div className="space-y-6">
           <div className="px-2">
             <p className="text-sm font-semibold text-white">{section.label}</p>

@@ -65,7 +65,7 @@ export function ServiceDetail({ serviceId }) {
         title={subscription.productPlanId?.name || "Managed Service"}
         subtitle={showsAccess ? "Access and renewal details for this managed deployment." : `${categoryName} managed and operated by ElevenOrbits.`}
       />
-      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-6">
           <Card>
             <CardHeader>

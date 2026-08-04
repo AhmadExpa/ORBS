@@ -79,7 +79,7 @@ export function ContractCompletePage({ contractId }) {
   return (
     <div>
       <Topbar title="Contract Signing" subtitle="Documenso returned you to ElevenOrbits. The backend is checking the signed document status." />
-      <div className="mx-auto w-full max-w-3xl p-6 md:p-8">
+      <div className="mx-auto w-full max-w-3xl p-4 sm:p-6 md:p-8">
         <Card>
           <CardHeader>
             <CardTitle>Signing Status</CardTitle>

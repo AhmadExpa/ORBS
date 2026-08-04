@@ -4,10 +4,33 @@ import { cn } from "./utils.js";
 export function DataTable({ columns = [], rows = [], emptyMessage = "No records found.", dense = false }) {
   const headCell = dense ? "px-3 py-2.5" : "px-4 py-3";
   const bodyCell = dense ? "px-3 py-2.5" : "px-4 py-3.5";
+  const renderCell = (column, row) => (column.render ? column.render(row) : row[column.key]);
+
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-white shadow-card">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-line text-left">
+      <div className="divide-y divide-line md:hidden">
+        {rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm font-medium text-slate-500">{emptyMessage}</p>
+        ) : (
+          rows.map((row, index) => (
+            <article key={row.id || index} className="grid gap-3 p-4 odd:bg-white even:bg-slate-50/50">
+              {columns.map((column) => (
+                <div key={column.key} className="grid min-w-0 gap-1">
+                  {column.label ? (
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">{column.label}</span>
+                  ) : null}
+                  <div className={cn("min-w-0 break-words text-sm font-medium text-slate-700", column.className)}>
+                    {renderCell(column, row)}
+                  </div>
+                </div>
+              ))}
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-full divide-y divide-line whitespace-nowrap text-left">
           <thead className="bg-slate-50">
             <tr>
               {columns.map((column) => (
@@ -29,7 +52,7 @@ export function DataTable({ columns = [], rows = [], emptyMessage = "No records 
                 <tr key={row.id || index} className="transition-colors hover:bg-slate-50/70">
                   {columns.map((column) => (
                     <td key={column.key} className={cn("text-sm font-medium text-slate-700", bodyCell, column.className)}>
-                      {column.render ? column.render(row) : row[column.key]}
+                      {renderCell(column, row)}
                     </td>
                   ))}
                 </tr>

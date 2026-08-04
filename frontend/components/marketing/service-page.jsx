@@ -105,10 +105,10 @@ export function ServicePage({ slug }) {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16">
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <JsonLd data={serviceSchema} />
       <JsonLd data={breadcrumbSchema} />
-      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-8 shadow-panel">
+      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-5 shadow-panel sm:p-8">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
           <div>
             <div className="mb-6">
@@ -119,12 +119,12 @@ export function ServicePage({ slug }) {
               title={marketing?.headline || category.name}
               description={marketing?.body || category.description}
             />
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/contact"}>
-                <Button>{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link href={primaryPurchasePlan ? getPurchasePath(primaryPurchasePlan) : "/contact"} className="w-full sm:w-auto">
+                <Button className="w-full">{primaryPurchasePlan ? "Start Subscription" : "Contact Sales"}</Button>
               </Link>
-              <a href={`mailto:${departmentContact.email}`}>
-                <Button variant="ghost">Email {departmentContact.title}</Button>
+              <a href={`mailto:${departmentContact.email}`} className="w-full sm:w-auto">
+                <Button variant="ghost" className="w-full">Email {departmentContact.title}</Button>
               </a>
             </div>
           </div>

@@ -395,7 +395,7 @@ function ConfiguratorStepNav({ steps, currentId, onSelect }) {
 
   return (
     <div className="border-b border-line bg-slate-50/80 p-3 sm:p-4">
-      <div className="eo-scrollbar-none flex gap-2 overflow-x-auto" role="tablist" aria-label="Configuration steps">
+      <div className="eo-scrollbar-none eo-touch-scroll flex max-w-full gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Configuration steps">
         {steps.map((step, index) => {
           const Icon = step.icon;
           const active = step.id === currentId;
@@ -1163,10 +1163,10 @@ export function OrderConfigurator({ slug }) {
           </Link>
         }
       />
-      <div className="mx-auto w-full max-w-[1680px] px-6 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8">
         <OrderJourney current="configure" />
       </div>
-      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <Card id="configurator-workspace" className="scroll-mt-36 overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-slate-950 to-slate-800 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-300">Managed service builder</p>

@@ -294,7 +294,7 @@ function ServerUsageSection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 bg-white p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 bg-white p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const access = subscription.serviceAccess || {};
           const credentialsReady = hasAssignedCredentials(subscription);
@@ -368,7 +368,7 @@ function AiAutomationSection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const stack = getTechHighlights(subscription, 4);
           const details = getSharedDetails(subscription, 3);
@@ -448,7 +448,7 @@ function EdgeStorageSection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const stack = getTechHighlights(subscription, 4);
           const details = getSharedDetails(subscription, 4);
@@ -528,7 +528,7 @@ function AppHostingSection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const stack = getTechHighlights(subscription, 4);
           const details = getSharedDetails(subscription, 5);
@@ -617,7 +617,7 @@ function OperationsSection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const details = getSharedDetails(subscription, 3);
 
@@ -687,7 +687,7 @@ function SecuritySection({ subscriptions, serviceBasePath = "/portal" }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
         {subscriptions.map((subscription) => {
           const stack = getTechHighlights(subscription, 4);
           const details = getSharedDetails(subscription, 3);
@@ -829,7 +829,7 @@ export default function PortalServicesPage() {
           ) : null
         }
       />
-      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <SummaryCard subscriptions={currentSubscriptions} />
           {!isDelegate ? (

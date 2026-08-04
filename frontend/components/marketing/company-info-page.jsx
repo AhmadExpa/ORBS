@@ -12,10 +12,10 @@ export function CompanyInfoPage({ page }) {
     <main className="bg-white">
       <section className="relative border-b border-slate-200/80">
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-35" />
-        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:py-16">
+        <div className="relative mx-auto grid max-w-[1280px] gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:py-16">
           <div className="eo-reveal-up">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">{page.eyebrow}</p>
-            <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">{page.title}</h1>
+            <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{page.description}</p>
           </div>
           <aside className="eo-premium-card eo-reveal-soft h-fit rounded-lg border border-slate-200 bg-slate-50 p-6" style={{ "--eo-delay": "120ms" }}>
@@ -27,7 +27,7 @@ export function CompanyInfoPage({ page }) {
       </section>
 
       <section className="border-b border-slate-200/80">
-        <div className="mx-auto grid max-w-[1280px] gap-4 px-6 py-10 md:grid-cols-3">
+        <div className="mx-auto grid max-w-[1280px] gap-4 px-4 py-10 sm:px-6 md:grid-cols-3">
           {page.metrics.map((item, index) => (
             <div
               key={item.label}
@@ -43,7 +43,7 @@ export function CompanyInfoPage({ page }) {
       </section>
 
       <section>
-        <div className="mx-auto max-w-[1280px] px-6 py-12">
+        <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 sm:py-12">
           <ServiceVisualPanel
             title="Public service identity"
             description="Every company page now carries the same product logo system used across services, pricing, resources, and the portal order flow."

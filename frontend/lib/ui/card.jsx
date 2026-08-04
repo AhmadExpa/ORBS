@@ -16,7 +16,7 @@ export function Card({ className, children, ...props }) {
 }
 
 export function CardHeader({ className, children }) {
-  return <div className={cn("space-y-1 border-b border-line p-5", className)}>{children}</div>;
+  return <div className={cn("space-y-1 border-b border-line p-4 sm:p-5", className)}>{children}</div>;
 }
 
 export function CardTitle({ className, children }) {
@@ -28,5 +28,5 @@ export function CardDescription({ className, children }) {
 }
 
 export function CardContent({ className, children }) {
-  return <div className={cn("p-5", className)}>{children}</div>;
+  return <div className={cn("p-4 sm:p-5", className)}>{children}</div>;
 }

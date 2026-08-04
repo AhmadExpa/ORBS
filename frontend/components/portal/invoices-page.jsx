@@ -217,7 +217,7 @@ export function InvoicesPage({
     <div>
       <Topbar title={title} subtitle={subtitle} />
 
-      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Wallet balance</p>

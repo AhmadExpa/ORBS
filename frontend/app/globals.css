@@ -25,11 +25,15 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: clip;
   font-family:
     var(--font-geist-sans),
     -apple-system,
@@ -49,6 +53,12 @@ a {
   text-decoration: none;
 }
 
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
 button,
 input,
 textarea,
@@ -59,7 +69,7 @@ select {
 .dashboard-grid {
   display: grid;
   gap: 1.1rem;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
 }
 
 .skeleton-shimmer {
@@ -177,6 +187,28 @@ select {
 
 .eo-scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+.eo-touch-scroll {
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.eo-touch-scroll > * {
+  scroll-snap-align: start;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .eo-premium-card:hover {
+    transform: none;
+  }
 }
 
 @keyframes skeleton-shimmer {

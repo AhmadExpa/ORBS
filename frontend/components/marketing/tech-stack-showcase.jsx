@@ -98,7 +98,7 @@ function CarouselLane({ group, index, compact = false }) {
   const duration = compact ? 24 + index * 3 : 30 + group.partners.length * 2 + index * 2;
 
   return (
-    <div id={group.slug} className="min-w-0 scroll-mt-28 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
+    <div id={group.slug} className="w-full min-w-0 overflow-hidden scroll-mt-28 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
       <div className="mb-3 flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.75)]">
@@ -114,7 +114,7 @@ function CarouselLane({ group, index, compact = false }) {
         </span>
       </div>
 
-      <div className="tech-stack-marquee max-w-full rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 shadow-[0_22px_60px_-54px_rgba(15,23,42,0.55)]">
+      <div className="tech-stack-marquee w-full max-w-full rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 shadow-[0_22px_60px_-54px_rgba(15,23,42,0.55)]">
         <div
           className="tech-stack-marquee-track"
           style={{
@@ -190,7 +190,7 @@ export function TechStackShowcase({ compact = false }) {
             className={cn(
               "eo-reveal-up min-w-0",
               compact
-                ? "rounded-xl border border-slate-200 bg-white/95 p-6 shadow-[0_22px_70px_-58px_rgba(15,23,42,0.7)]"
+                ? "rounded-xl border border-slate-200 bg-white/95 p-5 shadow-[0_22px_70px_-58px_rgba(15,23,42,0.7)] sm:p-6"
                 : "flex h-full flex-col border-y border-slate-200 py-7 lg:min-h-[760px] lg:py-8",
             )}
           >
@@ -274,7 +274,7 @@ export function TechStackShowcase({ compact = false }) {
 
           <div className={cn("grid min-w-0 content-start", compact ? "gap-4" : "gap-7")}>
             {visibleGroups.map((group, index) => (
-              <div key={group.slug} className="eo-reveal-soft" style={{ "--eo-delay": `${Math.min(index * 55, 260)}ms` }}>
+              <div key={group.slug} className="eo-reveal-soft min-w-0 overflow-hidden" style={{ "--eo-delay": `${Math.min(index * 55, 260)}ms` }}>
                 <CarouselLane group={group} index={index} compact={compact} />
               </div>
             ))}

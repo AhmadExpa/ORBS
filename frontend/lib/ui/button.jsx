@@ -53,7 +53,7 @@ export function Button({ asChild = false, className, variant = "primary", childr
   return (
     <Component
       className={cn(
-        "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold leading-5 tracking-[0.01em] transition-colors duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold leading-5 tracking-[0.01em] transition-colors duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
         resolvedVariants[variant] || resolvedVariants.primary,
         className,
       )}

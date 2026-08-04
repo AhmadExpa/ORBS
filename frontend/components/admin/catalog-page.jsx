@@ -680,7 +680,7 @@ export function AdminCatalogPage() {
         subtitle="Manage categories, their plans, and the add-ons & pricing for each plan — all in one place."
         actions={<Button onClick={() => setModal({ type: "category" })}><Plus className="h-4 w-4" />New category</Button>}
       />
-      <div className="p-6 md:p-8">
+      <div className="p-4 sm:p-6 md:p-8">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           {/* Categories */}
           <Card className="h-fit">

@@ -198,7 +198,7 @@ export function AccountForm({ embedded = false }) {
         title="Account"
         subtitle="Keep your business, contact, and billing details current — they're used on invoices and during support."
       />
-      <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">{content}</div>
+      <div className="mx-auto w-full max-w-[1680px] p-4 sm:p-6 md:p-8">{content}</div>
     </div>
   );
 }

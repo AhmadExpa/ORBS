@@ -777,7 +777,7 @@ export function WalletPaymentsPage() {
 
       <main className="mx-auto w-full max-w-[1680px] space-y-6 p-4 sm:p-6 md:p-8">
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
-          <div className="relative overflow-hidden rounded-2xl bg-slate-950 p-6 text-white shadow-panel sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl bg-slate-950 p-5 text-white shadow-panel sm:p-8">
             <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-accent-500/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-brand-600/20 blur-3xl" />
 
@@ -795,18 +795,18 @@ export function WalletPaymentsPage() {
 
               <div>
                 <p className="text-sm font-medium text-slate-400">Available balance</p>
-                <p className="mt-2 text-5xl font-semibold tracking-[-0.05em] sm:text-6xl">{formatCurrency(walletBalance)}</p>
+                <p className="mt-2 break-words text-[clamp(2.35rem,12vw,3.75rem)] font-semibold tracking-[-0.05em]">{formatCurrency(walletBalance)}</p>
                 <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
                   Use wallet funds to pay a new order invoice in full or cover future renewals. Add exactly what you need, whenever you need it.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button type="button" onClick={() => setActiveSection("instant-topup")} className="min-w-[150px]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button type="button" onClick={() => setActiveSection("instant-topup")} className="w-full sm:w-auto sm:min-w-[150px]">
                   <Plus className="h-4 w-4" />
                   Top up wallet
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => setActiveSection("activity")} className="border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                <Button type="button" variant="ghost" onClick={() => setActiveSection("activity")} className="w-full border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:w-auto">
                   View activity
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -1356,7 +1356,7 @@ export function WalletPaymentsPage() {
                           !contractApproved
                         }
                         onClick={() => handleSavedCardTopup(primaryCard.id)}
-                        className="min-w-[190px]"
+                        className="w-full sm:w-auto sm:min-w-[190px]"
                       >
                         {savedTopupState.savingId === primaryCard.id
                           ? "Charging card..."

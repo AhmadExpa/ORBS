@@ -77,7 +77,7 @@ export function AdminResourcePage({ title, subtitle, path, queryKey, rowsBuilder
   return (
     <div>
       <Topbar title={title} subtitle={subtitle} />
-      <div className="space-y-6 p-6 md:p-8">
+      <div className="space-y-6 p-4 sm:p-6 md:p-8">
         {resolvedSections.map((section) => (
           <ResourceSection key={section.title} section={section} />
         ))}

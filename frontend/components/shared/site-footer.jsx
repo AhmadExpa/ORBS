@@ -34,8 +34,6 @@ const footerColumns = [
     title: "Company",
     links: [
       ...companyLinks,
-      { href: "/industries", label: "Industries" },
-      { href: "/tech-stack", label: "Tech Stack" },
       { href: "/pricing", label: "Pricing" },
     ],
   },

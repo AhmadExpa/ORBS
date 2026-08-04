@@ -50,7 +50,7 @@ export function CheckoutThankYouView({ orderId }) {
             : "Stripe confirmed the checkout flow, and the portal is refreshing the final payment state."
         }
       />
-      <div className="mx-auto w-full max-w-[1180px] p-6 md:p-8">
+      <div className="mx-auto w-full max-w-[1180px] p-4 sm:p-6 md:p-8">
         <Card className="overflow-hidden border-slate-200 bg-white">
           <CardContent className="p-0">
             <div className="grid gap-px bg-slate-200 lg:grid-cols-[1.05fr_0.95fr]">

@@ -145,12 +145,12 @@ export function CartPage() {
         }
       />
 
-      <div className="mx-auto w-full max-w-[1680px] px-6 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8">
         <OrderJourney current="cart" />
       </div>
 
       {!item ? (
-        <div className="mx-auto w-full max-w-[1680px] p-6 md:p-8">
+        <div className="mx-auto w-full max-w-[1680px] p-4 sm:p-6 md:p-8">
           <Card className="overflow-hidden">
             <CardContent className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500">
@@ -170,7 +170,7 @@ export function CartPage() {
           </Card>
         </div>
       ) : (
-        <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_390px]">
+        <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_390px]">
           <div className="space-y-6">
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-slate-950 to-slate-800 p-6">

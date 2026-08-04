@@ -453,7 +453,7 @@ export function ContractsPage() {
 
       <div className="mx-auto w-full max-w-[1180px] space-y-6 p-5 md:p-8">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-          <div className="grid gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
+          <div className="grid gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
             <div className="flex min-w-0 items-start gap-4">
               <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : "bg-brand-50 text-brand-700"}`}>
                 {status === "APPROVED" ? <ShieldCheck className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
@@ -519,7 +519,7 @@ export function ContractsPage() {
           </Card>
         ) : isAwaitingReview ? (
           <Card className="overflow-hidden border-amber-200">
-            <CardContent className="p-6 md:p-8">
+            <CardContent className="p-4 sm:p-6 md:p-8">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex max-w-2xl items-start gap-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
@@ -593,11 +593,11 @@ export function ContractsPage() {
 
             {entryMode === "existing" ? (
               <Card>
-                <CardHeader className="p-6 md:px-8">
+                <CardHeader className="p-4 sm:p-6 md:px-8">
                   <CardTitle>Submit your signed document</CardTitle>
                   <CardDescription>Use the document ID and URL from the agreement you already completed. The URL must be on app.documenso.com.</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 md:p-8">
+                <CardContent className="p-4 sm:p-6 md:p-8">
                   {canSubmitExisting ? (
                     <form className="space-y-6" onSubmit={handleExistingSubmission}>
                       <div className="grid gap-5 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
@@ -637,7 +637,7 @@ export function ContractsPage() {
                       <CardTitle>Sign a new agreement</CardTitle>
                       <CardDescription>Your verified ElevenOrbits name and email will be assigned to the signer automatically.</CardDescription>
                     </div>
-                    <div className="flex min-w-[280px] gap-1 rounded-lg bg-slate-100 p-1">
+                    <div className="flex w-full min-w-0 gap-1 rounded-lg bg-slate-100 p-1 sm:w-auto sm:min-w-[280px]">
                       {["Profile", "Details", "Review"].map((label, index) => (
                         <button
                           key={label}
@@ -652,7 +652,7 @@ export function ContractsPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-6 md:p-8">
+                <CardContent className="p-4 sm:p-6 md:p-8">
                   <form className="space-y-7" onSubmit={handleStart}>
                     {wizardStep === 0 ? (
                       <div>
@@ -734,7 +734,7 @@ export function ContractsPage() {
           </>
         ) : (
           <Card>
-            <CardContent className="flex items-start gap-4 p-6 md:p-8">
+            <CardContent className="flex items-start gap-4 p-4 sm:p-6 md:p-8">
               <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
               <div>
                 <h2 className="font-semibold text-slate-950">Your agreement is being processed</h2>
@@ -750,7 +750,7 @@ export function ContractsPage() {
               <CardTitle>Agreement record</CardTitle>
               <CardDescription>The account and document information stored with this agreement.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5 p-6 md:p-8">
+            <CardContent className="space-y-5 p-4 sm:p-6 md:p-8">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <ContractFact label="Customer type" value={contract.customerType === "BUSINESS" ? "Business" : "Individual"} />
                 <ContractFact label="Account email" value={fieldValue(contract.customerEmail)} />

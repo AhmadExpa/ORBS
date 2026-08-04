@@ -208,7 +208,7 @@ function PlanGroup({ group }) {
   return (
     <section className="space-y-6">
       {/* Header row */}
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-2xl font-bold tracking-tight text-slate-950">{group.title}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">{group.description}</p>
@@ -218,7 +218,7 @@ function PlanGroup({ group }) {
         </div>
 
         {totalPages > 1 ? (
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex w-full shrink-0 items-center justify-between gap-3 sm:w-auto sm:justify-end">
             {/* Page dots */}
             <div className="flex items-center gap-1.5">
               {Array.from({ length: totalPages }).map((_, i) => (
@@ -227,13 +227,15 @@ function PlanGroup({ group }) {
                   type="button"
                   onClick={() => setPage(i)}
                   aria-label={`Go to page ${i + 1}`}
-                  className={cn(
-                    "rounded-full transition-all duration-200",
-                    i === page
-                      ? "h-2 w-6 bg-slate-950"
-                      : "h-2 w-2 bg-slate-300 hover:bg-slate-400",
-                  )}
-                />
+                  className="group inline-flex h-10 min-w-10 items-center justify-center rounded-full"
+                >
+                  <span
+                    className={cn(
+                      "block h-2 rounded-full transition-all duration-200",
+                      i === page ? "w-6 bg-slate-950" : "w-2 bg-slate-300 group-hover:bg-slate-400",
+                    )}
+                  />
+                </button>
               ))}
             </div>
 
@@ -245,7 +247,7 @@ function PlanGroup({ group }) {
                 onClick={() => setPage((p) => p - 1)}
                 aria-label="Previous plans"
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition",
                   canPrev
                     ? "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50"
                     : "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed",
@@ -259,7 +261,7 @@ function PlanGroup({ group }) {
                 onClick={() => setPage((p) => p + 1)}
                 aria-label="Next plans"
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition",
                   canNext
                     ? "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50"
                     : "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed",

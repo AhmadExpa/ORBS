@@ -459,10 +459,10 @@ export function CheckoutPaymentView({ orderId }) {
         title="Secure Checkout"
         subtitle="Confirm the order and complete payment. The ElevenOrbits team will review and provision your managed service after approval."
       />
-      <div className="mx-auto w-full max-w-[1680px] px-6 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8">
         <OrderJourney current="payment" />
       </div>
-      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mx-auto grid w-full max-w-[1680px] gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>
             <CardTitle>Selected Plan Summary</CardTitle>

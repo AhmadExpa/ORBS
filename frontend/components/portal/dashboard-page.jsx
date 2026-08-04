@@ -212,7 +212,7 @@ export function PortalDashboardPage() {
       {showInitialLoader ? (
         <PageLoader title="Loading your dashboard" subtitle="Gathering your services, payments, and support activity…" />
       ) : (
-        <div className="mx-auto w-full max-w-[1680px] space-y-8 p-6 md:p-8" aria-busy={dashboardLoading}>
+        <div className="mx-auto w-full max-w-[1680px] space-y-8 p-4 sm:p-6 md:p-8" aria-busy={dashboardLoading}>
           {reviewMessage ? (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
               {reviewMessage}
@@ -222,7 +222,7 @@ export function PortalDashboardPage() {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-[#0b0f19] text-white shadow-lg">
             <div className="grid min-w-0 lg:grid-cols-[1.4fr_0.6fr]">
               {/* Left Side: Welcome + Main Actions */}
-              <div className="relative overflow-hidden p-6 md:p-8">
+              <div className="relative overflow-hidden p-4 sm:p-6 md:p-8">
                 {/* Decorative background glow */}
                 <div className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-indigo-500/10 blur-[80px]" />
                 <div className="pointer-events-none absolute bottom-0 right-1/4 h-48 w-48 rounded-full bg-sky-500/10 blur-[60px]" />
@@ -260,7 +260,7 @@ export function PortalDashboardPage() {
               {/* Right Side: Quick Stats (Wallet + Next Renewal) */}
               <div className="flex flex-col justify-stretch border-t border-white/[0.08] lg:border-l lg:border-t-0 bg-white/[0.02]">
                 {/* Wallet Coverage */}
-                <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b border-white/[0.08]">
+                <div className="flex flex-1 flex-col justify-center border-b border-white/[0.08] p-4 sm:p-6 md:p-8">
                   <div className="flex items-center gap-4">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                       <Wallet className="h-6 w-6" />
@@ -273,7 +273,7 @@ export function PortalDashboardPage() {
                 </div>
 
                 {/* Next Renewal */}
-                <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                <div className="flex flex-1 flex-col justify-center p-4 sm:p-6 md:p-8">
                   <div className="flex items-center gap-4">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
                       <CalendarClock className="h-6 w-6" />

@@ -34,7 +34,7 @@ export function PortalFooter({ isAgent = false }) {
 
   return (
     <footer className="mt-auto border-t border-line bg-white">
-      <div className="mx-auto w-full max-w-[1680px] px-6 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1680px] px-4 py-8 sm:px-6 md:px-8">
         {!isAgent ? (
           <div className="mb-10 overflow-hidden rounded-2xl border border-slate-800 bg-[linear-gradient(135deg,#07111f_0%,#0f172a_60%,#172554_100%)] p-5 text-white shadow-[0_24px_60px_-34px_rgba(2,6,23,0.85)] sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

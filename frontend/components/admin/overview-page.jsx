@@ -46,7 +46,7 @@ export function AdminOverviewPage() {
   return (
     <div>
       <Topbar title="Overview" subtitle="Customers, recurring revenue, and everything that needs your attention today." />
-      <div className="space-y-8 p-6 md:p-8">
+      <div className="space-y-8 p-4 sm:p-6 md:p-8">
         {/* Needs attention */}
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">Needs attention</h2>

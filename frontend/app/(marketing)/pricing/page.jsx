@@ -90,10 +90,10 @@ export default function PricingPage() {
       <section className="relative overflow-hidden bg-[#04101f] text-white">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#020617_0%,#07192e_48%,#0f172a_100%)]" />
         <div className="pointer-events-none absolute inset-0 eo-media-grid opacity-15 mix-blend-screen" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-end lg:py-20">
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-end lg:py-20">
           <div className="eo-reveal-up">
             <p className="text-xs font-semibold uppercase tracking-[0.34em] text-cyan-300">Pricing</p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-tight md:text-6xl">
+            <h1 className="mt-5 max-w-4xl text-3xl font-semibold leading-[1.05] tracking-tight sm:text-4xl md:text-6xl md:leading-[1.02]">
               Managed service pricing with clear delivery ownership.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300">
@@ -133,7 +133,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-14 lg:py-16">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:py-16">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">Service catalog</p>
@@ -187,7 +187,7 @@ export default function PricingPage() {
       </section>
 
       <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-14">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14">
           <div className="grid gap-8 border-y border-slate-200 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.26em] text-sky-600">

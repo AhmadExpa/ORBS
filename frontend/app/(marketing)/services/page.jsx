@@ -53,8 +53,8 @@ const serviceIconMap = {
 
 export default function ServicesPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16">
-      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-8 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.2)]">
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+      <section className="eo-premium-card eo-reveal-up rounded-lg border border-slate-200 bg-white p-5 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.2)] sm:p-8">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-center">
           <div>
             <SectionHeading

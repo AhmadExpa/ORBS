@@ -128,7 +128,7 @@ export function AdminContactSubmissionsPage() {
   return (
     <div>
       <Topbar title="Contact Leads" subtitle="Review public contact form submissions and track follow-up status." />
-      <div className="space-y-6 p-6 md:p-8">
+      <div className="space-y-6 p-4 sm:p-6 md:p-8">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

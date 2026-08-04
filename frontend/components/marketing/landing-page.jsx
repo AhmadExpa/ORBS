@@ -241,7 +241,7 @@ function SectionIntro({ eyebrow, title, description, align = "left" }) {
   return (
     <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
       <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#ff7a1a]">{eyebrow}</p>
-      <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{title}</h2>
+      <h2 className="mt-4 text-[1.75rem] font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-4xl">{title}</h2>
       {description ? <p className="mt-4 text-sm leading-7 text-slate-600">{description}</p> : null}
     </div>
   );
@@ -281,22 +281,22 @@ function HeroSection() {
     <section className="relative overflow-hidden border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fb_100%)]">
       <div className="pointer-events-none absolute inset-0 marketing-grid-fine opacity-55" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(circle_at_28%_16%,rgba(255,122,26,0.16),transparent_34%),radial-gradient(circle_at_78%_22%,rgba(0,105,166,0.13),transparent_32%)]" />
-      <div className="relative mx-auto grid max-w-[1580px] gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[0.74fr_1.26fr] lg:items-center lg:px-8 lg:py-24">
+      <div className="relative mx-auto grid max-w-[1580px] gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[0.74fr_1.26fr] lg:items-center lg:px-8 lg:py-24">
         <div className="max-w-2xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#ff7a1a]">Business systems, managed end to end</p>
-          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-[64px] lg:leading-[1.02]">
+          <h1 className="mt-5 text-[clamp(2.1rem,10.5vw,3rem)] font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl lg:text-[64px] lg:leading-[1.02]">
             We manage the technology layer behind SMB and corporate operations.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
             ElevenOrbits operates the cloud, voice, AI, security, billing, and support systems companies rely on every day, with one accountable service record from order to renewal.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={getSignupPath()} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#ff7a1a] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#ea690d]">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Link href={getSignupPath()} className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-[#ff7a1a] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#ea690d] sm:w-auto">
               Open customer portal
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-            <Link href="/pricing" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:bg-slate-50">
+            <Link href="/pricing" className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto">
               Review catalog pricing
             </Link>
           </div>
@@ -316,7 +316,7 @@ function PromoTilesSection() {
           const Icon = tile.icon;
 
           return (
-            <Link key={tile.title} href={tile.href} className={`group relative min-h-[260px] overflow-hidden rounded-2xl bg-gradient-to-br ${tile.theme} p-6 text-white shadow-[0_36px_120px_-78px_rgba(15,23,42,0.98)] ring-1 ring-white/50`}>
+            <Link key={tile.title} href={tile.href} className={`group relative min-h-[240px] overflow-hidden rounded-2xl bg-gradient-to-br ${tile.theme} p-5 text-white shadow-[0_36px_120px_-78px_rgba(15,23,42,0.98)] ring-1 ring-white/50 sm:min-h-[260px] sm:p-6`}>
               <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/16 blur-3xl" />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent" />
               <div className="relative flex items-start justify-between gap-5">
@@ -343,7 +343,7 @@ function PromoTilesSection() {
 function ProofSection() {
   return (
     <section className="border-b border-slate-200 bg-white">
-      <div className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
           <SectionIntro
             eyebrow="Managed Proof"
@@ -369,7 +369,7 @@ function ProofSection() {
           {proofCards.map((card) => {
             const Icon = card.icon;
             return (
-              <article key={card.title} className="eo-premium-card rounded-2xl border border-slate-200 bg-[#fbfcfd] p-6 shadow-[0_24px_80px_-70px_rgba(15,23,42,0.85)]">
+              <article key={card.title} className="eo-premium-card rounded-2xl border border-slate-200 bg-[#fbfcfd] p-5 shadow-[0_24px_80px_-70px_rgba(15,23,42,0.85)] sm:p-6">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-[#ff7a1a] ring-1 ring-orange-100">
                   <Icon className="h-5 w-5" />
                 </span>
@@ -453,7 +453,7 @@ function MetricsBand() {
   return (
     <section className="relative overflow-hidden border-y border-slate-800 bg-[#070b16] text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_20%,rgba(255,122,26,0.14),transparent_52%)]" />
-      <div className="relative w-full px-4 py-14 sm:px-6 lg:px-8 2xl:px-10">
+      <div className="relative w-full px-4 py-12 sm:px-6 sm:py-14 lg:px-8 2xl:px-10">
         <div className="grid gap-8 lg:grid-cols-[minmax(360px,0.42fr)_minmax(0,0.58fr)] lg:items-center">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-orange-300">Operational ownership</p>
@@ -666,7 +666,7 @@ function OperatingLanesSection() {
       <div className="grid w-full gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(320px,0.32fr)_minmax(0,0.68fr)] lg:px-8 2xl:px-10">
         <div className="lg:pt-2">
           <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#0069a6]">Our service areas</p>
-          <h2 className="mt-6 text-5xl font-extrabold leading-[0.98] tracking-tight text-slate-950 lg:text-6xl">
+          <h2 className="mt-6 text-[clamp(2.25rem,11vw,3rem)] font-extrabold leading-[1.02] tracking-tight text-slate-950 lg:text-6xl lg:leading-[0.98]">
             Enterprise-grade operations.
             <span className="block">Built for what is next.</span>
           </h2>
@@ -691,7 +691,7 @@ function OperatingLanesSection() {
             })}
           </div>
 
-          <Link href="/contact" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white shadow-[0_20px_55px_-36px_rgba(15,23,42,0.9)] transition hover:bg-slate-800">
+          <Link href="/contact" className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white shadow-[0_20px_55px_-36px_rgba(15,23,42,0.9)] transition hover:bg-slate-800 sm:w-auto">
             Talk to an expert
             <ArrowRight className="ml-3 h-4 w-4" />
           </Link>
@@ -764,12 +764,12 @@ function FinalCtaSection() {
             Create an account for structured orders and trial requests, or contact the team for scoped managed work.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href={getSignupPath()} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#ff7a1a] px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#e66a12]">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+          <Link href={getSignupPath()} className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-[#ff7a1a] px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#e66a12] sm:w-auto">
             Create account
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
-          <Link href="/contact" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/15">
+          <Link href="/contact" className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/15 sm:w-auto">
             Talk to sales
           </Link>
         </div>

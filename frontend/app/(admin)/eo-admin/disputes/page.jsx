@@ -76,7 +76,7 @@ export default function AdminDisputesPage() {
   return (
     <div>
       <Topbar title="Disputes" subtitle="Monitor Stripe card disputes, chargebacks, affected invoices, and suspended services." />
-      <div className="space-y-6 p-6 md:p-8">
+      <div className="space-y-6 p-4 sm:p-6 md:p-8">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <SummaryTile icon={ShieldAlert} label="Total disputes" value={summary.total || 0} />
           <SummaryTile icon={AlertTriangle} label="Open cases" value={summary.open || 0} tone="amber" />
