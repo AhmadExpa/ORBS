@@ -7,13 +7,11 @@ import {
   assertPaymentIntentCaptured,
   CARD_VERIFICATION_MODE_STANDARD,
   constructWebhookEvent,
-  createCheckoutLineItem,
-  createPaymentCheckoutSession,
   createPaymentIntent,
   createSavedCardPaymentIntent,
-  createSetupCheckoutSession,
   createSetupIntent,
   getPaymentIntentCardAuthentication,
+  getCustomerPaymentFailureMessage,
   getSetupIntentCardAuthentication,
   getUserSavedPaymentMethods,
   isStripeConfigured,
@@ -43,6 +41,7 @@ import { withTransaction } from "../../db/postgres-model.js";
 import { sendInvoiceNotification, sendWalletTopupNotification } from "../../services/email-service.js";
 import { requireApprovedContract } from "../../services/contract-service.js";
 import { buildCountryConsistencyChecks, getPaymentNetworkSignal } from "../../services/payment-preflight-service.js";
+import { serializeCustomerPaymentSubmission } from "../../services/payment-submission-view-service.js";
 
 export const stripeRouter = express.Router();
 export const stripeWebhookRouter = express.Router();
@@ -61,27 +60,6 @@ const paymentFinalizationRateLimit = rateLimit({
   keyFn: (req) => req.auth?.clerkId || req.ip,
 });
 
-function successUrl(path, type) {
-  return `${env.appUrl}${path}?stripe=success&type=${type}&session_id={CHECKOUT_SESSION_ID}`;
-}
-
-function cancelUrl(path, type) {
-  return `${env.appUrl}${path}?stripe=cancel&type=${type}`;
-}
-
-function normalizePortalReturnPath(value) {
-  const path = String(value || "").trim();
-  return path.startsWith("/") && !path.startsWith("//") ? path : "";
-}
-
-function normalizeCheckoutRequestId(value) {
-  const requestId = String(value || "").trim();
-  if (!/^[A-Za-z0-9_-]{16,80}$/u.test(requestId)) {
-    throw new HttpError(400, "A valid checkout request ID is required.");
-  }
-  return requestId;
-}
-
 function normalizeCustomerId(customer) {
   return typeof customer === "string" ? customer : customer?.id || "";
 }
@@ -92,6 +70,137 @@ function normalizePaymentMethodId(paymentMethod) {
 
 function normalizeChargeId(charge) {
   return typeof charge === "string" ? charge : charge?.id || "";
+}
+
+function requirePaymentRequestId(req) {
+  const requestId = String(req.body?.requestId || "").trim();
+  if (!requestId || requestId.length > 128) {
+    throw new HttpError(400, "A unique payment request ID is required. Please try the payment again.");
+  }
+
+  return requestId;
+}
+
+function buildStripeIdempotencyKey(operation, requestId) {
+  const normalizedRequestId = String(requestId || "")
+    .replace(/[^a-zA-Z0-9_.:-]/gu, "_")
+    .slice(0, 120);
+  return `elevenorbits_${operation}_${normalizedRequestId}`;
+}
+
+function isSettledPaymentSubmission(submission) {
+  return ["approved", "refunded", "disputed", "charged_back"].includes(String(submission?.status || "").toLowerCase());
+}
+
+function getPaymentIntentOutcome(paymentIntent = {}) {
+  const lastError = paymentIntent.last_payment_error || {};
+  const charge = typeof paymentIntent.latest_charge === "object" ? paymentIntent.latest_charge : null;
+  const card = charge?.payment_method_details?.card || paymentIntent.payment_method?.card || {};
+  const outcome = charge?.outcome || {};
+
+  return {
+    paymentIntentStatus: String(paymentIntent.status || "").trim(),
+    stripeFailureCode: String(lastError.code || charge?.failure_code || "").trim(),
+    stripeDeclineCode: String(lastError.decline_code || charge?.failure_code || "").trim(),
+    stripeAdviceCode: String(lastError.advice_code || "").trim(),
+    stripeFailureMessage: String(lastError.message || charge?.failure_message || "").trim(),
+    customerMessage: getCustomerPaymentFailureMessage({
+      code: lastError.code || charge?.failure_code,
+      declineCode: lastError.decline_code || charge?.failure_code,
+      adviceCode: lastError.advice_code,
+      status: paymentIntent.status,
+    }),
+    stripeOutcomeType: String(outcome.type || "").trim(),
+    stripeRiskLevel: String(outcome.risk_level || "").trim(),
+    stripeNetworkDeclineCode: String(outcome.network_decline_code || "").trim(),
+    cardBrand: String(card.brand || "").trim(),
+    cardLast4: String(card.last4 || "").trim(),
+    statementDescriptor: String(charge?.statement_descriptor || paymentIntent.statement_descriptor || "").trim(),
+    merchantName: "ElevenOrbits",
+  };
+}
+
+function getPaymentIntentSubmissionStatus(paymentIntent = {}) {
+  if (paymentIntent.status === "succeeded") {
+    return "approved";
+  }
+
+  if (paymentIntent.status === "processing") {
+    return "processing";
+  }
+
+  if (paymentIntent.status === "requires_action") {
+    return "requires_action";
+  }
+
+  if (paymentIntent.status === "canceled") {
+    return "cancelled";
+  }
+
+  if (paymentIntent.last_payment_error) {
+    return "failed";
+  }
+
+  return "pending_verification";
+}
+
+async function upsertPaymentIntentSubmission({
+  paymentIntent,
+  user,
+  submissionType,
+  amount,
+  orderId,
+  subscriptionId,
+  status,
+}) {
+  if (!paymentIntent?.id || !user?._id) {
+    return null;
+  }
+
+  const existingSubmission = await findExistingGatewaySubmission({ paymentIntentId: paymentIntent.id });
+  if (existingSubmission && isSettledPaymentSubmission(existingSubmission) && status !== "approved") {
+    return existingSubmission;
+  }
+
+  const outcome = getPaymentIntentOutcome(paymentIntent);
+  const submission = existingSubmission || await PaymentSubmission.create({
+    userId: user._id,
+    submissionType,
+    amount: Number(amount || 0),
+    invoiceCode: paymentIntent.id,
+    paymentMethodType: "stripe_card",
+    gateway: "stripe",
+    gatewayPaymentId: paymentIntent.id,
+    orderId,
+    subscriptionId,
+    submittedAt: new Date(),
+  });
+
+  submission.userId = user._id;
+  submission.submissionType = submissionType;
+  submission.amount = Number(amount || submission.amount || 0);
+  submission.invoiceCode = submission.invoiceCode || paymentIntent.id;
+  submission.paymentMethodType = "stripe_card";
+  submission.gateway = "stripe";
+  submission.gatewayPaymentId = paymentIntent.id;
+  submission.gatewayChargeId = normalizeChargeId(paymentIntent.latest_charge);
+  if (orderId) submission.orderId = orderId;
+  if (subscriptionId) submission.subscriptionId = subscriptionId;
+  submission.status = status || getPaymentIntentSubmissionStatus(paymentIntent);
+  submission.adminRemarks = submission.status === "approved"
+    ? "Stripe payment completed successfully for ElevenOrbits."
+    : outcome.stripeFailureMessage || `Stripe payment status: ${outcome.paymentIntentStatus || "pending"}.`;
+  Object.assign(submission, outcome);
+  submission.metadata = {
+    ...(submission.metadata || {}),
+    merchantName: "ElevenOrbits",
+    paymentIntentStatus: outcome.paymentIntentStatus,
+  };
+  if (submission.status === "approved") {
+    submission.reviewedAt = new Date();
+  }
+  await submission.save();
+  return submission;
 }
 
 function shouldSavePaymentMethodForFutureUse(metadata) {
@@ -133,6 +242,21 @@ async function findExistingGatewaySubmission({ paymentIntentId, checkoutSessionI
   return PaymentSubmission.findOne(filters.length === 1 ? filters[0] : { $or: filters });
 }
 
+async function lockExistingGatewaySubmission({ paymentIntentId, checkoutSessionId, chargeId }) {
+  if (paymentIntentId) {
+    const lockedSubmission = await PaymentSubmission.findOneAndUpdate(
+      { gatewayPaymentId: paymentIntentId },
+      { $set: { paymentIntentStatus: "settling" } },
+      { new: false },
+    );
+    if (lockedSubmission) {
+      return lockedSubmission;
+    }
+  }
+
+  return findExistingGatewaySubmission({ paymentIntentId, checkoutSessionId, chargeId });
+}
+
 function assertGatewayResourceBelongsToUser({ metadata, user }) {
   if (!metadata?.userId || String(metadata.userId) !== String(user._id)) {
     throw new HttpError(403, "This Stripe payment does not belong to the authenticated customer.");
@@ -160,7 +284,7 @@ function buildCardAuthenticationMetadata(authentication = {}) {
   };
 }
 
-async function rejectPendingOrderSubmissions(orderId, reason) {
+async function rejectPendingOrderSubmissions(orderId, reason, excludePaymentIntentId = "") {
   if (!orderId) {
     return;
   }
@@ -172,7 +296,9 @@ async function rejectPendingOrderSubmissions(orderId, reason) {
   });
 
   await Promise.all(
-    pendingSubmissions.map(async (submission) => {
+    pendingSubmissions
+      .filter((submission) => String(submission.gatewayPaymentId || "") !== String(excludePaymentIntentId || ""))
+      .map(async (submission) => {
       submission.status = "rejected";
       submission.adminRemarks = reason;
       submission.reviewedAt = new Date();
@@ -206,6 +332,7 @@ async function finalizeStripeOrderPayment({
   amountReceived,
   currency,
   cardAuthentication,
+  paymentIntentOutcome,
 }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
@@ -222,12 +349,13 @@ async function finalizeStripeOrderPayment({
       currency,
     });
 
-    const existingSubmission = await findExistingGatewaySubmission({
+    const existingSubmission = await lockExistingGatewaySubmission({
       paymentIntentId,
       checkoutSessionId,
       chargeId,
     });
-    if (existingSubmission) {
+    if (existingSubmission && isSettledPaymentSubmission(existingSubmission)) {
+      await existingSubmission.save();
       return { submission: existingSubmission, shouldNotify: false };
     }
 
@@ -253,6 +381,7 @@ async function finalizeStripeOrderPayment({
     await rejectPendingOrderSubmissions(
       order._id,
       "Superseded by a completed Stripe card payment.",
+      paymentIntentId,
     );
 
     const paymentReceivedAt = new Date();
@@ -302,7 +431,21 @@ async function finalizeStripeOrderPayment({
       await invoice.save();
     }
 
-    const submission = await PaymentSubmission.create({
+    const submission = existingSubmission || await PaymentSubmission.create({
+      userId: user._id,
+      orderId: order._id,
+      subscriptionId: subscription?._id,
+      submissionType: "order_payment",
+      amount: order.totalAmount,
+      invoiceCode: paymentIntentId || checkoutSessionId,
+      paymentMethodType: "stripe_card",
+      gateway: "stripe",
+      gatewayPaymentId: paymentIntentId,
+      gatewayCheckoutSessionId: checkoutSessionId,
+      gatewayChargeId: chargeId,
+      submittedAt: new Date(),
+    });
+    Object.assign(submission, {
       userId: user._id,
       orderId: order._id,
       subscriptionId: subscription?._id,
@@ -316,15 +459,22 @@ async function finalizeStripeOrderPayment({
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
-      metadata: {
-        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
-        threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
-        saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
-        ...buildCardAuthenticationMetadata(cardAuthentication),
-      },
-      submittedAt: new Date(),
+      merchantName: "ElevenOrbits",
       reviewedAt: new Date(),
     });
+    submission.metadata = {
+      ...(submission.metadata || {}),
+      merchantName: "ElevenOrbits",
+      cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+      threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
+      saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
+      ...buildCardAuthenticationMetadata(cardAuthentication),
+    };
+    Object.assign(submission, paymentIntentOutcome || {
+      paymentIntentStatus: "succeeded",
+      merchantName: "ElevenOrbits",
+    });
+    await submission.save();
 
     await recordActivity({
       actorId: user._id,
@@ -372,18 +522,20 @@ async function finalizeStripeWalletTopup({
   amountReceived,
   currency,
   cardAuthentication,
+  paymentIntentOutcome,
 }) {
   const result = await withTransaction(async () => {
     assertGatewayResourceBelongsToUser({ metadata, user });
     assertGatewayCustomerBelongsToUser({ customerId, user });
     await requireApprovedContract(user.clerkId);
 
-    const existingSubmission = await findExistingGatewaySubmission({
+    const existingSubmission = await lockExistingGatewaySubmission({
       paymentIntentId,
       checkoutSessionId,
       chargeId,
     });
-    if (existingSubmission) {
+    if (existingSubmission && isSettledPaymentSubmission(existingSubmission)) {
+      await existingSubmission.save();
       return { submission: existingSubmission, amount: existingSubmission.amount, shouldNotify: false };
     }
 
@@ -416,27 +568,46 @@ async function finalizeStripeWalletTopup({
     user.accountBalance = creditedUser.accountBalance;
     await processSubscriptionRenewals({ userIds: [user._id] });
 
-    const submission = await PaymentSubmission.create({
+    const submission = existingSubmission || await PaymentSubmission.create({
+      userId: user._id,
+      submissionType: "wallet_topup",
+      amount,
+      invoiceCode: paymentIntentId || checkoutSessionId,
+      paymentMethodType: "stripe_card",
+      gateway: "stripe",
+      gatewayPaymentId: paymentIntentId,
+      gatewayCheckoutSessionId: checkoutSessionId,
+      gatewayChargeId: chargeId,
+      submittedAt: new Date(),
+    });
+    Object.assign(submission, {
       userId: user._id,
       submissionType: "wallet_topup",
       amount,
       invoiceCode: paymentIntentId || checkoutSessionId,
       paymentMethodType: "stripe_card",
       status: "approved",
-      adminRemarks: "Stripe wallet top-up completed automatically.",
+      adminRemarks: "Stripe wallet top-up completed automatically for ElevenOrbits.",
       gateway: "stripe",
       gatewayPaymentId: paymentIntentId,
       gatewayCheckoutSessionId: checkoutSessionId,
       gatewayChargeId: chargeId,
-      metadata: {
-        cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
-        threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
-        saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
-        ...buildCardAuthenticationMetadata(cardAuthentication),
-      },
-      submittedAt: new Date(),
+      merchantName: "ElevenOrbits",
       reviewedAt: new Date(),
     });
+    submission.metadata = {
+      ...(submission.metadata || {}),
+      merchantName: "ElevenOrbits",
+      cardVerificationMode: metadata?.cardVerificationMode || CARD_VERIFICATION_MODE_STANDARD,
+      threeDSecurePolicy: metadata?.threeDSecurePolicy || "automatic",
+      saveCardForFutureUse: metadata?.saveCardForFutureUse || "false",
+      ...buildCardAuthenticationMetadata(cardAuthentication),
+    };
+    Object.assign(submission, paymentIntentOutcome || {
+      paymentIntentStatus: "succeeded",
+      merchantName: "ElevenOrbits",
+    });
+    await submission.save();
 
     await recordActivity({
       actorId: user._id,
@@ -507,8 +678,6 @@ async function finalizeStripeCardSetup({
     },
   });
 
-  await processSubscriptionRenewals({ userIds: [user._id] });
-
   return {
     paymentMethodId,
     setupIntentId,
@@ -551,6 +720,7 @@ async function finalizeCheckoutSession({ session, user }) {
       amountReceived: session.payment_intent.amount_received,
       currency: session.payment_intent.currency,
       cardAuthentication: getPaymentIntentCardAuthentication(session.payment_intent),
+      paymentIntentOutcome: getPaymentIntentOutcome(session.payment_intent),
     });
 
     return { type: metadataType, submission };
@@ -577,6 +747,7 @@ async function finalizeCheckoutSession({ session, user }) {
       amountReceived: session.payment_intent.amount_received,
       currency: session.payment_intent.currency,
       cardAuthentication: getPaymentIntentCardAuthentication(session.payment_intent),
+      paymentIntentOutcome: getPaymentIntentOutcome(session.payment_intent),
     });
 
     return { type: metadataType, submission };
@@ -622,6 +793,7 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       amountReceived: paymentIntent.amount_received,
       currency: paymentIntent.currency,
       cardAuthentication: getPaymentIntentCardAuthentication(paymentIntent),
+      paymentIntentOutcome: getPaymentIntentOutcome(paymentIntent),
     });
 
     return { type: metadataType, submission };
@@ -638,6 +810,7 @@ async function finalizePaymentIntent({ paymentIntent, user }) {
       amountReceived: paymentIntent.amount_received,
       currency: paymentIntent.currency,
       cardAuthentication: getPaymentIntentCardAuthentication(paymentIntent),
+      paymentIntentOutcome: getPaymentIntentOutcome(paymentIntent),
     });
 
     return { type: metadataType, submission };
@@ -670,6 +843,45 @@ async function finalizeSetupIntent({ setupIntent, user }) {
   return { type: metadataType, card };
 }
 
+async function recordPaymentIntentLifecycle(paymentIntent) {
+  const metadata = paymentIntent?.metadata || {};
+  if (!paymentIntent?.id || !["wallet_topup", "order_payment", "renewal_charge", "wallet_auto_topup"].includes(metadata.type)) {
+    return null;
+  }
+
+  const user = await User.findById(metadata.userId);
+  if (!user) {
+    return null;
+  }
+
+  assertGatewayCustomerBelongsToUser({
+    customerId: normalizeCustomerId(paymentIntent.customer),
+    user,
+  });
+
+  let amount = Number(metadata.amount || 0);
+  let orderId = metadata.orderId || undefined;
+  let subscriptionId = metadata.subscriptionId || undefined;
+
+  if (metadata.type === "order_payment" && orderId) {
+    const order = await Order.findOne({ _id: orderId, userId: user._id });
+    if (!order) {
+      return null;
+    }
+    amount = Number(order.totalAmount || amount);
+  }
+
+  return upsertPaymentIntentSubmission({
+    paymentIntent,
+    user,
+    submissionType: metadata.type,
+    amount,
+    orderId,
+    subscriptionId,
+    status: getPaymentIntentSubmissionStatus(paymentIntent),
+  });
+}
+
 async function reconcileRecentStripePayments({ user }) {
   if (!user.stripeCustomerId) {
     return { examined: 0, reconciled: 0, settledPaymentIntentIds: [], failures: [] };
@@ -696,7 +908,7 @@ async function reconcileRecentStripePayments({ user }) {
     });
 
     try {
-      if (existingSubmission) {
+      if (existingSubmission && isSettledPaymentSubmission(existingSubmission)) {
         settledPaymentIntentIds.push(paymentIntent.id);
         continue;
       }
@@ -954,6 +1166,7 @@ stripeRouter.post(
     }
 
     await requireApprovedContract(req.auth.clerkId);
+    const requestId = requirePaymentRequestId(req);
 
     if (req.body.type === "card_setup") {
       const verification = resolvePortalCardVerificationMode();
@@ -962,9 +1175,11 @@ stripeRouter.post(
         user,
         billingDetails: req.body.billingDetails,
         requestThreeDSecure: verification.requestThreeDSecure,
+        idempotencyKey: buildStripeIdempotencyKey("card_setup", requestId),
         metadata: {
           type: "card_setup",
           userId: user._id,
+          merchantName: "ElevenOrbits",
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
         },
@@ -980,25 +1195,34 @@ stripeRouter.post(
         throw new HttpError(400, "A valid top-up amount is required.");
       }
       const verification = resolvePortalCardVerificationMode();
+      const saveCardForFutureUse = req.body.saveCardForFutureUse === true || req.body.saveCardForFutureUse === "true";
 
       const intent = await createPaymentIntent({
         user,
         amount,
         description: "ElevenOrbits wallet top-up",
         billingDetails: req.body.billingDetails,
-        saveForFutureUse: true,
+        saveForFutureUse: saveCardForFutureUse,
         requestThreeDSecure: verification.requestThreeDSecure,
+        idempotencyKey: buildStripeIdempotencyKey("wallet_topup", requestId),
         metadata: {
           type: "wallet_topup",
           userId: user._id,
           amount: amount.toFixed(2),
+          merchantName: "ElevenOrbits",
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "true",
+          saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
         },
       });
+      const submission = await upsertPaymentIntentSubmission({
+        paymentIntent: intent,
+        user,
+        submissionType: "wallet_topup",
+        amount,
+      });
 
-      res.json({ clientSecret: intent.client_secret, intentId: intent.id });
+      res.json({ clientSecret: intent.client_secret, intentId: intent.id, submissionId: submission?._id || "" });
       return;
     }
 
@@ -1016,7 +1240,7 @@ stripeRouter.post(
         throw new HttpError(400, "This order has already been paid.");
       }
       const verification = resolvePortalCardVerificationMode();
-      const saveCardForFutureUse = true;
+      const saveCardForFutureUse = req.body.saveCardForFutureUse === true || req.body.saveCardForFutureUse === "true";
 
       const intent = await createPaymentIntent({
         user,
@@ -1025,18 +1249,28 @@ stripeRouter.post(
         billingDetails: req.body.billingDetails,
         saveForFutureUse: saveCardForFutureUse,
         requestThreeDSecure: verification.requestThreeDSecure,
+        idempotencyKey: buildStripeIdempotencyKey("order_payment", requestId),
         metadata: {
           type: "order_payment",
           userId: user._id,
           orderId: order._id,
           subscriptionId: subscription?._id,
+          merchantName: "ElevenOrbits",
           cardVerificationMode: verification.cardVerificationMode,
           threeDSecurePolicy: verification.requestThreeDSecure,
           saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
         },
       });
+      const submission = await upsertPaymentIntentSubmission({
+        paymentIntent: intent,
+        user,
+        submissionType: "order_payment",
+        amount: order.totalAmount,
+        orderId: order._id,
+        subscriptionId: subscription?._id,
+      });
 
-      res.json({ clientSecret: intent.client_secret, intentId: intent.id });
+      res.json({ clientSecret: intent.client_secret, intentId: intent.id, submissionId: submission?._id || "" });
       return;
     }
 
@@ -1048,111 +1282,8 @@ stripeRouter.post(
   "/checkout-sessions",
   requireCustomer,
   paymentAttemptRateLimit,
-  asyncHandler(async (req, res) => {
-    const user = await User.findById(req.auth.user._id);
-    if (!user) {
-      throw new HttpError(404, "User not found.");
-    }
-
-    await requireApprovedContract(req.auth.clerkId);
-
-    if (req.body.type === "card_setup") {
-      const session = await createSetupCheckoutSession({
-        user,
-        successUrl: successUrl("/portal/payments", "card_setup"),
-        cancelUrl: cancelUrl("/portal/payments", "card_setup"),
-      });
-
-      res.json({ url: session.url, sessionId: session.id });
-      return;
-    }
-
-    if (req.body.type === "wallet_topup") {
-      const amount = Number(req.body.amount || 0);
-      if (!amount || amount <= 0) {
-        throw new HttpError(400, "A valid top-up amount is required.");
-      }
-      const verification = resolvePortalCardVerificationMode();
-      const checkoutRequestId = normalizeCheckoutRequestId(req.body.requestId);
-      const portalReturnPath = normalizePortalReturnPath(req.body.returnUrl);
-      const walletSuccessUrl = `${successUrl("/portal/payments", "wallet_topup")}${
-        portalReturnPath ? `&return_url=${encodeURIComponent(portalReturnPath)}` : ""
-      }`;
-
-      const session = await createPaymentCheckoutSession({
-        user,
-        successUrl: walletSuccessUrl,
-        cancelUrl: cancelUrl("/portal/payments", "wallet_topup"),
-        saveForFutureUse: true,
-        requestThreeDSecure: verification.requestThreeDSecure,
-        idempotencyKey: `eo-wallet-checkout-${user._id}-${checkoutRequestId}`,
-        lineItems: [
-          createCheckoutLineItem({
-            name: "ElevenOrbits Wallet Top-up",
-            description: "Instant wallet funding through Stripe.",
-            amount,
-          }),
-        ],
-        metadata: {
-          type: "wallet_topup",
-          userId: user._id,
-          amount: amount.toFixed(2),
-          cardVerificationMode: verification.cardVerificationMode,
-          threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: "true",
-        },
-      });
-
-      res.json({ url: session.url, sessionId: session.id });
-      return;
-    }
-
-    if (req.body.type === "order_payment") {
-      const { order, subscription, invoice } = await findOrderPaymentContext({
-        orderId: req.body.orderId,
-        userId: user._id,
-      });
-
-      if (["cancelled", "rejected"].includes(order.status)) {
-        throw new HttpError(400, "Cancelled or rejected orders cannot be paid.");
-      }
-
-      if (order.status === "approved" || invoice?.status === "paid") {
-        throw new HttpError(400, "This order has already been paid.");
-      }
-      const verification = resolvePortalCardVerificationMode();
-      const saveCardForFutureUse = true;
-
-      const session = await createPaymentCheckoutSession({
-        user,
-        successUrl: successUrl(`/portal/checkout/${order._id}`, "order_payment"),
-        cancelUrl: cancelUrl(`/portal/checkout/${order._id}`, "order_payment"),
-        saveForFutureUse: saveCardForFutureUse,
-        requestThreeDSecure: verification.requestThreeDSecure,
-        idempotencyKey: `eo-order-checkout-${order._id}`,
-        lineItems: [
-          createCheckoutLineItem({
-            name: invoice?.invoiceNumber || order.productPlanId?.name || "Managed Service",
-            description: order.productPlanId?.description || "Managed service payment",
-            amount: order.totalAmount,
-          }),
-        ],
-        metadata: {
-          type: "order_payment",
-          userId: user._id,
-          orderId: order._id,
-          subscriptionId: subscription?._id,
-          cardVerificationMode: verification.cardVerificationMode,
-          threeDSecurePolicy: verification.requestThreeDSecure,
-          saveCardForFutureUse: saveCardForFutureUse ? "true" : "false",
-        },
-      });
-
-      res.json({ url: session.url, sessionId: session.id });
-      return;
-    }
-
-    throw new HttpError(400, "Unsupported Stripe checkout session type.");
+  asyncHandler(async () => {
+    throw new HttpError(410, "Stripe-hosted checkout is disabled. Use the in-portal card payment form.");
   }),
 );
 
@@ -1213,6 +1344,36 @@ stripeRouter.post(
   }),
 );
 
+stripeRouter.post(
+  "/attempt-status",
+  requireCustomer,
+  paymentFinalizationRateLimit,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.auth.user._id);
+    if (!user) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const paymentIntentId = String(req.body.paymentIntentId || "").trim();
+    if (!paymentIntentId) {
+      throw new HttpError(400, "A Stripe payment intent ID is required.");
+    }
+
+    const paymentIntent = await retrievePaymentIntent(paymentIntentId);
+    assertGatewayResourceBelongsToUser({ metadata: paymentIntent.metadata, user });
+    if (paymentIntent.status === "succeeded") {
+      throw new HttpError(409, "This payment is complete. Use payment finalization to post it to your ElevenOrbits account.");
+    }
+
+    const submission = await recordPaymentIntentLifecycle(paymentIntent);
+    res.json({
+      success: true,
+      status: paymentIntent.status,
+      submission: serializeCustomerPaymentSubmission(submission),
+    });
+  }),
+);
+
 stripeRouter.get(
   "/payment-methods",
   requireCustomer,
@@ -1242,6 +1403,7 @@ stripeRouter.post(
     }
 
     await requireApprovedContract(req.auth.clerkId);
+    const requestId = requirePaymentRequestId(req);
 
     const amount = Number(req.body.amount || 0);
     if (!amount || amount <= 0) {
@@ -1256,21 +1418,30 @@ stripeRouter.post(
       description: "ElevenOrbits wallet top-up from saved card",
       billingDetails: req.body.billingDetails,
       requestThreeDSecure: verification.requestThreeDSecure,
+      idempotencyKey: buildStripeIdempotencyKey("saved_card_wallet_topup", requestId),
       metadata: {
         type: "wallet_topup",
         userId: user._id,
         amount: amount.toFixed(2),
+        merchantName: "ElevenOrbits",
         preserveSavedCard: "true",
         cardVerificationMode: verification.cardVerificationMode,
         threeDSecurePolicy: verification.requestThreeDSecure,
         saveCardForFutureUse: "false",
       },
     });
+    const submission = await upsertPaymentIntentSubmission({
+      paymentIntent,
+      user,
+      submissionType: "wallet_topup",
+      amount,
+    });
 
     res.json({
       type: "wallet_topup",
       clientSecret: paymentIntent.client_secret,
       intentId: paymentIntent.id,
+      submissionId: submission?._id || "",
     });
   }),
 );
@@ -1286,6 +1457,7 @@ stripeRouter.post(
     }
 
     await requireApprovedContract(req.auth.clerkId);
+    const requestId = requirePaymentRequestId(req);
 
     const { order, subscription, invoice } = await findOrderPaymentContext({
       orderId: req.body.orderId,
@@ -1309,22 +1481,33 @@ stripeRouter.post(
       description: invoice?.invoiceNumber || order.productPlanId?.name || "Managed service payment",
       billingDetails: req.body.billingDetails,
       requestThreeDSecure: verification.requestThreeDSecure,
+      idempotencyKey: buildStripeIdempotencyKey("saved_card_order_payment", requestId),
       metadata: {
         type: "order_payment",
         userId: user._id,
         orderId: order._id,
         subscriptionId: subscription?._id,
+        merchantName: "ElevenOrbits",
         preserveSavedCard: "true",
         cardVerificationMode: verification.cardVerificationMode,
         threeDSecurePolicy: verification.requestThreeDSecure,
         saveCardForFutureUse: "false",
       },
     });
+    const submission = await upsertPaymentIntentSubmission({
+      paymentIntent,
+      user,
+      submissionType: "order_payment",
+      amount: order.totalAmount,
+      orderId: order._id,
+      subscriptionId: subscription?._id,
+    });
 
     res.json({
       type: "order_payment",
       clientSecret: paymentIntent.client_secret,
       intentId: paymentIntent.id,
+      submissionId: submission?._id || "",
     });
   }),
 );
@@ -1466,8 +1649,6 @@ stripeRouter.delete(
       },
     });
 
-    await processSubscriptionRenewals({ userIds: [user._id] });
-
     res.json({
       success: true,
       paymentMethods: getUserSavedPaymentMethods(user),
@@ -1503,8 +1684,6 @@ stripeRouter.delete(
       },
     });
 
-    await processSubscriptionRenewals({ userIds: [user._id] });
-
     res.json({
       success: true,
       message: "Your saved card has been removed.",
@@ -1539,6 +1718,15 @@ stripeWebhookRouter.post(
       if (user && ["wallet_topup", "order_payment"].includes(metadataType)) {
         await finalizePaymentIntent({ paymentIntent, user });
       }
+    }
+
+    if ([
+      "payment_intent.payment_failed",
+      "payment_intent.processing",
+      "payment_intent.canceled",
+    ].includes(event.type)) {
+      const paymentIntent = await retrievePaymentIntent(event.data.object.id);
+      await recordPaymentIntentLifecycle(paymentIntent);
     }
 
     if (event.type === "setup_intent.succeeded") {

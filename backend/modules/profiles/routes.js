@@ -15,7 +15,6 @@ import {
 import { requireCustomer, findUserFromRequest } from "../../middleware/require-customer.js";
 import { isDelegateActor, requirePortalActor, serializeDelegateSession } from "../../middleware/require-portal-actor.js";
 import { verifyClerkRequestToken } from "../../services/clerk-auth-service.js";
-import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { syncCustomerProfile } from "../../services/customer-profile-service.js";
 import { getCustomerSupportPin } from "../../services/support-chat-service.js";
 
@@ -339,7 +338,6 @@ profilesRouter.get(
   "/me",
   requirePortalActor,
   asyncHandler(async (req, res) => {
-    await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
     const user = await User.findById(req.auth.user._id);
     res.json({
       user,

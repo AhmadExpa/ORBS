@@ -23,6 +23,8 @@ const colors = {
   charged_back: "border-rose-300 bg-rose-100 text-rose-800",
   rejected: "border-rose-200 bg-rose-50 text-rose-700",
   failed: "border-rose-200 bg-rose-50 text-rose-700",
+  requires_action: "border-amber-200 bg-amber-50 text-amber-700",
+  processing: "border-sky-200 bg-sky-50 text-sky-700",
   cancelled: "border-slate-200 bg-slate-100 text-slate-600",
   deleted: "border-slate-200 bg-slate-100 text-slate-600",
   expired: "border-slate-200 bg-slate-100 text-slate-600",
@@ -32,7 +34,7 @@ const colors = {
   resolved: "border-sky-200 bg-sky-50 text-sky-700",
 };
 
-export function StatusBadge({ status, className }) {
+export function StatusBadge({ status, className, label }) {
   const normalizedStatus = String(status || "").toLowerCase();
   return (
     <span
@@ -43,7 +45,7 @@ export function StatusBadge({ status, className }) {
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" aria-hidden />
-      {normalizedStatus.replaceAll("_", " ")}
+      {label || normalizedStatus.replaceAll("_", " ")}
     </span>
   );
 }

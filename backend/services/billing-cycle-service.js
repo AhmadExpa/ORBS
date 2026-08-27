@@ -1,7 +1,7 @@
 import { env } from "../config/env.js";
 import { Invoice, PaymentSubmission, Subscription, User } from "../db/models/index.js";
 import { generateInvoicePdf, nextInvoiceNumber } from "./invoice-service.js";
-import { createOffSessionCharge, isStripeConfigured } from "./stripe-service.js";
+import { createOffSessionCharge, getCustomerPaymentFailureMessage, isStripeConfigured } from "./stripe-service.js";
 import { sendInvoiceNotification, sendWalletAutoTopupNotification } from "./email-service.js";
 import { requireApprovedContract } from "./contract-service.js";
 import { recordActivity } from "./activity-log-service.js";
@@ -228,11 +228,23 @@ async function ensureRenewalInvoice({ subscription, user, amount, dueDate, planN
 async function recordWalletAutoTopupFailure({ user, amount, scheduledRunAt, nextRunAt, invoiceCode, error }) {
   const message = describeWalletAutoTopupError(error);
   const paymentIntentId = normalizeStripeId(error?.payment_intent || error?.raw?.payment_intent || error?.paymentIntent);
-  const existingSubmission = await PaymentSubmission.findOne({
-    userId: user._id,
-    submissionType: "wallet_auto_topup",
-    invoiceCode,
+  const paymentIntent = error?.payment_intent && typeof error.payment_intent === "object" ? error.payment_intent : null;
+  const failureCode = String(error?.decline_code || error?.code || paymentIntent?.last_payment_error?.code || "").trim();
+  const declineCode = String(error?.decline_code || paymentIntent?.last_payment_error?.decline_code || "").trim();
+  const adviceCode = String(error?.advice_code || paymentIntent?.last_payment_error?.advice_code || "").trim();
+  const customerMessage = getCustomerPaymentFailureMessage({
+    code: failureCode,
+    declineCode,
+    adviceCode,
+    status: paymentIntent?.status,
   });
+  const existingSubmission = paymentIntentId
+    ? await PaymentSubmission.findOne({ gatewayPaymentId: paymentIntentId })
+    : await PaymentSubmission.findOne({
+        userId: user._id,
+        submissionType: "wallet_auto_topup",
+        invoiceCode,
+      });
 
   const submission = existingSubmission || await PaymentSubmission.create({
     userId: user._id,
@@ -245,7 +257,15 @@ async function recordWalletAutoTopupFailure({ user, amount, scheduledRunAt, next
   submission.adminRemarks = `Monthly wallet auto top-up failed: ${message}`;
   submission.gateway = "stripe";
   submission.gatewayPaymentId = paymentIntentId;
+  submission.paymentIntentStatus = String(paymentIntent?.status || "requires_payment_method");
+  submission.stripeFailureCode = failureCode;
+  submission.stripeDeclineCode = declineCode;
+  submission.stripeAdviceCode = adviceCode;
+  submission.stripeFailureMessage = message;
+  submission.customerMessage = customerMessage;
+  submission.merchantName = "ElevenOrbits";
   submission.metadata = {
+    merchantName: "ElevenOrbits",
     scheduledRunAt: scheduledRunAt.toISOString(),
     nextRunAt: nextRunAt.toISOString(),
     failureMessage: message,
@@ -257,7 +277,7 @@ async function recordWalletAutoTopupFailure({ user, amount, scheduledRunAt, next
   user.walletAutoTopupNextRunAt = nextRunAt;
   user.walletAutoTopupLastRunAt = new Date();
   user.walletAutoTopupLastStatus = "failed";
-  user.walletAutoTopupLastMessage = message;
+  user.walletAutoTopupLastMessage = customerMessage;
   user.walletAutoTopupLastPaymentIntentId = paymentIntentId;
   await user.save();
 
@@ -284,8 +304,64 @@ async function recordWalletAutoTopupFailure({ user, amount, scheduledRunAt, next
     scheduledFor: scheduledRunAt,
     nextRunAt,
     status: "failed",
-    errorMessage: message,
+    errorMessage: customerMessage,
   });
+}
+
+async function recordRenewalChargeFailure({ user, subscription, amount, dueDate, walletAmount, remainingAmount, error }) {
+  const invoiceCode = buildRenewalBillingCode(dueDate);
+  const paymentIntent = error?.payment_intent && typeof error.payment_intent === "object" ? error.payment_intent : null;
+  const paymentIntentId = normalizeStripeId(error?.payment_intent || error?.raw?.payment_intent || error?.paymentIntent);
+  const message = String(error?.message || "Stripe could not approve the saved-card renewal charge.").trim();
+  const failureCode = String(error?.decline_code || error?.code || paymentIntent?.last_payment_error?.code || "").trim();
+  const declineCode = String(error?.decline_code || paymentIntent?.last_payment_error?.decline_code || "").trim();
+  const adviceCode = String(error?.advice_code || paymentIntent?.last_payment_error?.advice_code || "").trim();
+  const customerMessage = getCustomerPaymentFailureMessage({
+    code: failureCode,
+    declineCode,
+    adviceCode,
+    status: paymentIntent?.status,
+  });
+  const existingSubmission = paymentIntentId
+    ? await PaymentSubmission.findOne({ gatewayPaymentId: paymentIntentId })
+    : await PaymentSubmission.findOne({
+        userId: user._id,
+        submissionType: "renewal_charge",
+        invoiceCode,
+      });
+  const submission = existingSubmission || await PaymentSubmission.create({
+    userId: user._id,
+    orderId: subscription.orderId,
+    subscriptionId: subscription._id,
+    submissionType: "renewal_charge",
+    invoiceCode,
+    submittedAt: new Date(),
+  });
+
+  submission.amount = amount;
+  submission.paymentMethodType = walletAmount > 0 ? "wallet_balance + stripe_card" : "stripe_card";
+  submission.status = "failed";
+  submission.adminRemarks = `Automatic renewal failed: ${message}`;
+  submission.gateway = "stripe";
+  submission.gatewayPaymentId = paymentIntentId;
+  submission.paymentIntentStatus = String(paymentIntent?.status || "requires_payment_method");
+  submission.stripeFailureCode = failureCode;
+  submission.stripeDeclineCode = declineCode;
+  submission.stripeAdviceCode = adviceCode;
+  submission.stripeFailureMessage = message;
+  submission.customerMessage = customerMessage;
+  submission.merchantName = "ElevenOrbits";
+  submission.metadata = {
+    ...(submission.metadata || {}),
+    merchantName: "ElevenOrbits",
+    dueDate: dueDate.toISOString(),
+    walletChargeAmount: walletAmount,
+    cardChargeAmount: remainingAmount,
+    failureMessage: message,
+  };
+  submission.reviewedAt = new Date();
+  await submission.save();
+  return submission;
 }
 
 async function processWalletAutoTopupForUser(user) {
@@ -331,10 +407,12 @@ async function processWalletAutoTopupForUser(user) {
         amount,
         description: "ElevenOrbits monthly wallet auto top-up",
         requireAutoCardBillingEnabled: false,
+        idempotencyKey: `elevenorbits_wallet_auto_topup_${String(user._id)}_${scheduledRunAt.toISOString()}`,
         metadata: {
           type: "wallet_auto_topup",
           userId: String(user._id),
           amount: amount.toFixed(2),
+          merchantName: "ElevenOrbits",
           scheduledRunAt: scheduledRunAt.toISOString(),
           dayOfMonth,
         },
@@ -381,7 +459,13 @@ async function processWalletAutoTopupForUser(user) {
     submission.gateway = "stripe";
     submission.gatewayPaymentId = paymentIntent.id;
     submission.gatewayChargeId = normalizeStripeId(paymentIntent.latest_charge);
+    submission.paymentIntentStatus = paymentIntent.status || "succeeded";
+    submission.cardBrand = paymentIntent.latest_charge?.payment_method_details?.card?.brand || "";
+    submission.cardLast4 = paymentIntent.latest_charge?.payment_method_details?.card?.last4 || "";
+    submission.statementDescriptor = paymentIntent.latest_charge?.statement_descriptor || "";
+    submission.merchantName = "ElevenOrbits";
     submission.metadata = {
+      merchantName: "ElevenOrbits",
       scheduledRunAt: scheduledRunAt.toISOString(),
       nextRunAt: nextRunAt.toISOString(),
       dayOfMonth,
@@ -562,11 +646,14 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
             user,
             amount: remainingAmount,
             description: `${planName} renewal`,
+            idempotencyKey: `elevenorbits_renewal_${String(subscription._id)}_${dueDate.toISOString()}`,
             metadata: {
               type: "renewal_charge",
               subscriptionId: String(subscription._id),
               userId: String(user._id),
               orderId: subscription.orderId ? String(subscription.orderId) : "",
+              amount: amount.toFixed(2),
+              merchantName: "ElevenOrbits",
               billingCycle: subscription.billingCycle,
             },
           });
@@ -602,6 +689,12 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
               gateway: "stripe",
               gatewayPaymentId: paymentIntent.id,
               gatewayChargeId: normalizeStripeId(paymentIntent.latest_charge),
+              paymentIntentStatus: paymentIntent.status || "succeeded",
+              cardBrand: paymentIntent.latest_charge?.payment_method_details?.card?.brand || "",
+              cardLast4: paymentIntent.latest_charge?.payment_method_details?.card?.last4 || "",
+              statementDescriptor: paymentIntent.latest_charge?.statement_descriptor || "",
+              merchantName: "ElevenOrbits",
+              metadata: { merchantName: "ElevenOrbits" },
               submittedAt: new Date(),
               reviewedAt: new Date(),
             });
@@ -620,6 +713,15 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
           await subscription.save();
           continue;
         } catch (error) {
+          const failedRenewalSubmission = await recordRenewalChargeFailure({
+            user,
+            subscription,
+            amount,
+            dueDate,
+            walletAmount,
+            remainingAmount,
+            error,
+          });
           await ensureRenewalInvoice({
             subscription,
             user,
@@ -639,7 +741,7 @@ export async function processSubscriptionRenewals({ userIds } = {}) {
               walletAmount > 0
                 ? "Wallet balance is available, but the saved Stripe card charge failed."
                 : "Saved Stripe card charge failed after the wallet balance check.",
-            lastStripeChargeError: error.message,
+            lastStripeChargeError: failedRenewalSubmission.customerMessage,
           };
           await subscription.save();
           continue;

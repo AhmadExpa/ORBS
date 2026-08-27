@@ -8,6 +8,7 @@ import {
   CUSTOMER_PRESENT_CAPTURE_METHOD,
   CUSTOMER_PRESENT_THREE_D_SECURE_MODE,
   getPaymentIntentCardAuthentication,
+  getCustomerPaymentFailureMessage,
   getSetupIntentCardAuthentication,
   normalizePaymentBillingDetails,
   normalizePaymentPhoneNumber,
@@ -16,6 +17,7 @@ import {
   STANDARD_THREE_D_SECURE_MODE,
   WALLET_TOPUP_THREE_D_SECURE_MODE,
 } from "../services/stripe-service.js";
+import { serializeCustomerPaymentSubmission } from "../services/payment-submission-view-service.js";
 
 test("customer-initiated wallet top-ups use adaptive 3DS and immediate capture", () => {
   const params = buildUserInitiatedCardPaymentIntentParams({
@@ -93,6 +95,35 @@ test("portal card payments use adaptive authentication for non-3DS compatibility
     cardVerificationMode: CARD_VERIFICATION_MODE_STANDARD,
     requestThreeDSecure: STANDARD_THREE_D_SECURE_MODE,
   });
+});
+
+test("customer payment failure messages explain the cause without exposing gateway wording", () => {
+  assert.match(
+    getCustomerPaymentFailureMessage({ declineCode: "insufficient_funds" }),
+    /insufficient available funds/,
+  );
+  assert.match(
+    getCustomerPaymentFailureMessage({ code: "payment_intent_action_required" }),
+    /verification prompt in this portal/,
+  );
+  assert.doesNotMatch(
+    getCustomerPaymentFailureMessage({ declineCode: "fraudulent" }),
+    /fraud/i,
+  );
+});
+
+test("customer payment activity hides raw Stripe diagnostics and keeps the safe reason", () => {
+  const submission = serializeCustomerPaymentSubmission({
+    status: "failed",
+    stripeFailureCode: "card_declined",
+    stripeDeclineCode: "insufficient_funds",
+    stripeFailureMessage: "Your card was declined. Contact your issuer.",
+  });
+
+  assert.match(submission.customerMessage, /insufficient available funds/);
+  assert.equal(submission.stripeFailureCode, undefined);
+  assert.equal(submission.stripeDeclineCode, undefined);
+  assert.equal(submission.stripeFailureMessage, undefined);
 });
 
 test("standard customer-present payments do not request future card setup", () => {

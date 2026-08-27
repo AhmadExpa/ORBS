@@ -4,7 +4,6 @@ import { requireCustomer } from "../../middleware/require-customer.js";
 import { isDelegateActor, requirePortalActor } from "../../middleware/require-portal-actor.js";
 import { Subscription } from "../../db/models/index.js";
 import { recordActivity } from "../../services/activity-log-service.js";
-import { processSubscriptionRenewals } from "../../services/billing-cycle-service.js";
 import { cancelCustomerSubscription, deleteCustomerSubscriptionFromPortal } from "../../services/customer-cancellation-service.js";
 
 export const subscriptionsRouter = express.Router();
@@ -13,8 +12,6 @@ subscriptionsRouter.get(
   "/",
   requirePortalActor,
   asyncHandler(async (req, res) => {
-    await processSubscriptionRenewals({ userIds: [req.auth.user._id] });
-
     const filter = {
       userId: req.auth.user._id,
       customerDeletedAt: null,

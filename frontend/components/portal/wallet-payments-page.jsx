@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, CircleDollarSign, CreditCard, History, Plus, ReceiptText, RefreshCw, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, CreditCard, History, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useCustomerQuery } from "@/lib/api/hooks";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, StatusBadge, TextInput, cn } from "@/lib/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, TextInput, cn } from "@/lib/ui";
 import { formatCurrency } from "@/lib/shared";
 import {
   createEmptyPaymentBillingDetails,
@@ -15,7 +15,8 @@ import {
   normalizePaymentBillingDetails,
   toStripeBillingDetails,
 } from "@/lib/payments/billing-details";
-import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
+import { createStripePaymentError, getStripePaymentErrorMessage, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
+import { buildBillingDetailsFromProfile } from "@/lib/payments/profile-billing-details";
 import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
@@ -99,6 +100,59 @@ function cardExpiryLabel(card) {
   return `Expires ${String(card.expMonth).padStart(2, "0")}/${String(card.expYear).slice(-2)}`;
 }
 
+function formatActivityDate(value, withTime = false) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    ...(withTime ? { hour: "numeric", minute: "2-digit" } : {}),
+  });
+}
+
+function transactionStatusLabel(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "approved") return "Completed";
+  if (normalized === "failed" || normalized === "rejected") return "Declined";
+  if (normalized === "requires_action") return "Action required";
+  if (normalized === "processing" || normalized === "pending_verification") return "Processing";
+  if (normalized === "charged_back") return "Charged back";
+  if (normalized === "cancelled") return "Canceled";
+  return normalized ? normalized.replaceAll("_", " ") : "Pending";
+}
+
+function transactionStatusDetail(submission) {
+  const normalized = String(submission?.status || "").toLowerCase();
+  if (normalized === "approved") return "Funds received by ElevenOrbits";
+  if (normalized === "failed" || normalized === "rejected") {
+    return submission?.customerMessage || getStripePaymentErrorMessage({ ...submission, status: normalized }, "The payment was declined and was not completed.");
+  }
+  if (normalized === "requires_action") return "Complete the bank verification shown in this portal.";
+  if (normalized === "processing" || normalized === "pending_verification") return "Stripe is still confirming this payment.";
+  if (normalized === "refunded") return "The payment was returned to the customer.";
+  if (normalized === "disputed" || normalized === "charged_back") return "This payment is under dispute review.";
+  if (normalized === "cancelled") return "This payment attempt was canceled before completion.";
+  return "Payment record available";
+}
+
+function transactionFilterMatches(submission, filter) {
+  const status = String(submission?.status || "").toLowerCase();
+  if (filter === "successful") return status === "approved";
+  if (filter === "pending") return ["processing", "pending_verification", "requires_action"].includes(status);
+  if (filter === "attention") return ["failed", "rejected", "refunded", "disputed", "charged_back", "cancelled"].includes(status);
+  return true;
+}
+
+function transactionReference(submission) {
+  const reference = String(submission?.invoiceCode || submission?.gatewayPaymentId || submission?._id || "");
+  if (reference.length <= 18) return reference;
+  return `…${reference.slice(-16)}`;
+}
+
 function formatScheduleDate(value) {
   if (!value) {
     return "Not scheduled";
@@ -120,6 +174,10 @@ function wait(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function createPaymentRequestId() {
+  return globalThis.crypto?.randomUUID?.() || `payment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function WalletPaymentsPage() {
@@ -149,13 +207,17 @@ export function WalletPaymentsPage() {
   const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const cardSetupVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [topupBillingDetails, setTopupBillingDetails] = useState(createEmptyPaymentBillingDetails);
+  const [newCardBillingDetails, setNewCardBillingDetails] = useState(createEmptyPaymentBillingDetails);
+  const [saveCardForFutureUse, setSaveCardForFutureUse] = useState(false);
   const [savedTopupState, setSavedTopupState] = useState({ savingId: "", error: "", message: "" });
-  const [hostedTopupState, setHostedTopupState] = useState({ isSubmitting: false, error: "" });
   const [blockedSavedTopupCardId, setBlockedSavedTopupCardId] = useState("");
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [activitySearch, setActivitySearch] = useState("");
+  const [selectedTransactionId, setSelectedTransactionId] = useState("");
+  const cardSetupRequestIdRef = useRef("");
+  const newCardTopupRequestIdRef = useRef("");
+  const savedCardTopupRequestIdsRef = useRef({});
   const reconciliationStartedRef = useRef(false);
-  const checkoutFinalizationStartedRef = useRef(false);
-  const hostedTopupStartedRef = useRef(false);
-  const hostedTopupRequestRef = useRef({ amount: 0, requestId: "" });
   const checkoutPrefillAppliedRef = useRef(false);
   const [cardManagementState, setCardManagementState] = useState({
     savingId: "",
@@ -188,18 +250,53 @@ export function WalletPaymentsPage() {
     lastMessage: user?.walletAutoTopupLastMessage || "",
   };
   const recentSubmissions = submissions.slice(0, 4);
+  const normalizedActivitySearch = activitySearch.trim().toLowerCase();
+  const filteredSubmissions = submissions.filter((submission) => {
+    if (!transactionFilterMatches(submission, activityFilter)) {
+      return false;
+    }
+
+    if (!normalizedActivitySearch) {
+      return true;
+    }
+
+    const searchable = [
+      submissionTypeLabel(submission.submissionType),
+      submission.invoiceCode,
+      submission.gatewayPaymentId,
+      submission.cardBrand,
+      submission.cardLast4,
+      submission.status,
+      submission.customerMessage,
+    ].join(" ").toLowerCase();
+    return searchable.includes(normalizedActivitySearch);
+  });
+  const transactionCounts = {
+    all: submissions.length,
+    successful: submissions.filter((submission) => String(submission.status || "").toLowerCase() === "approved").length,
+    pending: submissions.filter((submission) => transactionFilterMatches(submission, "pending")).length,
+    attention: submissions.filter((submission) => transactionFilterMatches(submission, "attention")).length,
+  };
+  const selectedTransaction = submissions.find((submission) => String(submission._id) === String(selectedTransactionId));
   const requestedAmount = Number(searchParams.get("amount") || 0);
   const requestedReturnUrl = searchParams.get("return_url") || "";
-  const returnedStripeStatus = searchParams.get("stripe") || "";
-  const returnedPaymentType = searchParams.get("type") || "";
-  const returnedCheckoutSessionId = searchParams.get("session_id") || "";
   const returnUrl = requestedReturnUrl.startsWith("/") && !requestedReturnUrl.startsWith("//")
     ? requestedReturnUrl
     : "";
-  const isReturningFromHostedTopup =
-    returnedStripeStatus === "success" &&
-    returnedPaymentType === "wallet_topup" &&
-    Boolean(returnedCheckoutSessionId);
+
+  useEffect(() => {
+    if (!user?._id) {
+      return;
+    }
+
+    setNewCardBillingDetails((current) => {
+      if (Object.values(current).some(Boolean)) {
+        return current;
+      }
+
+      return buildBillingDetailsFromProfile(user);
+    });
+  }, [user?._id]);
 
   useEffect(() => {
     const requestedSection = searchParams.get("section");
@@ -229,7 +326,7 @@ export function WalletPaymentsPage() {
   }, [user?._id, user?.walletAutoTopupAmount, user?.walletAutoTopupDayOfMonth]);
 
   useEffect(() => {
-    if (!user?._id || !contractApproved || reconciliationStartedRef.current || isReturningFromHostedTopup) {
+    if (!user?._id || !contractApproved || reconciliationStartedRef.current) {
       return;
     }
 
@@ -269,53 +366,7 @@ export function WalletPaymentsPage() {
     return () => {
       isActive = false;
     };
-  }, [contractApproved, getToken, isReturningFromHostedTopup, refetchPayments, refetchProfile, showToast, user?._id]);
-
-  useEffect(() => {
-    if (!user?._id || !contractApproved || !isReturningFromHostedTopup || checkoutFinalizationStartedRef.current) {
-      return;
-    }
-
-    checkoutFinalizationStartedRef.current = true;
-    let isActive = true;
-
-    async function finalizeHostedTopup() {
-      setHostedTopupState({ isSubmitting: true, error: "" });
-      try {
-        const token = await getToken({ skipCache: true });
-        await apiFetch("/stripe/finalize", {
-          method: "POST",
-          token,
-          body: { checkoutSessionId: returnedCheckoutSessionId },
-        });
-        await Promise.all([refetchPayments(), refetchProfile()]);
-        await wait(500);
-        await Promise.all([refetchPayments(), refetchProfile()]);
-
-        if (!isActive) return;
-        setHostedTopupState({ isSubmitting: false, error: "" });
-        setActiveSection("overview");
-        showToast({
-          type: "success",
-          action: "Wallet Top-up",
-          title: "Wallet funded",
-          description: "Stripe captured the payment and the wallet balance has been refreshed.",
-        });
-        router.replace(returnUrl || "/portal/payments?section=overview");
-      } catch (error) {
-        if (!isActive) return;
-        setHostedTopupState({
-          isSubmitting: false,
-          error: error.message || "Stripe approved the checkout, but the wallet credit is still synchronizing. Do not pay again; refresh shortly.",
-        });
-      }
-    }
-
-    finalizeHostedTopup();
-    return () => {
-      isActive = false;
-    };
-  }, [contractApproved, getToken, isReturningFromHostedTopup, refetchPayments, refetchProfile, returnUrl, returnedCheckoutSessionId, router, showToast, user?._id]);
+  }, [contractApproved, getToken, refetchPayments, refetchProfile, showToast, user?._id]);
 
   async function syncPortalPayments() {
     await Promise.all([refetchPayments(), refetchProfile()]);
@@ -355,17 +406,37 @@ export function WalletPaymentsPage() {
     }
   }
 
+  async function recordFailedPaymentIntent(paymentIntentId) {
+    if (!paymentIntentId) {
+      return;
+    }
+
+    try {
+      const token = await getToken({ skipCache: true });
+      await apiFetch("/stripe/attempt-status", {
+        method: "POST",
+        token,
+        body: { paymentIntentId },
+      });
+      await syncPortalPaymentsSafely();
+    } catch {
+      // The signed Stripe webhook remains the recovery path if this status sync is delayed.
+    }
+  }
+
   async function handleSaveCard({ stripe, cardElement, billingDetails }) {
     const token = await getToken();
+    const requestId = cardSetupRequestIdRef.current || createPaymentRequestId();
+    cardSetupRequestIdRef.current = requestId;
     let response;
     try {
       response = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
-        body: { type: "card_setup", billingDetails, cardVerificationMode: cardSetupVerificationMode },
+        body: { type: "card_setup", billingDetails, cardVerificationMode: cardSetupVerificationMode, requestId },
       });
     } catch (error) {
-      if (error.redirectUrl) {
+      if (String(error.redirectUrl || "").startsWith("/")) {
         router.push(error.redirectUrl);
       }
       throw error;
@@ -380,7 +451,8 @@ export function WalletPaymentsPage() {
     });
 
     if (result.error) {
-      throw new Error(result.error.message || "The card could not be saved.");
+      cardSetupRequestIdRef.current = "";
+      throw createStripePaymentError(result.error, "The card could not be saved.");
     }
 
     if (!result.setupIntent?.id) {
@@ -393,63 +465,83 @@ export function WalletPaymentsPage() {
     await syncPortalPaymentsSafely();
 
     if (!finalization.completed) {
+      cardSetupRequestIdRef.current = "";
       return "Stripe verified the card. Its saved-card status is synchronizing automatically; do not submit it again.";
     }
+
+    cardSetupRequestIdRef.current = "";
 
     return hasSavedCard
       ? "Your card has been saved and set as the primary card."
       : "Your card has been saved and set as the primary card. You can switch to wallet-only mode any time.";
   }
 
-  async function handleHostedCardTopup() {
-    if (hostedTopupStartedRef.current) return;
-
+  async function handleNewCardTopup({ stripe, cardElement, billingDetails, saveCardForFutureUse: shouldSaveCard }) {
     const numericAmount = Number(instantAmount || 0);
     if (!numericAmount || numericAmount <= 0) {
-      setHostedTopupState({ isSubmitting: false, error: "Enter a valid top-up amount before opening Stripe Checkout." });
-      return;
+      throw new Error("Enter a valid top-up amount before charging the card.");
     }
 
-    if (
-      hostedTopupRequestRef.current.amount !== numericAmount ||
-      !hostedTopupRequestRef.current.requestId
-    ) {
-      hostedTopupRequestRef.current = {
-        amount: numericAmount,
-        requestId: globalThis.crypto.randomUUID(),
-      };
-    }
-
-    hostedTopupStartedRef.current = true;
-    setHostedTopupState({ isSubmitting: true, error: "" });
     try {
+      const requestId = newCardTopupRequestIdRef.current || createPaymentRequestId();
+      newCardTopupRequestIdRef.current = requestId;
       const token = await getToken();
-      const response = await apiFetch("/stripe/checkout-sessions", {
+      const response = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
         body: {
           type: "wallet_topup",
           amount: numericAmount,
-          returnUrl,
-          requestId: hostedTopupRequestRef.current.requestId,
+          billingDetails,
+          cardVerificationMode,
+          saveCardForFutureUse: shouldSaveCard,
+          requestId,
         },
       });
 
-      const checkoutUrl = new URL(response.url);
-      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
-        throw new Error("Stripe returned an invalid checkout address. No charge was made.");
+      const stripeBillingDetails = toStripeBillingDetails(billingDetails);
+      const result = await stripe.confirmCardPayment(response.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
+        },
+      });
+
+      if (result.error) {
+        await recordFailedPaymentIntent(result.error.payment_intent?.id);
+        newCardTopupRequestIdRef.current = "";
+        throw createStripePaymentError(result.error, "The wallet top-up could not be completed.");
       }
 
-      window.location.assign(checkoutUrl.toString());
+      if (!result.paymentIntent?.id) {
+        throw new Error("Stripe confirmed the wallet top-up but did not return a payment intent ID.");
+      }
+
+      const finalization = await finalizeConfirmedStripeResource({
+        paymentIntentId: result.paymentIntent.id,
+      });
+      await syncPortalPaymentsSafely();
+      setInstantAmount("");
+      setNewCardBillingDetails(createEmptyPaymentBillingDetails());
+      setSaveCardForFutureUse(false);
+      newCardTopupRequestIdRef.current = "";
+      setBlockedSavedTopupCardId("");
+      setActiveSection("overview");
+
+      const message = finalization.completed
+        ? response.message || "Your card was charged and the wallet balance has been refreshed."
+        : "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.";
+
+      if (finalization.completed && returnUrl) {
+        router.push(returnUrl);
+      }
+
+      return message;
     } catch (error) {
-      hostedTopupStartedRef.current = false;
-      if (error.redirectUrl) {
+      if (String(error.redirectUrl || "").startsWith("/")) {
         router.push(error.redirectUrl);
       }
-      setHostedTopupState({
-        isSubmitting: false,
-        error: error.message || "Secure Stripe Checkout could not be opened. No charge was made.",
-      });
+      throw error;
     }
   }
 
@@ -469,6 +561,9 @@ export function WalletPaymentsPage() {
     setSavedTopupState({ savingId: paymentMethodId, error: "", message: "" });
 
     try {
+      const requestKey = `${paymentMethodId}:${numericAmount.toFixed(2)}`;
+      const requestId = savedCardTopupRequestIdsRef.current[requestKey] || createPaymentRequestId();
+      savedCardTopupRequestIdsRef.current[requestKey] = requestId;
       const token = await getToken();
       const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/topup`, {
         method: "POST",
@@ -477,6 +572,7 @@ export function WalletPaymentsPage() {
           amount: numericAmount,
           billingDetails: normalizePaymentBillingDetails(topupBillingDetails),
           cardVerificationMode,
+          requestId,
         },
       });
 
@@ -490,6 +586,8 @@ export function WalletPaymentsPage() {
       });
 
       if (result.error) {
+        await recordFailedPaymentIntent(result.error.payment_intent?.id);
+        delete savedCardTopupRequestIdsRef.current[requestKey];
         throw createStripePaymentError(result.error, "The saved-card top-up could not be completed.");
       }
 
@@ -512,6 +610,7 @@ export function WalletPaymentsPage() {
           ? response.message || "Your saved card was charged and the wallet balance has been refreshed."
           : "Your card was charged successfully. The wallet credit is synchronizing automatically—do not submit this payment again.",
       });
+      delete savedCardTopupRequestIdsRef.current[requestKey];
       showToast({
         type: "success",
         action: "Wallet Top-up",
@@ -528,7 +627,7 @@ export function WalletPaymentsPage() {
       if (normalizedError.preventSameCardRetry) {
         setBlockedSavedTopupCardId(paymentMethodId);
       }
-      if (normalizedError.redirectUrl) {
+      if (String(normalizedError.redirectUrl || "").startsWith("/")) {
         router.push(normalizedError.redirectUrl);
       }
       setSavedTopupState({
@@ -1005,7 +1104,7 @@ export function WalletPaymentsPage() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between gap-4 pl-[52px] sm:pl-0">
-                          <StatusBadge status={submission.status} />
+                          <StatusBadge status={submission.status} label={transactionStatusLabel(submission.status)} />
                           <p className="min-w-24 text-right text-sm font-semibold text-slate-950">
                             {formatCurrency(submission.amount || submission.orderId?.totalAmount || 0)}
                           </p>
@@ -1326,8 +1425,8 @@ export function WalletPaymentsPage() {
 
             <div className="space-y-5">
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                <p className="font-semibold">Secure Stripe-hosted checkout</p>
-                <p className="mt-1 text-xs leading-5 text-sky-800">New-card purchases continue to Stripe. Stripe invokes 3D Secure only when needed, so a bank without 3D Secure support is not automatically rejected.</p>
+                <p className="font-semibold">Secure payment in this portal</p>
+                <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card here. Stripe.js keeps you in the ElevenOrbits portal while handling any required 3D Secure bank challenge.</p>
               </div>
 
               {primaryCard ? (
@@ -1376,29 +1475,30 @@ export function WalletPaymentsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <CardTitle>{primaryCard ? "Use a different card" : "Pay with a card"}</CardTitle>
-                      <CardDescription className="mt-1">Continue to Stripe to enter and authenticate the card securely.</CardDescription>
+                      <CardDescription className="mt-1">Enter and authenticate your card securely without leaving the portal.</CardDescription>
                     </div>
                     <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Instant credit</span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {contractApproved ? (
-                    <div className="space-y-3">
-                      <Button
-                        className="w-full"
-                        type="button"
-                        disabled={!instantAmount || Number(instantAmount) <= 0 || hostedTopupState.isSubmitting}
-                        onClick={handleHostedCardTopup}
-                      >
-                        {hostedTopupState.isSubmitting
-                          ? "Opening Stripe Checkout..."
-                          : `Continue to Stripe · ${formatCurrency(Number(instantAmount || 0))}`}
-                      </Button>
-                      <p className="text-xs leading-5 text-slate-500">
-                        Stripe handles the card number and any bank challenge. ElevenOrbits never receives your full card number or OTP.
-                      </p>
-                      {hostedTopupState.error ? <p className="text-sm font-medium text-rose-600">{hostedTopupState.error}</p> : null}
-                    </div>
+                    <PortalCardForm
+                      disabled={!instantAmount || Number(instantAmount) <= 0}
+                      billingDetails={newCardBillingDetails}
+                      onBillingDetailsChange={setNewCardBillingDetails}
+                      showBillingDetails
+                      showSaveCardConsent
+                      saveCardForFutureUse={saveCardForFutureUse}
+                      onSaveCardForFutureUseChange={setSaveCardForFutureUse}
+                      note="Your card details are collected securely by Stripe. If your bank requests OTP or app approval, the verification prompt will appear without leaving this portal."
+                      onSubmit={handleNewCardTopup}
+                      pendingLabel="Processing top-up..."
+                      submitLabel={`Add ${formatCurrency(Number(instantAmount || 0))} to wallet`}
+                      successTitle="Wallet top-up approved"
+                      errorTitle="Wallet top-up failed"
+                      actionLabel="Wallet Top-up"
+                      preflightKey={instantAmount}
+                    />
                   ) : (
                     <ContractApprovalLock description="Wallet card top-ups unlock after an ElevenOrbits administrator approves your signed agreement." />
                   )}
@@ -1414,32 +1514,153 @@ export function WalletPaymentsPage() {
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle>Payment activity</CardTitle>
-                <CardDescription className="mt-1">Track card payments, wallet top-ups, and automatic renewals in one place.</CardDescription>
+                <CardDescription className="mt-1">A clear record of every payment charged by ElevenOrbits.</CardDescription>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-line bg-slate-50 px-4 py-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-600 shadow-card">
                   <History className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="text-xs text-slate-500">Total records</p>
-                  <p className="text-sm font-semibold text-slate-900">{submissions.length}</p>
+                  <p className="text-xs text-slate-500">Charged by</p>
+                  <p className="text-sm font-semibold text-slate-900">ElevenOrbits</p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={[
-                  { key: "submissionType", label: "Type", render: (row) => submissionTypeLabel(row.submissionType) },
-                  { key: "invoiceCode", label: "Reference" },
-                  { key: "amount", label: "Amount", render: (row) => formatCurrency(row.amount || row.orderId?.totalAmount || 0) },
-                  { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
-                  { key: "submittedAt", label: "Submitted", render: (row) => new Date(row.submittedAt).toLocaleDateString() },
-                ]}
-                rows={submissions}
-                emptyMessage={paymentsQuery.isLoading ? "Loading activity..." : "No payment activity yet."}
-              />
+            <CardContent className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { label: "All records", value: transactionCounts.all, icon: ReceiptText, tone: "text-slate-600 bg-slate-100" },
+                  { label: "Completed", value: transactionCounts.successful, icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50" },
+                  { label: "Processing", value: transactionCounts.pending, icon: Clock3, tone: "text-amber-600 bg-amber-50" },
+                  { label: "Needs attention", value: transactionCounts.attention, icon: AlertCircle, tone: "text-rose-600 bg-rose-50" },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-xl border border-line bg-white p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className={cn("flex h-9 w-9 items-center justify-center rounded-lg", item.tone)}><Icon className="h-4 w-4" /></span>
+                        <span className="text-2xl font-semibold tracking-tight text-slate-950">{item.value}</span>
+                      </div>
+                      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{item.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-xl border border-line bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative min-w-0 flex-1 lg:max-w-md">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <TextInput
+                    value={activitySearch}
+                    onChange={(event) => setActivitySearch(event.target.value)}
+                    placeholder="Search type, reference, or card"
+                    aria-label="Search payment activity"
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["all", "All"],
+                    ["successful", "Completed"],
+                    ["pending", "Processing"],
+                    ["attention", "Needs attention"],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setActivityFilter(value)}
+                      className={cn(
+                        "rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                        activityFilter === value ? "bg-slate-950 text-white" : "bg-white text-slate-600 hover:bg-slate-100",
+                      )}
+                    >
+                      {label} <span className="ml-1 opacity-70">{transactionCounts[value]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hidden overflow-hidden rounded-xl border border-line md:block">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-line whitespace-nowrap text-left">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        {['Transaction', 'Amount', 'Payment method', 'Status', 'Date', ''].map((label) => (
+                          <th key={label} className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {filteredSubmissions.length ? filteredSubmissions.map((submission) => (
+                        <tr key={submission._id} className="transition-colors hover:bg-slate-50/70">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><ReceiptText className="h-4 w-4" /></span>
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900">{submissionTypeLabel(submission.submissionType)}</p>
+                                <p className="mt-0.5 text-xs text-slate-500">{transactionReference(submission)} · {transactionStatusDetail(submission)}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-semibold text-slate-950">{formatCurrency(submission.amount || submission.orderId?.totalAmount || 0)}</td>
+                          <td className="px-4 py-4 text-sm text-slate-600">
+                            {submission.cardLast4 ? `${formatCardBrand(submission.cardBrand)} •••• ${submission.cardLast4}` : "Card payment"}
+                          </td>
+                          <td className="px-4 py-4"><StatusBadge status={submission.status} label={transactionStatusLabel(submission.status)} /></td>
+                          <td className="px-4 py-4 text-sm text-slate-600">{formatActivityDate(submission.submittedAt)}</td>
+                          <td className="px-4 py-4 text-right">
+                            <button type="button" onClick={() => setSelectedTransactionId(submission._id)} className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 hover:text-accent-800">
+                              Details <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={6} className="px-4 py-12 text-center text-sm font-medium text-slate-500">{paymentsQuery.isLoading ? "Loading activity..." : "No payment activity matches your filters."}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="divide-y divide-line overflow-hidden rounded-xl border border-line md:hidden">
+                {filteredSubmissions.length ? filteredSubmissions.map((submission) => (
+                  <button key={submission._id} type="button" onClick={() => setSelectedTransactionId(submission._id)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><ReceiptText className="h-4 w-4" /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center justify-between gap-2"><span className="truncate text-sm font-semibold text-slate-900">{submissionTypeLabel(submission.submissionType)}</span><span className="text-sm font-semibold text-slate-950">{formatCurrency(submission.amount || submission.orderId?.totalAmount || 0)}</span></span>
+                      <span className="mt-1 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">{formatActivityDate(submission.submittedAt)}</span><StatusBadge status={submission.status} label={transactionStatusLabel(submission.status)} /></span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                  </button>
+                )) : <p className="px-4 py-12 text-center text-sm font-medium text-slate-500">{paymentsQuery.isLoading ? "Loading activity..." : "No payment activity matches your filters."}</p>}
+              </div>
+
+              <p className="text-xs leading-5 text-slate-500">All amounts are shown in {paymentsData?.currency || "USD"} and payment card details are limited to the brand and last four digits.</p>
             </CardContent>
           </Card>
+        ) : null}
+
+        {selectedTransaction ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-6" role="presentation" onClick={() => setSelectedTransactionId("")}>
+            <div className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-panel sm:rounded-2xl" role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Charged by ElevenOrbits</p>
+                  <h2 id="transaction-detail-title" className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{submissionTypeLabel(selectedTransaction.submissionType)}</h2>
+                </div>
+                <button type="button" onClick={() => setSelectedTransactionId("")} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close transaction details"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4"><div><p className="text-2xl font-semibold tracking-tight text-slate-950">{formatCurrency(selectedTransaction.amount || selectedTransaction.orderId?.totalAmount || 0)}</p><p className="mt-1 text-xs text-slate-500">{formatActivityDate(selectedTransaction.submittedAt, true)}</p></div><StatusBadge status={selectedTransaction.status} label={transactionStatusLabel(selectedTransaction.status)} /></div>
+              <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Reference</dt><dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTransaction.invoiceCode || selectedTransaction.gatewayPaymentId || "Not available"}</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Payment method</dt><dd className="mt-1 text-sm font-medium text-slate-800">{selectedTransaction.cardLast4 ? `${formatCardBrand(selectedTransaction.cardBrand)} ending in ${selectedTransaction.cardLast4}` : "Card payment"}</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Status detail</dt><dd className="mt-1 text-sm font-medium text-slate-800">{transactionStatusDetail(selectedTransaction)}</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Statement name</dt><dd className="mt-1 text-sm font-medium text-slate-800">{selectedTransaction.statementDescriptor || "ElevenOrbits"}</dd></div>
+              </dl>
+              {["failed", "rejected"].includes(String(selectedTransaction.status || "").toLowerCase()) ? <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Why this needs attention</p><p className="mt-1 leading-6">{selectedTransaction.customerMessage || getStripePaymentErrorMessage({ ...selectedTransaction, status: selectedTransaction.status }, "The payment was declined and was not completed.")}</p></div> : null}
+              <p className="mt-5 text-xs leading-5 text-slate-500">ElevenOrbits never asks you to share your full card number or bank verification code.</p>
+            </div>
+          </div>
         ) : null}
       </main>
     </div>

@@ -23,6 +23,20 @@ test("temporary issuer failures recommend one delayed retry", () => {
   assert.match(getStripePaymentErrorMessage({ decline_code: "issuer_not_available" }), /Wait a few minutes/);
 });
 
+test("authentication failures explain the required in-portal verification", () => {
+  assert.match(
+    getStripePaymentErrorMessage({ code: "payment_intent_action_required" }),
+    /verification prompt in this portal/,
+  );
+});
+
+test("activity records use the stored customer-safe reason", () => {
+  assert.match(
+    getStripePaymentErrorMessage({ customerMessage: "Your bank declined this payment.", status: "failed" }),
+    /Your bank declined this payment/,
+  );
+});
+
 test("suspected fraud stays generic to the customer", () => {
   const message = getStripePaymentErrorMessage({ decline_code: "fraudulent" });
 

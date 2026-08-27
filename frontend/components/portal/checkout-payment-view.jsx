@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge } from "@/lib/ui";
 import { apiFetch } from "@/lib/api/client";
@@ -12,6 +12,7 @@ import { formatCurrency, getBillingCycleLabel } from "@/lib/shared";
 import {
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
+  toStripeBillingDetails,
 } from "@/lib/payments/billing-details";
 import { createStripePaymentError, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { buildBillingDetailsFromProfile, getProfileBillingDetailsIssues } from "@/lib/payments/profile-billing-details";
@@ -19,6 +20,7 @@ import { Topbar } from "@/components/shared/topbar";
 import {
   CARD_VERIFICATION_MODE_STANDARD,
   CardIdentityToggle,
+  PortalCardForm,
   portalStripePromise,
 } from "@/components/portal/portal-card-form";
 import { useActionToast } from "@/components/shared/feedback-layer";
@@ -67,9 +69,12 @@ function wait(ms) {
   });
 }
 
+function createPaymentRequestId() {
+  return globalThis.crypto?.randomUUID?.() || `payment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function CheckoutPaymentView({ orderId }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const { showToast } = useActionToast();
   const [state, setState] = useState({
@@ -81,12 +86,21 @@ export function CheckoutPaymentView({ orderId }) {
   const [reasonAction, setReasonAction] = useState("");
   const cardVerificationMode = CARD_VERIFICATION_MODE_STANDARD;
   const [usingOwnCard, setUsingOwnCard] = useState(true);
+  const [newCardBillingDetails, setNewCardBillingDetails] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+  });
+  const [saveCardForFutureUse, setSaveCardForFutureUse] = useState(false);
+  const newCardPaymentRequestIdRef = useRef("");
+  const savedCardPaymentRequestIdRef = useRef("");
   const [savedCardPayState, setSavedCardPayState] = useState({ isSubmitting: false, error: "", message: "" });
-  const checkoutCompletionStartedRef = useRef(false);
-  const checkoutRedirectStartedRef = useRef(false);
-  const returnedStripeStatus = searchParams.get("stripe") || "";
-  const returnedPaymentType = searchParams.get("type") || "";
-  const returnedCheckoutSessionId = searchParams.get("session_id") || "";
 
   const orderQuery = useCustomerQuery({
     queryKey: ["portal-order-checkout", orderId],
@@ -120,6 +134,20 @@ export function CheckoutPaymentView({ orderId }) {
   const refetchProfile = profileQuery.refetch;
   const customerNote = String(order?.metadata?.customerNote || "").trim();
 
+  useEffect(() => {
+    if (!profile?._id) {
+      return;
+    }
+
+    setNewCardBillingDetails((current) => {
+      if (Object.values(current).some(Boolean)) {
+        return current;
+      }
+
+      return buildBillingDetailsFromProfile(profile);
+    });
+  }, [profile?._id]);
+
   const totalDue = useMemo(() => (isTrialRequested ? 0 : Number(invoice?.amount || order?.totalAmount || 0)), [invoice?.amount, isTrialRequested, order?.totalAmount]);
   const walletBalance = Number(profile?.accountBalance || 0);
   const walletShortfall = Math.max(totalDue - walletBalance, 0);
@@ -135,49 +163,22 @@ export function CheckoutPaymentView({ orderId }) {
     await Promise.all([refetchOrder(), refetchProfile()]);
   }
 
-  useEffect(() => {
-    if (
-      returnedStripeStatus !== "success" ||
-      returnedPaymentType !== "order_payment" ||
-      !returnedCheckoutSessionId ||
-      checkoutCompletionStartedRef.current
-    ) {
+  async function recordFailedPaymentIntent(paymentIntentId) {
+    if (!paymentIntentId) {
       return;
     }
 
-    checkoutCompletionStartedRef.current = true;
-    let isActive = true;
-
-    async function finalizeHostedCheckout() {
-      setState({ isSubmitting: true, action: "stripe_finalize", message: "Confirming your Stripe payment...", error: "" });
-      try {
-        const token = await getToken({ skipCache: true });
-        await apiFetch("/stripe/finalize", {
-          method: "POST",
-          token,
-          body: { checkoutSessionId: returnedCheckoutSessionId },
-        });
-        await syncOrderState();
-        if (isActive) {
-          router.replace(`/portal/checkout/${orderId}/thank-you`);
-        }
-      } catch (error) {
-        if (isActive) {
-          setState({
-            isSubmitting: false,
-            action: "",
-            message: "",
-            error: error.message || "Stripe approved the checkout, but the order is still synchronizing. Do not pay again; refresh this page shortly.",
-          });
-        }
-      }
+    try {
+      const token = await getToken({ skipCache: true });
+      await apiFetch("/stripe/attempt-status", {
+        method: "POST",
+        token,
+        body: { paymentIntentId },
+      });
+    } catch {
+      // The signed Stripe webhook remains the recovery path if this status sync is delayed.
     }
-
-    finalizeHostedCheckout();
-    return () => {
-      isActive = false;
-    };
-  }, [getToken, orderId, refetchOrder, refetchProfile, returnedCheckoutSessionId, returnedPaymentType, returnedStripeStatus, router]);
+  }
 
   async function handleWalletPayment() {
     if (!canPayWithWallet || state.isSubmitting) return;
@@ -213,39 +214,73 @@ export function CheckoutPaymentView({ orderId }) {
     }
   }
 
-  async function handleHostedStripeCheckout() {
-    if (!canTriggerPayments || state.isSubmitting || checkoutRedirectStartedRef.current) return;
-
-    checkoutRedirectStartedRef.current = true;
-    setState({ isSubmitting: true, action: "stripe_checkout", message: "Opening secure Stripe Checkout...", error: "" });
+  async function handleNewCardPayment({ stripe, cardElement, billingDetails, saveCardForFutureUse: shouldSaveCard }) {
     try {
+      const requestId = newCardPaymentRequestIdRef.current || createPaymentRequestId();
+      newCardPaymentRequestIdRef.current = requestId;
       const token = await getToken();
-      const response = await apiFetch("/stripe/checkout-sessions", {
+      const response = await apiFetch("/stripe/intents", {
         method: "POST",
         token,
         body: {
           type: "order_payment",
           orderId,
+          billingDetails,
+          cardVerificationMode,
+          saveCardForFutureUse: shouldSaveCard,
+          requestId,
         },
       });
 
-      const checkoutUrl = new URL(response.url);
-      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
-        throw new Error("Stripe returned an invalid checkout address. No charge was made.");
+      const stripeBillingDetails = toStripeBillingDetails(billingDetails);
+      const result = await stripe.confirmCardPayment(response.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          ...(Object.keys(stripeBillingDetails).length ? { billing_details: stripeBillingDetails } : {}),
+        },
+      });
+
+      if (result.error) {
+        await recordFailedPaymentIntent(result.error.payment_intent?.id);
+        newCardPaymentRequestIdRef.current = "";
+        throw createStripePaymentError(result.error, "The card payment could not be completed.");
       }
 
-      window.location.assign(checkoutUrl.toString());
+      if (!result.paymentIntent?.id) {
+        throw new Error("Stripe confirmed the payment but did not return a payment intent ID.");
+      }
+
+      let finalized = false;
+      for (let attempt = 0; attempt < 2 && !finalized; attempt += 1) {
+        try {
+          const finalizeToken = await getToken({ skipCache: true });
+          await apiFetch("/stripe/finalize", {
+            method: "POST",
+            token: finalizeToken,
+            body: { paymentIntentId: result.paymentIntent.id },
+          });
+          finalized = true;
+        } catch {
+          if (attempt === 0) {
+            await wait(500);
+          }
+        }
+      }
+
+      await syncOrderState();
+      if (!finalized) {
+        newCardPaymentRequestIdRef.current = "";
+        return "Your card was charged successfully, but the order update is still synchronizing. Do not submit this payment again.";
+      }
+
+      router.replace(`/portal/checkout/${orderId}/thank-you`);
+      newCardPaymentRequestIdRef.current = "";
+      return "Payment approved. Redirecting to your order confirmation...";
     } catch (error) {
-      checkoutRedirectStartedRef.current = false;
-      if (error.redirectUrl) {
+      if (String(error.redirectUrl || "").startsWith("/")) {
         router.push(error.redirectUrl);
       }
-      setState({
-        isSubmitting: false,
-        action: "",
-        message: "",
-        error: error.message || "Secure Stripe Checkout could not be opened. No charge was made.",
-      });
+      throw error;
     }
   }
 
@@ -260,6 +295,8 @@ export function CheckoutPaymentView({ orderId }) {
     setSavedCardPayState({ isSubmitting: true, error: "", message: "" });
 
     try {
+      const requestId = savedCardPaymentRequestIdRef.current || createPaymentRequestId();
+      savedCardPaymentRequestIdRef.current = requestId;
       const token = await getToken();
       const response = await apiFetch(`/stripe/payment-methods/${paymentMethodId}/pay-order`, {
         method: "POST",
@@ -268,6 +305,7 @@ export function CheckoutPaymentView({ orderId }) {
           orderId,
           billingDetails: normalizedBillingDetails,
           cardVerificationMode,
+          requestId,
         },
       });
 
@@ -281,6 +319,8 @@ export function CheckoutPaymentView({ orderId }) {
       });
 
       if (result.error) {
+        await recordFailedPaymentIntent(result.error.payment_intent?.id);
+        savedCardPaymentRequestIdRef.current = "";
         throw createStripePaymentError(result.error);
       }
 
@@ -316,9 +356,10 @@ export function CheckoutPaymentView({ orderId }) {
       }
 
       router.replace(`/portal/checkout/${orderId}/thank-you`);
+      savedCardPaymentRequestIdRef.current = "";
     } catch (error) {
       const normalizedError = normalizePaymentActionError(error);
-      if (normalizedError.redirectUrl) {
+      if (String(normalizedError.redirectUrl || "").startsWith("/")) {
         router.push(normalizedError.redirectUrl);
       }
       setSavedCardPayState({
@@ -602,8 +643,8 @@ export function CheckoutPaymentView({ orderId }) {
                       </div>
 
                       <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                        <p className="font-semibold">Secure Stripe-hosted checkout</p>
-                        <p className="mt-1 text-xs leading-5 text-sky-800">You will continue to Stripe to enter the card. Stripe requests 3D Secure only when required, so banks and cards without 3D Secure support are not automatically blocked.</p>
+                        <p className="font-semibold">Secure payment in this portal</p>
+                        <p className="mt-1 text-xs leading-5 text-sky-800">Enter your card here. Stripe.js keeps you in the ElevenOrbits portal while handling any required 3D Secure bank challenge.</p>
                       </div>
 
                       {!profileReady ? (
@@ -639,21 +680,22 @@ export function CheckoutPaymentView({ orderId }) {
                           {savedCardPayState.error ? <p className="text-sm font-medium text-rose-600">{savedCardPayState.error}</p> : null}
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          <Button
-                            className="w-full"
-                            type="button"
-                            disabled={!canTriggerPayments || state.isSubmitting}
-                            onClick={handleHostedStripeCheckout}
-                          >
-                            {state.isSubmitting && state.action === "stripe_checkout"
-                              ? "Opening Stripe Checkout..."
-                              : `Continue to Stripe · ${formatCurrency(totalDue)}`}
-                          </Button>
-                          <p className="text-xs leading-5 text-slate-500">
-                            Card details and any OTP or banking-app approval are handled on Stripe's secure page. ElevenOrbits never receives your card number or OTP.
-                          </p>
-                        </div>
+                        <PortalCardForm
+                          disabled={!canTriggerPayments || state.isSubmitting || savedCardPayState.isSubmitting}
+                          billingDetails={newCardBillingDetails}
+                          onBillingDetailsChange={setNewCardBillingDetails}
+                          showBillingDetails
+                          showSaveCardConsent
+                          saveCardForFutureUse={saveCardForFutureUse}
+                          onSaveCardForFutureUseChange={setSaveCardForFutureUse}
+                          note="Your card details are collected securely by Stripe. If your bank requests OTP or app approval, the verification prompt will appear without leaving this portal."
+                          onSubmit={handleNewCardPayment}
+                          pendingLabel="Processing payment..."
+                          submitLabel={`Pay ${formatCurrency(totalDue)} by card`}
+                          successTitle="Order payment approved"
+                          errorTitle="Order payment failed"
+                          actionLabel="Order Advance Payment"
+                        />
                       )}
                     </div>
                   )}

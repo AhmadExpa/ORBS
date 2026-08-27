@@ -10,7 +10,7 @@ import {
   getPaymentBillingDetailsValidationError,
   normalizePaymentBillingDetails,
 } from "@/lib/payments/billing-details";
-import { normalizePaymentActionError } from "@/lib/payments/stripe-errors";
+import { getStripePaymentErrorMessage, normalizePaymentActionError } from "@/lib/payments/stripe-errors";
 import { useActionToast } from "@/components/shared/feedback-layer";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -285,6 +285,9 @@ function PortalCardFormInner({
   billingDetails,
   onBillingDetailsChange,
   showBillingDetails = false,
+  showSaveCardConsent = false,
+  saveCardForFutureUse = false,
+  onSaveCardForFutureUseChange,
   onPreflight,
   preflightKey = "",
 }) {
@@ -420,6 +423,7 @@ function PortalCardFormInner({
         stripe,
         cardElement,
         billingDetails: normalizedBillingDetails,
+        saveCardForFutureUse,
       });
 
       cardElement.clear();
@@ -466,15 +470,18 @@ function PortalCardFormInner({
           <CardElement
             options={cardElementOptions}
             onChange={(event) => {
+              const cardErrorMessage = event.error
+                ? getStripePaymentErrorMessage(event.error, event.error.message || "Check the card details and try again.")
+                : "";
               setPreflightReport(null);
               setState((current) => ({
                 ...current,
                 message: "",
-                error: event.error?.message || "",
+                error: cardErrorMessage,
               }));
               setCardState({
                 complete: event.complete,
-                error: event.error?.message || "",
+                error: cardErrorMessage,
                 retryLocked: false,
               });
             }}
@@ -482,6 +489,21 @@ function PortalCardFormInner({
         </div>
       </div>
       {cardState.retryLocked ? <p className="text-sm font-medium text-amber-700">Change the card details before retrying.</p> : null}
+      {showSaveCardConsent ? (
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+            checked={saveCardForFutureUse}
+            disabled={state.isSubmitting || isPreflightRunning}
+            onChange={(event) => onSaveCardForFutureUseChange?.(event.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold text-slate-900">Save this card for future ElevenOrbits renewals</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-500">You can remove the card or disable automatic billing any time from Payment Activity.</span>
+          </span>
+        </label>
+      ) : null}
       <PaymentReadinessReport report={preflightReport} />
       {note ? <p className="text-sm leading-6 text-slate-600">{note}</p> : null}
       {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
@@ -517,6 +539,9 @@ export function PortalCardForm({
   billingDetails,
   onBillingDetailsChange,
   showBillingDetails = false,
+  showSaveCardConsent = false,
+  saveCardForFutureUse = false,
+  onSaveCardForFutureUseChange,
   onPreflight,
   preflightKey,
 }) {
@@ -542,6 +567,9 @@ export function PortalCardForm({
         billingDetails={billingDetails}
         onBillingDetailsChange={onBillingDetailsChange}
         showBillingDetails={showBillingDetails}
+        showSaveCardConsent={showSaveCardConsent}
+        saveCardForFutureUse={saveCardForFutureUse}
+        onSaveCardForFutureUseChange={onSaveCardForFutureUseChange}
         onPreflight={onPreflight}
         preflightKey={preflightKey}
       />
